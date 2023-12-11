@@ -1,0 +1,15 @@
+{
+  "client_id": "Enter_the_Application_Id_Here",
+  "authorities": [
+    {
+      "type": "CIAM",
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+    }
+  ],
+  "challenge_types": ["oob", "password"],
+  "logging": {
+    "pii_enabled": false,
+    "log_level": "INFO",
+    "logcat_enabled": true
+  }
+}
