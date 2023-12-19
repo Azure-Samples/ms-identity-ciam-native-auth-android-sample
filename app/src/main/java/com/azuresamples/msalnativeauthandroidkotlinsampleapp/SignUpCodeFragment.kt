@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,11 +9,12 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.results.Result
+import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignUpSubmitCodeResult
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
@@ -69,19 +69,16 @@ class SignUpCodeFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is SignUpSubmitCodeResult.CodeIncorrect,
-                    is SignUpResult.BrowserRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
-                        clearCode()
-                    }
                     is SignUpResult.AttributesRequired,
-                    is SignUpResult.PasswordRequired,
-                    is SignUpResult.UnexpectedError -> {
-                        displayDialog("Unexpected result: $actionResult")
+                    is SignUpResult.PasswordRequired -> {
+                        displayDialog("Unexpected result", actionResult.toString())
+                    }
+                    is SubmitCodeError -> {
+                        handleSubmitError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -98,12 +95,12 @@ class SignUpCodeFragment : Fragment() {
                 ).show()
                 finish()
             }
-            is SignInResult.BrowserRequired,
+            is SignInError -> {
+                handleSignInAfterSignUpError(actionResult)
+            }
             is SignInResult.CodeRequired,
-            is SignInResult.PasswordRequired,
-            is SignInResult.UserNotFound,
-            is SignInResult.UnexpectedError -> {
-                displayDialog("Unexpected result: $actionResult")
+            is SignInResult.PasswordRequired -> {
+                displayDialog("Unexpected result", actionResult.toString())
             }
         }
     }
@@ -120,12 +117,12 @@ class SignUpCodeFragment : Fragment() {
                         currentState = actionResult.nextState
                         Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                     }
-                    is SignUpResult.BrowserRequired, is SignUpResult.UnexpectedError -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                    is ResendCodeError -> {
+                        handleResendError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -134,11 +131,45 @@ class SignUpCodeFragment : Fragment() {
         binding.codeText.text?.clear()
     }
 
-    private fun displayDialog(message: String?) {
-        Log.w(TAG, "$message")
+    private fun handleSubmitError(error: SubmitCodeError) {
+        when {
+            error.isBrowserRequired() || error.isInvalidCode() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
 
+    private fun handleResendError(error: ResendCodeError) {
+        when {
+            error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+    private fun handleSignInAfterSignUpError(error: SignInError) {
+        when {
+            error.isBrowserRequired() || error.isUserNotFound() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+    private fun displayDialog(error: String?, message: String?) {
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()

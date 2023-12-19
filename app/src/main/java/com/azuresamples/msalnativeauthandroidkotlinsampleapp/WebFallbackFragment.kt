@@ -15,12 +15,13 @@ import com.microsoft.identity.client.AcquireTokenParameters
 import com.microsoft.identity.client.AuthenticationCallback
 import com.microsoft.identity.client.IAccount
 import com.microsoft.identity.client.IAuthenticationResult
-import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
+import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
-import com.microsoft.identity.common.java.util.StringUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,10 +68,14 @@ class WebFallbackFragment : Fragment() {
 
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
-            if (authClient.getCurrentAccount() == null) {
-                displaySignedOutState()
-            } else {
-                displaySignedInState()
+            val accountResult = authClient.getCurrentAccount()
+            when (accountResult) {
+                is GetAccountResult.AccountFound -> {
+                    displaySignedInState()
+                }
+                is GetAccountResult.NoAccountFound -> {
+                    displaySignedOutState()
+                }
             }
         }
     }
@@ -79,39 +84,42 @@ class WebFallbackFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInUsingPasswordResult;
+                val actionResult: SignInUsingPasswordResult
                 try {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
                         password = password
                     )
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(
+                        0,
+                        binding.passwordText.text?.length?.minus(1) ?: 0,
+                        0
+                    )
+                    StringUtil.overwriteWithNull(password)
                 }
 
-                when (actionResult) {
-                    is SignInResult.BrowserRequired -> {
-                        Toast.makeText(requireContext(), actionResult.error.errorMessage, Toast.LENGTH_SHORT).show()
+                if (actionResult is SignInError && actionResult.isBrowserRequired()) {
+                    Toast.makeText(requireContext(), actionResult.errorMessage, Toast.LENGTH_SHORT)
+                        .show()
 
-                        authClient.acquireToken(
-                            AcquireTokenParameters(
-                                AcquireTokenParameters.Builder()
-                                    .startAuthorizationFromActivity(requireActivity())
-                                    .withScopes(mutableListOf("profile", "openid", "email"))
-                                    .withCallback(getAuthInteractiveCallback())
-                            )
+                    authClient.acquireToken(
+                        AcquireTokenParameters(
+                            AcquireTokenParameters.Builder()
+                                .startAuthorizationFromActivity(requireActivity())
+                                .withScopes(mutableListOf("profile", "openid", "email"))
+                                .withCallback(getAuthInteractiveCallback())
                         )
-                    }
-                    else -> {
-                        displayDialog("Unexpected result: $actionResult")
-                    }
+                    )
+                } else {
+                    displayDialog("Unexpected result", actionResult.toString())
                 }
+
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -140,7 +148,7 @@ class WebFallbackFragment : Fragment() {
 
             override fun onError(exception: MsalException) {
                 /* Failed to acquireToken */
-                displayDialog("Authentication failed: $exception")
+                displayDialog(getString(R.string.msal_exception_title),"Authentication failed: $exception")
             }
 
             override fun onCancel() {
@@ -151,16 +159,19 @@ class WebFallbackFragment : Fragment() {
 
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
-            val signOutResult = authClient.getCurrentAccount()?.signOut()
-            if (signOutResult is SignOutResult.Complete) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_out_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                displaySignedOutState()
-            } else {
-                displayDialog("Unexpected result: $signOutResult")
+            val getAccountResult = authClient.getCurrentAccount()
+            if (getAccountResult is GetAccountResult.AccountFound) {
+                val signOutResult = getAccountResult.resultValue.signOut()
+                if (signOutResult is SignOutResult.Complete) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_out_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedOutState()
+                } else {
+                    displayDialog("Unexpected result", signOutResult.toString())
+                }
             }
         }
     }
@@ -204,11 +215,11 @@ class WebFallbackFragment : Fragment() {
         binding.resultIdToken.text = getString(R.string.result_id_token_text) + accountResult?.idToken
     }
 
-    private fun displayDialog(message: String?) {
+    private fun displayDialog(error: String? = null, message: String?) {
         Log.w(TAG, "$message")
 
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()

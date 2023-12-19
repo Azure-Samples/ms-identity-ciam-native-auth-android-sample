@@ -2,20 +2,20 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
-import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordStartResult
-import com.microsoft.identity.nativeauth.statemachine.results.Result
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
-import com.microsoft.identity.nativeauth.statemachine.states.AccountResult
+import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,10 +64,13 @@ class PasswordResetFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
-            if (accountResult == null) {
-                displaySignedOutState()
-            } else {
-                displaySignedInState(accountResult)
+            when (accountResult) {
+                is GetAccountResult.AccountFound -> {
+                    displaySignedInState(accountResult.resultValue)
+                }
+                is GetAccountResult.NoAccountFound -> {
+                    displaySignedOutState()
+                }
             }
         }
     }
@@ -86,37 +89,39 @@ class PasswordResetFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is ResetPasswordStartResult.UserNotFound,
-                    is ResetPasswordResult.UnexpectedError, is ResetPasswordResult.BrowserRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                    is ResetPasswordError -> {
+                        handleError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
 
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
-            val signOutResult = authClient.getCurrentAccount()?.signOut()
-            if (signOutResult is SignOutResult.Complete) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_out_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                displaySignedOutState()
-            } else {
-                displayDialog("Unexpected result: $signOutResult")
+            val getAccountResult = authClient.getCurrentAccount()
+            if (getAccountResult is GetAccountResult.AccountFound) {
+                val signOutResult = getAccountResult.resultValue.signOut()
+                if (signOutResult is SignOutResult.Complete) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_out_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedOutState()
+                } else {
+                    displayDialog("Unexpected result", signOutResult.toString())
+                }
             }
         }
     }
 
-    private fun displaySignedInState(accountResult: AccountResult) {
+    private fun displaySignedInState(accountState: AccountState) {
         emptyFields()
         updateUI(STATUS.SignedIn)
-        displayAccount(accountResult)
+        displayAccount(accountState)
     }
 
     private fun displaySignedOutState() {
@@ -147,26 +152,38 @@ class PasswordResetFragment : Fragment() {
         binding.resultIdToken.text = ""
     }
 
-    private fun displayAccount(accountResult: AccountResult) {
+    private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val accessToken = accountResult.getAccessToken()?.accessToken
+            val accessTokenState = accountState.getAccessToken()
+            if (accessTokenState is GetAccessTokenResult.Complete) {
+                val accessToken = accessTokenState.resultValue.accessToken
                 binding.resultAccessToken.text =
                     getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountResult.getIdToken()
+                val idToken = accountState.getIdToken()
                 binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
-            } catch (exception: Exception) {
-                displayDialog(exception.message.toString())
             }
         }
     }
 
-    private fun displayDialog(message: String?) {
-        Log.w(TAG, "$message")
+    private fun handleError(error: ResetPasswordError) {
+        when {
+            error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            error.isUserNotFound() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
 
+    private fun displayDialog(error: String?, message: String?) {
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()

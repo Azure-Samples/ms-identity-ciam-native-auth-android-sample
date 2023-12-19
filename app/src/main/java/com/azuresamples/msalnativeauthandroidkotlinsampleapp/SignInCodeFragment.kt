@@ -10,10 +10,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.results.Result
+import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResendCodeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInSubmitCodeResult
 import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,17 +69,12 @@ class SignInCodeFragment : Fragment() {
                         ).show()
                         finish()
                     }
-                    is SignInSubmitCodeResult.CodeIncorrect -> {
-                        displayDialog(actionResult.error.errorMessage)
-                        clearCode()
-                    }
-                    is SignInResult.UnexpectedError,
-                    is SignInResult.BrowserRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                    is SubmitCodeError -> {
+                        handleSubmitCodeError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -95,8 +90,8 @@ class SignInCodeFragment : Fragment() {
                     currentState = actionResult.nextState
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
-                is SignInResult.UnexpectedError, is SignInResult.BrowserRequired -> {
-                    displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                is ResendCodeError -> {
+                    handleResendCodeError(actionResult)
                 }
             }
         }
@@ -106,11 +101,36 @@ class SignInCodeFragment : Fragment() {
         binding.codeText.text?.clear()
     }
 
-    private fun displayDialog(message: String?) {
+    private fun handleSubmitCodeError(error: SubmitCodeError) {
+        when {
+            error.isInvalidCode() || error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+
+    private fun handleResendCodeError(error: ResendCodeError) {
+        when {
+            error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+    private fun displayDialog(error: String?, message: String?) {
         Log.w(TAG, "$message")
 
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()

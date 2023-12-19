@@ -9,13 +9,16 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
-import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.results.Result
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
-import com.microsoft.identity.nativeauth.statemachine.states.AccountResult
+import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
@@ -70,10 +73,13 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
-            if (accountResult == null) {
-                displaySignedOutState()
-            } else {
-                displaySignedInState(accountResult)
+            when (accountResult) {
+                is GetAccountResult.AccountFound -> {
+                    displaySignedInState(accountResult.resultValue)
+                }
+                is GetAccountResult.NoAccountFound -> {
+                    displaySignedOutState()
+                }
             }
         }
     }
@@ -93,18 +99,12 @@ class EmailSignInSignUpFragment : Fragment() {
                             signInstate = actionResult.nextState
                         )
                     }
-                    is SignInResult.UserNotFound,
-                    is SignInResult.UnexpectedError,
-                    is SignInResult.BrowserRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
-                    }
-                    is SignInResult.Complete,
-                    is SignInResult.PasswordRequired -> {
-                        displayDialog("Unexpected result: $actionResult")
+                    is SignInError -> {
+                        handleSignInError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -134,22 +134,20 @@ class EmailSignInSignUpFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is SignUpResult.UserAlreadyExists,
-                    is SignUpResult.InvalidEmail,
-                    is SignUpResult.UnexpectedError,
-                    is SignUpResult.BrowserRequired,
                     is SignUpResult.AttributesRequired,
-                    is SignUpResult.InvalidAttributes,
-                    is SignUpResult.InvalidPassword,
                     is SignUpResult.PasswordRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                        displayDialog("Unexpected result", actionResult.toString())
+                    }
+                    is SignUpError -> {
+                        handleSignUpError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
+
 
     private suspend fun signInAfterSignUp(nextState: SignInAfterSignUpState) {
         val actionResult = nextState.signIn()
@@ -160,34 +158,37 @@ class EmailSignInSignUpFragment : Fragment() {
                     getString(R.string.sign_in_successful_message),
                     Toast.LENGTH_SHORT
                 ).show()
-                displaySignedInState(accountResult = actionResult.resultValue)
+                displaySignedInState(accountState = actionResult.resultValue)
             }
             else -> {
-                displayDialog("Unexpected result: $actionResult")
+                displayDialog("Unexpected result", actionResult.toString())
             }
         }
     }
 
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
-            val signOutResult = authClient.getCurrentAccount()?.signOut()
-            if (signOutResult is SignOutResult.Complete) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_out_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                displaySignedOutState()
-            } else {
-                displayDialog("Unexpected result: $signOutResult")
+            val getAccountResult = authClient.getCurrentAccount()
+            if (getAccountResult is GetAccountResult.AccountFound) {
+                val signOutResult = getAccountResult.resultValue.signOut()
+                if (signOutResult is SignOutResult.Complete) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_out_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedOutState()
+                } else {
+                    displayDialog("Unexpected result", signOutResult.toString())
+                }
             }
         }
     }
 
-    private fun displaySignedInState(accountResult: AccountResult) {
+    private fun displaySignedInState(accountState: AccountState) {
         emptyFields()
         updateUI(STATUS.SignedIn)
-        displayAccount(accountResult)
+        displayAccount(accountState)
     }
 
     private fun displaySignedOutState() {
@@ -220,25 +221,50 @@ class EmailSignInSignUpFragment : Fragment() {
         binding.resultIdToken.text = ""
     }
 
-    private fun displayAccount(accountResult: AccountResult) {
+    private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val accessToken = accountResult.getAccessToken()?.accessToken
+            val accessTokenState = accountState.getAccessToken()
+            if (accessTokenState is GetAccessTokenResult.Complete) {
+                val accessToken = accessTokenState.resultValue.accessToken
                 binding.resultAccessToken.text =
                     getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountResult.getIdToken()
+                val idToken = accountState.getIdToken()
                 binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
-            } catch (exception: Exception) {
-                displayDialog(exception.message.toString())
             }
         }
     }
 
-    private fun displayDialog(message: String?) {
+    private fun handleSignInError(error: SignInError) {
+        when {
+            error.isUserNotFound() || error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+    private fun handleSignUpError(error: SignUpError) {
+        when {
+            error.isUserAlreadyExists() || error.isInvalidUsername() || error.isInvalidAttributes()
+                    || error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
+    }
+
+    private fun displayDialog(error: String? = null, message: String?) {
         Log.w(TAG, "$message")
+
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()

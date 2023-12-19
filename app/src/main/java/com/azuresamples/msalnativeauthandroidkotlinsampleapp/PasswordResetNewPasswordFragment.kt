@@ -12,11 +12,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
 import com.microsoft.identity.client.exception.MsalException
+import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
-import com.microsoft.identity.nativeauth.statemachine.results.Result
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
-import com.microsoft.identity.common.java.util.StringUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,7 +58,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length());
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
 
-                val actionResult: ResetPasswordSubmitPasswordResult;
+                val actionResult: ResetPasswordSubmitPasswordResult
                 try {
                     actionResult = currentState.submitPassword(password)
                 } finally {
@@ -75,35 +75,34 @@ class PasswordResetNewPasswordFragment : Fragment() {
                         ).show()
                         finish()
                     }
-                    is ResetPasswordSubmitPasswordResult.InvalidPassword -> {
-                        Toast.makeText(
-                            requireContext(),
-                            actionResult.error.errorMessage,
-                            Toast.LENGTH_LONG
-                        ).show()
-                        clearPasswordField()
-                    }
-                    is ResetPasswordSubmitPasswordResult.PasswordResetFailed,
-                    is ResetPasswordResult.UnexpectedError,
-                    is ResetPasswordResult.BrowserRequired -> {
-                        displayDialog((actionResult as Result.ErrorResult).error.errorMessage)
+                    is ResetPasswordSubmitPasswordError -> {
+                        handleError(actionResult)
                     }
                 }
             } catch (exception: MsalException) {
-                displayDialog(exception.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
 
-    private fun clearPasswordField() {
-        binding.passwordText.text?.clear()
+    private fun handleError(error: ResetPasswordSubmitPasswordError) {
+        when {
+            error.isBrowserRequired() || error.isInvalidPassword() || error.isPasswordResetFailed()
+            -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
+            }
+        }
     }
 
-    private fun displayDialog(message: String?) {
+    private fun displayDialog(error: String?, message: String?) {
         Log.w(TAG, "$message")
 
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(getString(R.string.msal_exception_title))
+        builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
