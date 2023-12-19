@@ -12,11 +12,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.client.statemachine.errors.ResetPasswordSubmitPasswordError
-import com.microsoft.identity.client.statemachine.results.ResetPasswordResult
-import com.microsoft.identity.client.statemachine.results.ResetPasswordSubmitPasswordResult
-import com.microsoft.identity.client.statemachine.states.ResetPasswordPasswordRequiredState
 import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
+import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,7 +58,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length());
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
 
-                val actionResult: ResetPasswordSubmitPasswordResult;
+                val actionResult: ResetPasswordSubmitPasswordResult
                 try {
                     actionResult = currentState.submitPassword(password)
                 } finally {

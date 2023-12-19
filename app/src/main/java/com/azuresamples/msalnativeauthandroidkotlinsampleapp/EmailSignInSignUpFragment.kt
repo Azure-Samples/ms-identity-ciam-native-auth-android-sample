@@ -9,19 +9,19 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
-import com.microsoft.identity.client.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.client.statemachine.errors.SignInError
-import com.microsoft.identity.client.statemachine.errors.SignUpError
-import com.microsoft.identity.client.statemachine.results.GetAccessTokenResult
-import com.microsoft.identity.client.statemachine.results.GetAccountResult
-import com.microsoft.identity.client.statemachine.results.SignInResult
-import com.microsoft.identity.client.statemachine.results.SignOutResult
-import com.microsoft.identity.client.statemachine.results.SignUpResult
-import com.microsoft.identity.client.statemachine.states.AccountState
-import com.microsoft.identity.client.statemachine.states.SignInAfterSignUpState
-import com.microsoft.identity.client.statemachine.states.SignInCodeRequiredState
-import com.microsoft.identity.client.statemachine.states.SignUpCodeRequiredState
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
+import com.microsoft.identity.nativeauth.statemachine.states.AccountState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -148,6 +148,7 @@ class EmailSignInSignUpFragment : Fragment() {
         }
     }
 
+
     private suspend fun signInAfterSignUp(nextState: SignInAfterSignUpState) {
         val actionResult = nextState.signIn()
         when (actionResult) {
@@ -166,7 +167,7 @@ class EmailSignInSignUpFragment : Fragment() {
     }
 
     private fun signOut() {
-       CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
@@ -249,7 +250,7 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun handleSignUpError(error: SignUpError) {
         when {
             error.isUserAlreadyExists() || error.isInvalidUsername() || error.isInvalidAttributes()
-            || error.isBrowserRequired() -> {
+                    || error.isBrowserRequired() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {

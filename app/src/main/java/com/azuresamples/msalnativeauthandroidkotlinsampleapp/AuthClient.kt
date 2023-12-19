@@ -3,9 +3,9 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import com.microsoft.identity.client.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.Logger
 import com.microsoft.identity.client.PublicClientApplication
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 
 object AuthClient : Application() {
     private lateinit var authClient: INativeAuthPublicClientApplication
