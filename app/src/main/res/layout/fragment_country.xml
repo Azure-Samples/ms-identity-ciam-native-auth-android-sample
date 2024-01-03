@@ -11,55 +11,39 @@
         android:layout_height="wrap_content">
 
         <TextView
-            android:id="@+id/hint_text"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/dimens_15dp"
-            android:layout_marginStart="@dimen/dimens_15dp"
-            android:layout_marginLeft="@dimen/dimens_15dp"
-            android:gravity="start|center_horizontal"
-            android:text="@string/hint_password_text_value"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/password_hint"
+            android:id="@+id/country_hint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/dimens_15dp"
-            android:text="@string/attribute_password"
+            android:text="@string/attribute_country"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/hint_text"
+            app:layout_constraintTop_toTopOf="parent"
             style="@style/TextViewStyle" />
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/password_layout"
+            android:id="@+id/country_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/password_hint"
-            app:passwordToggleEnabled="true"
-            app:passwordToggleTint="@color/colorPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/country_hint"
             style="@style/TextInputLayoutStyle">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/password_text"
+                android:id="@+id/country_text"
                 android:layout_width="match_parent"
-                android:inputType="textPassword"
+                android:inputType="textPersonName"
                 tools:ignore="SpeakableTextPresentCheck"
                 style="@style/TextInputEditTextStyle" />
-
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/submit"
-            android:text="@string/submit_password"
+            android:text="@string/submit_attribute"
             android:layout_marginTop="@dimen/dimens_30dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/password_layout"
+            app:layout_constraintTop_toBottomOf="@+id/country_layout"
             style="@style/ActionButtonStyle" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

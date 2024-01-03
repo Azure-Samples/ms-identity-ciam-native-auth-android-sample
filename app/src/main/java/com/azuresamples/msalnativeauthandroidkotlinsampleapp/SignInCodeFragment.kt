@@ -10,11 +10,11 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.client.statemachine.errors.ResendCodeError
-import com.microsoft.identity.client.statemachine.errors.SubmitCodeError
-import com.microsoft.identity.client.statemachine.results.SignInResendCodeResult
-import com.microsoft.identity.client.statemachine.results.SignInResult
-import com.microsoft.identity.client.statemachine.states.SignInCodeRequiredState
+import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResendCodeResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
+import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

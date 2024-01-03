@@ -16,6 +16,7 @@
     <string name="sign_out">"Sign Out"</string>
     <string name="forget_password">"Forget Password"</string>
     <string name="submit_password">"Submit"</string>
+    <string name="submit_attribute">"Submit"</string>
     <string name="create">"Create new user"</string>
     <string name="verify_email">"Send"</string>
     <string name="verify_code">"Next"</string>

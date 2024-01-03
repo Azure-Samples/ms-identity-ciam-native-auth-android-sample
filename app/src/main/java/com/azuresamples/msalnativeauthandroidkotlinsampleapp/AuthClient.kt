@@ -3,7 +3,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import com.microsoft.identity.client.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.client.Logger
 import com.microsoft.identity.client.PublicClientApplication
 

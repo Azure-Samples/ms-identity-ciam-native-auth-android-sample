@@ -12,10 +12,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.client.statemachine.errors.ResetPasswordSubmitPasswordError
-import com.microsoft.identity.client.statemachine.results.ResetPasswordResult
-import com.microsoft.identity.client.statemachine.results.ResetPasswordSubmitPasswordResult
-import com.microsoft.identity.client.statemachine.states.ResetPasswordPasswordRequiredState
+import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
+import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
 import com.microsoft.identity.common.java.util.StringUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +47,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
     }
 
     private fun initializeButtonListener() {
-        binding.create.setOnClickListener {
+        binding.submit.setOnClickListener {
             resetPassword()
         }
     }

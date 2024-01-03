@@ -9,14 +9,16 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.client.statemachine.errors.ResendCodeError
-import com.microsoft.identity.client.statemachine.errors.SignInError
-import com.microsoft.identity.client.statemachine.errors.SubmitCodeError
-import com.microsoft.identity.client.statemachine.results.SignInResult
-import com.microsoft.identity.client.statemachine.results.SignUpResendCodeResult
-import com.microsoft.identity.client.statemachine.results.SignUpResult
-import com.microsoft.identity.client.statemachine.states.SignInAfterSignUpState
-import com.microsoft.identity.client.statemachine.states.SignUpCodeRequiredState
+import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
+import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
+import com.microsoft.identity.nativeauth.statemachine.states.SignUpAttributesRequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.SignUpPasswordRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,9 +71,15 @@ class SignUpCodeFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is SignUpResult.AttributesRequired,
+                    is SignUpResult.AttributesRequired -> {
+                        navigateToAttributes(
+                            nextState = actionResult.nextState
+                        )
+                    }
                     is SignUpResult.PasswordRequired -> {
-                        displayDialog("Unexpected result", actionResult.toString())
+                        navigateToPassword(
+                            nextState = actionResult.nextState
+                        )
                     }
                     is SubmitCodeError -> {
                         handleSubmitError(actionResult)
@@ -165,6 +173,34 @@ class SignUpCodeFragment : Fragment() {
                 displayDialog("Unexpected error", error.toString())
             }
         }
+    }
+
+    private fun navigateToAttributes(nextState: SignUpAttributesRequiredState) {
+        val bundle = Bundle()
+        bundle.putSerializable(Constants.STATE, nextState)
+        val fragment = SignUpCountryAttributeFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToPassword(nextState: SignUpPasswordRequiredState) {
+        val bundle = Bundle()
+        bundle.putSerializable(Constants.STATE, nextState)
+        val fragment = SignUpPasswordFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
     }
 
     private fun displayDialog(error: String?, message: String?) {
