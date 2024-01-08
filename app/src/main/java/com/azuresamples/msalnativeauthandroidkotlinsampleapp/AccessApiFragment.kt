@@ -1,22 +1,16 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
-import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInUsingPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,13 +36,14 @@ class AccessApiFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAccessApiBinding.inflate(inflater, container, false)
-        val view = binding.root
+
+        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_access_protected_api)
 
         authClient = AuthClient.getAuthClient()
 
         init()
 
-        return view
+        return binding.root
     }
 
     override fun onResume() {
@@ -61,16 +56,12 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun initializeButtonListeners() {
-        binding.signIn.setOnClickListener {
-            signIn()
-        }
-
         binding.postTodo.setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch {
                 val accountResult = authClient.getCurrentAccount()
                 when (accountResult) {
                     is GetAccountResult.AccountFound -> {
-                        sendDataAndUpdateUI(accountResult.resultValue)
+                        postDataAndUpdateUI(accountResult.resultValue)
                     }
                     is GetAccountResult.NoAccountFound -> {
                         displaySignedOutState()
@@ -99,53 +90,11 @@ class AccessApiFragment : Fragment() {
             val accountResult = authClient.getCurrentAccount()
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
-                    sendDataAndUpdateUI(accountResult.resultValue)
+                    displaySignedInState(accountResult.resultValue)
                 }
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
-            }
-        }
-    }
-
-    private fun signIn() {
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
-
-                val actionResult: SignInUsingPasswordResult;
-                try {
-                    actionResult = authClient.signInUsingPassword(
-                        username = email,
-                        password = password,
-                        scopes = listOf("api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.Read",
-                            "api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.ReadWrite")
-                    )
-                } finally {
-                    binding.passwordText.text?.clear();
-                    StringUtil.overwriteWithNull(password);
-                }
-
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        displaySignedInState(accountState = actionResult.resultValue)
-                    }
-                    is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp))
-                    }
-                    is SignInUsingPasswordError -> {
-                        handleSignInError(actionResult)
-                    }
-                }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }
@@ -203,13 +152,11 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun sendDataAndUpdateUI(accountState: AccountState) {
+    private fun postDataAndUpdateUI(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
                 try {
                     binding.requestResponse.text = sendPostRequest("https://todolistapi20231027124634.azurewebsites.net/api/todolist", accessToken)
                 } catch (e: Exception) {
@@ -224,8 +171,6 @@ class AccessApiFragment : Fragment() {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
                 try {
                     binding.requestResponse.text = sendGetRequest("https://todolistapi20231027124634.azurewebsites.net/api/todolist/1", accessToken)
                 } catch (e: Exception) {
@@ -236,13 +181,11 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun displaySignedInState(accountState: AccountState) {
-        emptyFields()
         updateUI(STATUS.SignedIn)
         displayAccount(accountState)
     }
 
     private fun displaySignedOutState() {
-        emptyFields()
         updateUI(STATUS.SignedOut)
         emptyResults()
     }
@@ -250,21 +193,14 @@ class AccessApiFragment : Fragment() {
     private fun updateUI(status: STATUS) {
         when (status) {
             STATUS.SignedIn -> {
-                binding.signIn.isEnabled = false
                 binding.getTodo.isEnabled = true
                 binding.postTodo.isEnabled = true
             }
             STATUS.SignedOut -> {
-                binding.signIn.isEnabled = true
                 binding.getTodo.isEnabled = false
                 binding.postTodo.isEnabled = false
             }
         }
-    }
-
-    private fun emptyFields() {
-        binding.emailText.setText("")
-        binding.passwordText.setText("")
     }
 
     private fun emptyResults() {
@@ -277,31 +213,9 @@ class AccessApiFragment : Fragment() {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
+                binding.resultAccessToken.text = accessToken
                 Log.d(TAG, "Access token: $accessToken")
             }
         }
-    }
-
-    private fun handleSignInError(error: SignInUsingPasswordError) {
-        when {
-            error.isInvalidCredentials() || error.isBrowserRequired() || error.isUserNotFound() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog("Unexpected error", error.toString())
-            }
-        }
-    }
-
-    private fun displayDialog(error: String? = null, message: String?) {
-        Log.w(TAG, "$message")
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
     }
 }

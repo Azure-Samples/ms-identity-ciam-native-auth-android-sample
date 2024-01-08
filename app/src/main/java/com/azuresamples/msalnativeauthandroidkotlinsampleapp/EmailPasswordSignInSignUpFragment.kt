@@ -100,7 +100,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 try {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
-                        password = password
+                        password = password,
+                        scopes = listOf("api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.Read",
+                            "api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.ReadWrite")
                     )
                 } finally {
                     binding.passwordText.text?.clear();
