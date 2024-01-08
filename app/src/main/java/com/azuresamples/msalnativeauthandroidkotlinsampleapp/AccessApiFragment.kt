@@ -15,11 +15,11 @@ import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
-    private lateinit var apiClient: ApiClient
     private var _binding: FragmentAccessApiBinding? = null
     private val binding get() = _binding!!
 
@@ -99,7 +99,10 @@ class AccessApiFragment : Fragment() {
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
-                    binding.requestResponse.text = ApiClient.postTodoListItem(accessToken,"Test").message
+                    val apiResponse = withContext(Dispatchers.IO) {
+                        ApiClient.postTodoListItem(accessToken).message
+                    }
+                    binding.requestResponse.text = apiResponse
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -113,7 +116,10 @@ class AccessApiFragment : Fragment() {
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
-                    binding.requestResponse.text = ApiClient.getToDoListItem(accessToken,1).message
+                    val apiResponse = withContext(Dispatchers.IO) {
+                        ApiClient.getAllToDoListItems(accessToken).message
+                    }
+                    binding.requestResponse.text = apiResponse
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
