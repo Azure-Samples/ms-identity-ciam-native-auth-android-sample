@@ -9,7 +9,7 @@
     <string name="title_email_oob_sspr">"Password Reset"</string>
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
-    <string name="title_access_protected_api">"Web Fallback"</string>
+    <string name="title_access_protected_api">"Access Protected API"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
