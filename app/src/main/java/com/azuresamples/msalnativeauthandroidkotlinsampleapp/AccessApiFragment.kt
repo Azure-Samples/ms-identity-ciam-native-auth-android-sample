@@ -15,17 +15,11 @@ import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
 
 
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var apiClient: ApiClient
     private var _binding: FragmentAccessApiBinding? = null
     private val binding get() = _binding!!
 
@@ -99,66 +93,13 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private suspend fun sendGetRequest(url: String, accessToken: String): String? {
-        return withContext(Dispatchers.IO) {
-            val client = OkHttpClient()
-
-            try {
-                val request = Request.Builder()
-                    .url(url)
-                    .addHeader("Authorization", "Bearer $accessToken")
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        response.body?.string()
-                    } else {
-                        "Network request failed with code: ${response.code}"
-                    }
-                }
-            } catch (e: IOException) {
-                // Handle exceptions
-                throw e
-            }
-        }
-    }
-
-    private suspend fun sendPostRequest(url: String, accessToken: String): String? {
-        return withContext(Dispatchers.IO) {
-            val client = OkHttpClient()
-            val jsonData = "{\"Description\": \"Test\"}"
-            // Create a request body with the JSON data
-            val requestBody: RequestBody =
-                jsonData.toRequestBody("application/json".toMediaTypeOrNull())
-
-            try {
-                val request = Request.Builder()
-                    .url(url)
-                    .addHeader("Authorization", "Bearer $accessToken")
-                    .post(requestBody)
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        response.body?.string()
-                    } else {
-                        "Network request failed with code: ${response.code}"
-                    }
-                }
-            } catch (e: IOException) {
-                // Handle exceptions
-                throw e
-            }
-        }
-    }
-
     private fun postDataAndUpdateUI(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
-                    binding.requestResponse.text = sendPostRequest("https://todolistapi20231027124634.azurewebsites.net/api/todolist", accessToken)
+                    binding.requestResponse.text = ApiClient.postTodoListItem(accessToken,"Test").message
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -172,7 +113,7 @@ class AccessApiFragment : Fragment() {
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
-                    binding.requestResponse.text = sendGetRequest("https://todolistapi20231027124634.azurewebsites.net/api/todolist/1", accessToken)
+                    binding.requestResponse.text = ApiClient.getToDoListItem(accessToken,1).message
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
