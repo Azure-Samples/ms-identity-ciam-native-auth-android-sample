@@ -1,11 +1,9 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.ActivityMainBinding
-import com.microsoft.identity.client.Logger
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {

@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var apiClient: ApiClient
     private var _binding: FragmentAccessApiBinding? = null
     private val binding get() = _binding!!
 
@@ -34,6 +35,8 @@ class AccessApiFragment : Fragment() {
         (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_access_protected_api)
 
         authClient = AuthClient.getAuthClient()
+
+        apiClient = ApiClient(requireContext())
 
         init()
 
@@ -55,7 +58,7 @@ class AccessApiFragment : Fragment() {
                 val accountResult = authClient.getCurrentAccount()
                 when (accountResult) {
                     is GetAccountResult.AccountFound -> {
-                        postDataAndUpdateUI(accountResult.resultValue)
+                        postData(accountResult.resultValue)
                     }
                     is GetAccountResult.NoAccountFound -> {
                         displaySignedOutState()
@@ -69,7 +72,7 @@ class AccessApiFragment : Fragment() {
                 val accountResult = authClient.getCurrentAccount()
                 when (accountResult) {
                     is GetAccountResult.AccountFound -> {
-                        getDataAndUpdateUI(accountResult.resultValue)
+                        getData(accountResult.resultValue)
                     }
                     is GetAccountResult.NoAccountFound -> {
                         displaySignedOutState()
@@ -93,16 +96,16 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun postDataAndUpdateUI(accountState: AccountState) {
+    private fun postData(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
                     val apiResponse = withContext(Dispatchers.IO) {
-                        ApiClient.postTodoListItem(accessToken).message
+                        apiClient.postTodoListItem(accessToken)
                     }
-                    binding.requestResponse.text = apiResponse
+                    binding.requestResponse.text = apiResponse.message
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -110,16 +113,16 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun getDataAndUpdateUI(accountState: AccountState) {
+    private fun getData(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
                     val apiResponse = withContext(Dispatchers.IO) {
-                        ApiClient.getAllToDoListItems(accessToken).message
+                        apiClient.getAllToDoListItems(accessToken)
                     }
-                    binding.requestResponse.text = apiResponse
+                    binding.requestResponse.text = apiResponse.message
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

@@ -93,20 +93,20 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+                val scopes = context?.readScopesFromRawJsonFile(R.raw.protected_api_config)
 
-                val actionResult: SignInUsingPasswordResult;
+                val actionResult: SignInUsingPasswordResult
                 try {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
                         password = password,
-                        scopes = listOf("api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.Read",
-                            "api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.ReadWrite")
+                        scopes = scopes
                     )
                 } finally {
-                    binding.passwordText.text?.clear();
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.clear()
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
@@ -135,8 +135,8 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
                 val actionResult: SignUpUsingPasswordResult
 
@@ -146,8 +146,8 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                         password = password
                     )
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
