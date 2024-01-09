@@ -94,7 +94,7 @@ class AccessApiFragment : Fragment() {
                     }
                     binding.requestResponse.text = "Your response code is: " + apiResponseCode
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "API request failed ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }

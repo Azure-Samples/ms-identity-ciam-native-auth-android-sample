@@ -26,7 +26,6 @@ class ApiClient(context: Context) {
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                Log.e(TAG, "Request failed with code: ${response.code}")
                 throw IllegalStateException("Network request failed with code: ${response.code}")
             }
 
