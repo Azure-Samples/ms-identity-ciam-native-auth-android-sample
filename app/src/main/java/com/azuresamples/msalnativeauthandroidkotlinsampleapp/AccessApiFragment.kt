@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
     private var _binding: FragmentAccessApiBinding? = null
@@ -82,7 +81,7 @@ class AccessApiFragment : Fragment() {
                             val apiResponseCode = withContext(Dispatchers.IO) {
                                 ApiClient.performGetApiRequest(accessToken)
                             }
-                            binding.requestResponse.text = "Your response code is: $apiResponseCode"
+                            binding.requestResponse.text = getString(R.string.response_code) + apiResponseCode
                         } catch (e: Exception) {
                             displayDialog("Network Request Error", e.message ?: "unknown error")
                         }
