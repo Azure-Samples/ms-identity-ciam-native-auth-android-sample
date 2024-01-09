@@ -51,7 +51,7 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun initializeButtonListeners() {
-        binding.getTodo.setOnClickListener {
+        binding.getApi.setOnClickListener {
             accessWebAPI()
         }
     }
@@ -84,7 +84,7 @@ class AccessApiFragment : Fragment() {
                             }
                             binding.requestResponse.text = "Your response code is: $apiResponseCode"
                         } catch (e: Exception) {
-                            displayDialog("Error", e.message ?: "Unknown error")
+                            displayDialog("Network Request Error", e.message ?: "unknown error")
                         }
                     }
                 }
@@ -108,10 +108,10 @@ class AccessApiFragment : Fragment() {
     private fun updateUI(status: STATUS) {
         when (status) {
             STATUS.SignedIn -> {
-                binding.getTodo.isEnabled = true
+                binding.getApi.isEnabled = true
             }
             STATUS.SignedOut -> {
-                binding.getTodo.isEnabled = false
+                binding.getApi.isEnabled = false
             }
         }
     }

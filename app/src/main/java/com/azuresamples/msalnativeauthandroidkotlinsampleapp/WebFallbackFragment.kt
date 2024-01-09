@@ -207,8 +207,8 @@ class WebFallbackFragment : Fragment() {
     }
 
     private fun emptyResults() {
-        binding.resultAccessToken.setText("")
-        binding.resultIdToken.setText("")
+        binding.resultAccessToken.text = ""
+        binding.resultIdToken.text = ""
     }
 
     private fun displayAccount() {

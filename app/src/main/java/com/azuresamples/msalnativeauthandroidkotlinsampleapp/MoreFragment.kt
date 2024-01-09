@@ -30,7 +30,7 @@ class MoreFragment : Fragment() {
         }
 
         binding.useAccessToken.setOnClickListener {
-            navigateToUseAccessApi()
+            navigateToAccessApi()
         }
     }
 
@@ -44,7 +44,7 @@ class MoreFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToUseAccessApi() {
+    private fun navigateToAccessApi() {
         val fragment = AccessApiFragment()
         requireActivity().supportFragmentManager
             .beginTransaction()

@@ -33,7 +33,7 @@
             app:layout_constraintTop_toBottomOf="@+id/result"/>
 
         <Button
-            android:id="@+id/get_todo"
+            android:id="@+id/get_api"
             style="@style/ActionButtonStyle"
             android:layout_marginTop="@dimen/dimens_15dp"
             android:text="@string/api_get"
@@ -49,7 +49,7 @@
             android:text=""
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/get_todo" />
+            app:layout_constraintTop_toBottomOf="@+id/get_api" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

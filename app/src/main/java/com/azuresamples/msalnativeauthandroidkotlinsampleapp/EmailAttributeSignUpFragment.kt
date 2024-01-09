@@ -91,8 +91,8 @@ class EmailAttributeSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
                 val country = binding.countryText.text.toString()
                 val city = binding.cityText.text.toString()
 
@@ -101,7 +101,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     .city(city)
                     .build()
 
-                val actionResult: SignUpUsingPasswordResult;
+                val actionResult: SignUpUsingPasswordResult
                 try {
                     actionResult = authClient.signUpUsingPassword(
                         username = email,
@@ -109,8 +109,8 @@ class EmailAttributeSignUpFragment : Fragment() {
                         attributes = attributes
                     )
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
