@@ -9,7 +9,7 @@
     <string name="title_email_oob_sspr">"Password Reset"</string>
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
-    <string name="title_access_protected_api">"Access Protected API"</string>
+    <string name="title_access_web_api">"Access Web API"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -21,7 +21,7 @@
     <string name="verify_email">"Send"</string>
     <string name="verify_code">"Next"</string>
     <string name="resend_code_text">"Resend Passcode"</string>
-    <string name="api_get">"API - Get"</string>
+    <string name="api_get">"API - Perform GET"</string>
 
     <string name="hint_text_value">Please fill in the required information:</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>

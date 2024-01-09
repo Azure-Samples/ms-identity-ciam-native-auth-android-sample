@@ -88,7 +88,8 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val scopes = context?.readScopesFromRawJsonFile(R.raw.protected_api_config)
+                // The default scopes are Microsoft Graph: "email","offline_access","openid","profile".
+                val scopes = listOf<String>() //  Developers should set the additional respective scopes of their web API if they have.
 
                 val actionResult = authClient.signIn(
                     username = email,

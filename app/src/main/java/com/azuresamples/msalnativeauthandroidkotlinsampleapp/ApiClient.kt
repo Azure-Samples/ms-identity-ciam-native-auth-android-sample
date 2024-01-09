@@ -1,35 +1,29 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
-import android.content.Context
-import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.lang.Exception
 
-
-class ApiClient(context: Context) {
+object ApiClient {
     private val client = OkHttpClient()
-    private val site = context.readSiteFromRawJsonFile(R.raw.protected_api_config)
-    companion object {
-        private val TAG = ApiClient::class.java.simpleName
+    private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
+
+    init {
+        check(WEB_API_BASE_URL.isNotBlank()) { "WEB_API_BASE_URL is not set." }
     }
 
     fun performGetApiRequest(accessToken: String): Int {
-        val fullUrl = "$site/api/todolist"
-        Log.d(TAG, "Requesting $fullUrl")
+        val fullUrl = "$WEB_API_BASE_URL/api/todolist"
 
         val requestBuilder = Request.Builder()
-            .url(fullUrl)
-            .addHeader("Authorization", "Bearer $accessToken")
-            .get()
+                .url(fullUrl)
+                .addHeader("Authorization", "Bearer $accessToken")
+                .get()
 
         val request = requestBuilder.build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IllegalStateException("Network request failed with code: ${response.code}")
-            }
-
-            return response.code
-        }
+        client.newCall(request).execute().use { response -> return response.code }
     }
 }
