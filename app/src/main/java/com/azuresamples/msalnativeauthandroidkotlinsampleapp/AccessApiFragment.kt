@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
@@ -58,7 +59,7 @@ class AccessApiFragment : Fragment() {
                 val accountResult = authClient.getCurrentAccount()
                 when (accountResult) {
                     is GetAccountResult.AccountFound -> {
-                        getData(accountResult.resultValue)
+                        accessProtectedAPI(accountResult.resultValue)
                     }
                     is GetAccountResult.NoAccountFound -> {
                         displaySignedOutState()
@@ -82,18 +83,18 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun getData(accountState: AccountState) {
+    private fun accessProtectedAPI(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
-                    val apiResponse = withContext(Dispatchers.IO) {
+                    val apiResponseCode = withContext(Dispatchers.IO) {
                         apiClient.performGetApiRequest(accessToken)
                     }
-                    binding.requestResponse.text = "Your response code is: " + apiResponse.code
+                    binding.requestResponse.text = "Your response code is: " + apiResponseCode
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Toast.makeText(requireContext(), "API request failed ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }

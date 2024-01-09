@@ -13,11 +13,7 @@ class ApiClient(context: Context) {
         private val TAG = ApiClient::class.java.simpleName
     }
 
-    data class ApiResponse(val code: Int, val message: String?)
-
-    fun performGetApiRequest(
-        accessToken: String
-    ): ApiResponse {
+    fun performGetApiRequest(accessToken: String): Int {
         val fullUrl = "$site/api/todolist"
         Log.d(TAG, "Requesting $fullUrl")
 
@@ -34,7 +30,7 @@ class ApiClient(context: Context) {
                 throw IllegalStateException("Network request failed with code: ${response.code}")
             }
 
-            return ApiResponse(response.code, response.body?.string())
+            return response.code
         }
     }
 }
