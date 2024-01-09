@@ -1,4 +1,4 @@
 {
-  "site": "https://todolistapi20231027124634.azurewebsites.net",
-  "scopes": ["api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.Read", "api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.ReadWrite"]
+  "site": "Enter_the_Site_Url_Here",
+  "scopes": ["Enter_the_Scopes_List_Here"]
 }
