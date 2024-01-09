@@ -2,16 +2,8 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.content.Context
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.text.DateFormat
-import java.util.Date
 
 
 class ApiClient(context: Context) {
@@ -21,25 +13,18 @@ class ApiClient(context: Context) {
         private val TAG = ApiClient::class.java.simpleName
     }
 
-    data class ApiResponse(val message: String)
+    data class ApiResponse(val code: Int, val message: String?)
 
-    private fun performApiRequest(
-        url: String,
-        accessToken: String,
-        method: String,
-        requestBody: RequestBody? = null
+    fun performGetApiRequest(
+        accessToken: String
     ): ApiResponse {
-        val fullUrl = "$site/api/$url"
-        Log.d(TAG, "Requesting $fullUrl with method $method")
+        val fullUrl = "$site/api/todolist"
+        Log.d(TAG, "Requesting $fullUrl")
 
         val requestBuilder = Request.Builder()
             .url(fullUrl)
             .addHeader("Authorization", "Bearer $accessToken")
-
-        when (method) {
-            "GET" -> requestBuilder.get()
-            "POST" -> requestBuilder.post(requestBody!!)
-        }
+            .get()
 
         val request = requestBuilder.build()
 
@@ -49,32 +34,7 @@ class ApiClient(context: Context) {
                 throw IllegalStateException("Network request failed with code: ${response.code}")
             }
 
-            val responseBody =
-                response.body?.string() ?: throw IllegalStateException("Empty response body")
-            Log.d(TAG, "Response: $responseBody")
-            return ApiResponse(responseBody)
+            return ApiResponse(response.code, response.body?.string())
         }
-    }
-
-    fun getAllToDoListItems(accessToken: String): ApiResponse {
-        return performApiRequest("/todolist", accessToken, "GET")
-    }
-
-    fun getToDoListItem(accessToken: String, id: Int): ApiClient.ApiResponse {
-        return performApiRequest("/todolist/$id", accessToken, "GET")
-    }
-
-    fun postTodoListItem(accessToken: String): ApiResponse {
-        val currentDate = getCurrentDate()
-        val jsonData = "{\"Description\": \"$currentDate\"}"
-        val requestBody: RequestBody =
-                jsonData.toRequestBody("application/json".toMediaTypeOrNull())
-
-        return performApiRequest("/todolist", accessToken, "POST", requestBody)
-    }
-
-    private fun getCurrentDate(): String {
-        val dateFormat = DateFormat.getDateInstance()
-        return dateFormat.format(Date())
     }
 }

@@ -88,9 +88,11 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
+                val scopes = context?.readScopesFromRawJsonFile(R.raw.protected_api_config)
 
                 val actionResult = authClient.signIn(
-                    username = email
+                    username = email,
+                    scopes = scopes
                 )
 
                 when (actionResult) {

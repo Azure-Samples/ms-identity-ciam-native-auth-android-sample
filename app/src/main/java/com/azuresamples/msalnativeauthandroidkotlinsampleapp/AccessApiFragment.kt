@@ -53,20 +53,6 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun initializeButtonListeners() {
-        binding.postTodo.setOnClickListener {
-            CoroutineScope(Dispatchers.Main).launch {
-                val accountResult = authClient.getCurrentAccount()
-                when (accountResult) {
-                    is GetAccountResult.AccountFound -> {
-                        postData(accountResult.resultValue)
-                    }
-                    is GetAccountResult.NoAccountFound -> {
-                        displaySignedOutState()
-                    }
-                }
-            }
-        }
-
         binding.getTodo.setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch {
                 val accountResult = authClient.getCurrentAccount()
@@ -96,23 +82,6 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun postData(accountState: AccountState) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenState = accountState.getAccessToken()
-            if (accessTokenState is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenState.resultValue.accessToken
-                try {
-                    val apiResponse = withContext(Dispatchers.IO) {
-                        apiClient.postTodoListItem(accessToken)
-                    }
-                    binding.requestResponse.text = apiResponse.message
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-
     private fun getData(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenState = accountState.getAccessToken()
@@ -120,9 +89,9 @@ class AccessApiFragment : Fragment() {
                 val accessToken = accessTokenState.resultValue.accessToken
                 try {
                     val apiResponse = withContext(Dispatchers.IO) {
-                        apiClient.getAllToDoListItems(accessToken)
+                        apiClient.performGetApiRequest(accessToken)
                     }
-                    binding.requestResponse.text = apiResponse.message
+                    binding.requestResponse.text = "Your response code is: " + apiResponse.code
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -144,11 +113,9 @@ class AccessApiFragment : Fragment() {
         when (status) {
             STATUS.SignedIn -> {
                 binding.getTodo.isEnabled = true
-                binding.postTodo.isEnabled = true
             }
             STATUS.SignedOut -> {
                 binding.getTodo.isEnabled = false
-                binding.postTodo.isEnabled = false
             }
         }
     }
