@@ -44,13 +44,13 @@
     <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->
-    <string name="attribute_email">"Email "<font color='@android:color/red'>*</font></string>
-    <string name="attribute_password">"Password "<font color='@android:color/red'>*</font></string>
-    <string name="attribute_country">"Country "</string>
-    <string name="attribute_city">"City "</string>
-    <string name="attribute_given">"Given name "</string>
-    <string name="attribute_surname">"Surname "</string>
-    <string name="attribute_otp">"Code "</string>
+    <string name="attribute_email">"Email"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_country">"Country"</string>
+    <string name="attribute_city">"City"</string>
+    <string name="attribute_given">"Given name"</string>
+    <string name="attribute_surname">"Surname"</string>
+    <string name="attribute_otp">"Code"</string>
 
     <!-- Results -->
     <string name="result_account_text">"Account username: "</string>
