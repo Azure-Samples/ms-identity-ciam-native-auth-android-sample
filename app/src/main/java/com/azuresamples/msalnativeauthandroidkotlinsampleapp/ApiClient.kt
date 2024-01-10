@@ -6,13 +6,8 @@ import okhttp3.Request
 
 object ApiClient {
     private val client = OkHttpClient()
-    private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
 
-    init {
-        check(WEB_API_BASE_URL.isNotBlank()) { "WEB_API_BASE_URL is not set." }
-    }
-
-    fun performGetApiRequest(accessToken: String): Int {
+    fun performGetApiRequest(WEB_API_BASE_URL: String, accessToken: String): Int {
         val fullUrl = "$WEB_API_BASE_URL/api/todolist"
 
         val requestBuilder = Request.Builder()

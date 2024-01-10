@@ -26,6 +26,7 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
+        private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -78,8 +79,12 @@ class AccessApiFragment : Fragment() {
                     if (accessTokenState is GetAccessTokenResult.Complete) {
                         val accessToken = accessTokenState.resultValue.accessToken
                         try {
+                            if (WEB_API_BASE_URL.isBlank()) {
+                                displayDialog("Invalid WEB_API_BASE_URL", "Please set the WEB_API_BASE_URL constant to the URL of your web API")
+                                return@launch
+                            }
                             val apiResponseCode = withContext(Dispatchers.IO) {
-                                ApiClient.performGetApiRequest(accessToken)
+                                ApiClient.performGetApiRequest(WEB_API_BASE_URL, accessToken)
                             }
                             binding.requestResponse.text = getString(R.string.response_code) + apiResponseCode
                         } catch (e: Exception) {
@@ -138,5 +143,4 @@ class AccessApiFragment : Fragment() {
         val alertDialog = builder.create()
         alertDialog.show()
     }
-
 }
