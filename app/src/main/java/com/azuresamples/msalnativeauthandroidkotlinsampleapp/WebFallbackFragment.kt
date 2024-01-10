@@ -216,8 +216,6 @@ class WebFallbackFragment : Fragment() {
     }
 
     private fun displayDialog(error: String? = null, message: String?) {
-        Log.w(TAG, "$message")
-
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)

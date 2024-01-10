@@ -34,6 +34,7 @@ class AccessApiFragment : Fragment() {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
         private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
+        private val scopes = listOf<String>() // Developers should set the respective scopes of their web API here
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -97,7 +98,7 @@ class AccessApiFragment : Fragment() {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
                         password = password,
-                        scopes = listOf() // Developers should set the respective scopes of their web API here
+                        scopes = scopes
                     )
                 } finally {
                     binding.passwordText.text?.clear()
@@ -227,7 +228,6 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun displayDialog(error: String? = null, message: String?) {
-        Log.w(TAG, "$message")
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)
