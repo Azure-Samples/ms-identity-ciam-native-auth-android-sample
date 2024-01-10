@@ -91,8 +91,8 @@ class EmailAttributeSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
                 val country = binding.countryText.text.toString()
                 val city = binding.cityText.text.toString()
 
@@ -101,7 +101,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     .city(city)
                     .build()
 
-                val actionResult: SignUpUsingPasswordResult;
+                val actionResult: SignUpUsingPasswordResult
                 try {
                     actionResult = authClient.signUpUsingPassword(
                         username = email,
@@ -109,8 +109,8 @@ class EmailAttributeSignUpFragment : Fragment() {
                         attributes = attributes
                     )
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
@@ -133,7 +133,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                         handleSignUpError(actionResult)
                     }
                     is SignUpResult.AttributesRequired -> {
-                        displayDialog("Unexpected result", actionResult.toString())
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                     }
                 }
             } catch (exception: MsalException) {
@@ -159,7 +159,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 handleSignInAfterSignUpError(actionResult)
             }
             else -> {
-                displayDialog( "Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -251,7 +251,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -263,7 +263,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }

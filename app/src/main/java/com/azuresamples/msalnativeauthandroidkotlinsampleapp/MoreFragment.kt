@@ -28,10 +28,24 @@ class MoreFragment : Fragment() {
         binding.webFallback.setOnClickListener {
             navigateToWebFallback()
         }
+
+        binding.useAccessToken.setOnClickListener {
+            navigateToAccessApi()
+        }
     }
 
     private fun navigateToWebFallback() {
         val fragment = WebFallbackFragment()
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToAccessApi() {
+        val fragment = AccessApiFragment()
         requireActivity().supportFragmentManager
             .beginTransaction()
             .setReorderingAllowed(true)

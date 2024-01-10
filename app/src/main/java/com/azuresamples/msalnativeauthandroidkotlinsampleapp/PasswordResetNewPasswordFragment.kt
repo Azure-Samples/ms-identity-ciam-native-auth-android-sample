@@ -55,15 +55,15 @@ class PasswordResetNewPasswordFragment : Fragment() {
     private fun resetPassword() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
                 val actionResult: ResetPasswordSubmitPasswordResult
                 try {
                     actionResult = currentState.submitPassword(password)
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
@@ -93,14 +93,12 @@ class PasswordResetNewPasswordFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
 
     private fun displayDialog(error: String?, message: String?) {
-        Log.w(TAG, "$message")
-
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)

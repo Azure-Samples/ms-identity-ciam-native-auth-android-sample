@@ -9,6 +9,7 @@
     <string name="title_email_oob_sspr">"Password Reset"</string>
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
+    <string name="title_access_web_api">"Access Web API"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -16,28 +17,35 @@
     <string name="sign_out">"Sign Out"</string>
     <string name="forget_password">"Forget Password"</string>
     <string name="submit_password">"Submit"</string>
-    <string name="create">"Create new user"</string>
+    <string name="create">"Create New User"</string>
     <string name="verify_email">"Send"</string>
     <string name="verify_code">"Next"</string>
     <string name="resend_code_text">"Resend Passcode"</string>
+    <string name="api_get">"API - Perform GET"</string>
 
-    <string name="hint_text_value">Please fill in the required information:</string>
+    <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
-    <string name="sign_in_switch_to_otp">"Account requires code for sign in"</string>
+    <string name="sign_in_switch_to_otp_message">"Account requires code for sign in"</string>
     <string name="sign_out_successful_message">"Sign out successful"</string>
     <string name="password_reset_success_message">"Password change successful"</string>
     <string name="resend_code_message">"New code sent"</string>
 
     <!-- Errors -->
-    <string name="msal_exception_title">MSAL Exception</string>
+    <string name="msal_exception_title">"MSAL Exception"</string>
+    <string name="unexpected_sdk_result_title">"Unexpected Result"</string>
+    <string name="unexpected_sdk_error_title">"Unexpected Error"</string>
+    <string name="network_request_exception_titile">"Network Request Exception"</string>
+    <string name="invalid_web_url_title">"Invalid WEB_API_BASE_URL"</string>
+    <string name="unknown_error_message">"unknown error"</string>
+    <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->
-    <string name="attribute_email">Email <font color='@android:color/red'>*</font></string>
-    <string name="attribute_password">Password <font color='@android:color/red'>*</font></string>
+    <string name="attribute_email">"Email"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
     <string name="attribute_country">"Country"</string>
     <string name="attribute_city">"City"</string>
     <string name="attribute_given">"Given name"</string>
@@ -48,4 +56,5 @@
     <string name="result_account_text">"Account username: "</string>
     <string name="result_access_token_text">"Access token: "</string>
     <string name="result_id_token_text">"ID token: "</string>
+    <string name="response_code">"API response code is: "</string>
 </resources>

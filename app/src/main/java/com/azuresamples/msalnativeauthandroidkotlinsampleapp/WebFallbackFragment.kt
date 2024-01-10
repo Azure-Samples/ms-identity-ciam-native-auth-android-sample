@@ -115,7 +115,7 @@ class WebFallbackFragment : Fragment() {
                         )
                     )
                 } else {
-                    displayDialog("Unexpected result", actionResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
 
             } catch (exception: MsalException) {
@@ -170,7 +170,7 @@ class WebFallbackFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }
@@ -207,8 +207,8 @@ class WebFallbackFragment : Fragment() {
     }
 
     private fun emptyResults() {
-        binding.resultAccessToken.setText("")
-        binding.resultIdToken.setText("")
+        binding.resultAccessToken.text = ""
+        binding.resultIdToken.text = ""
     }
 
     private fun displayAccount() {
@@ -216,8 +216,6 @@ class WebFallbackFragment : Fragment() {
     }
 
     private fun displayDialog(error: String? = null, message: String?) {
-        Log.w(TAG, "$message")
-
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)

@@ -93,18 +93,18 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInUsingPasswordResult;
+                val actionResult: SignInUsingPasswordResult
                 try {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
                         password = password
                     )
                 } finally {
-                    binding.passwordText.text?.clear();
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.clear()
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
@@ -117,7 +117,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                         displaySignedInState(accountState = actionResult.resultValue)
                     }
                     is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp))
+                        displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                     }
                     is SignInUsingPasswordError -> {
                         handleSignInError(actionResult)
@@ -133,8 +133,8 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length());
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0);
+                val password = CharArray(binding.passwordText.length())
+                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
                 val actionResult: SignUpUsingPasswordResult
 
@@ -144,8 +144,8 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                         password = password
                     )
                 } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0);
-                    StringUtil.overwriteWithNull(password);
+                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+                    StringUtil.overwriteWithNull(password)
                 }
 
                 when (actionResult) {
@@ -190,7 +190,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
-                displayDialog("Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -208,7 +208,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }
@@ -272,7 +272,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -286,7 +286,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -298,13 +298,12 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
 
     private fun displayDialog(error: String? = null, message: String?) {
-        Log.w(TAG, "$message")
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)
