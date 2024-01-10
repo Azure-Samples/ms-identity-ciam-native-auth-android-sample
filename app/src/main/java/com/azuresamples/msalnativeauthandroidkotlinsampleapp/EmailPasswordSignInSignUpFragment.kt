@@ -95,14 +95,12 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 val email = binding.emailText.text.toString()
                 val password = CharArray(binding.passwordText.length())
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
-                val scopes = listOf<String>() //  Developers should set the additional respective scopes of their web API if they have.
 
                 val actionResult: SignInUsingPasswordResult
                 try {
                     actionResult = authClient.signInUsingPassword(
                         username = email,
-                        password = password,
-                        scopes = scopes
+                        password = password
                     )
                 } finally {
                     binding.passwordText.text?.clear()
@@ -119,7 +117,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                         displaySignedInState(accountState = actionResult.resultValue)
                     }
                     is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp))
+                        displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                     }
                     is SignInUsingPasswordError -> {
                         handleSignInError(actionResult)
@@ -192,7 +190,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
-                displayDialog("Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -210,7 +208,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }
@@ -274,7 +272,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -288,7 +286,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -300,7 +298,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }

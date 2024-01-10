@@ -115,7 +115,7 @@ class WebFallbackFragment : Fragment() {
                         )
                     )
                 } else {
-                    displayDialog("Unexpected result", actionResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
 
             } catch (exception: MsalException) {
@@ -170,7 +170,7 @@ class WebFallbackFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }

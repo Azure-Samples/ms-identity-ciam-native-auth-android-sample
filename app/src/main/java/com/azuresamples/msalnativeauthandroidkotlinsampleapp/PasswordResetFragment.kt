@@ -112,7 +112,7 @@ class PasswordResetFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }
@@ -176,7 +176,7 @@ class PasswordResetFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }

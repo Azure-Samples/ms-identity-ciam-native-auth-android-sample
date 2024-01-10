@@ -71,7 +71,7 @@ class SignUpCodeFragment : Fragment() {
                     }
                     is SignUpResult.AttributesRequired,
                     is SignUpResult.PasswordRequired -> {
-                        displayDialog("Unexpected result", actionResult.toString())
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                     }
                     is SubmitCodeError -> {
                         handleSubmitError(actionResult)
@@ -100,7 +100,7 @@ class SignUpCodeFragment : Fragment() {
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
-                displayDialog("Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -138,7 +138,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -150,7 +150,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -162,7 +162,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }

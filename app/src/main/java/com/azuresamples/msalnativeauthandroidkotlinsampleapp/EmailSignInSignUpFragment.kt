@@ -88,11 +88,9 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val email = binding.emailText.text.toString()
-                val scopes = listOf<String>() //  Developers should set the additional respective scopes of their web API if they have.
 
                 val actionResult = authClient.signIn(
-                    username = email,
-                    scopes = scopes
+                    username = email
                 )
 
                 when (actionResult) {

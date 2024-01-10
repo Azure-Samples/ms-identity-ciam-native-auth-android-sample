@@ -133,7 +133,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                         handleSignUpError(actionResult)
                     }
                     is SignUpResult.AttributesRequired -> {
-                        displayDialog("Unexpected result", actionResult.toString())
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                     }
                 }
             } catch (exception: MsalException) {
@@ -159,7 +159,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 handleSignInAfterSignUpError(actionResult)
             }
             else -> {
-                displayDialog( "Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
         }
     }
@@ -251,7 +251,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -263,7 +263,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }

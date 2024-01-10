@@ -108,7 +108,7 @@ class SignInCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
@@ -121,7 +121,7 @@ class SignInCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
