@@ -8,7 +8,7 @@ ext {
     buildToolsVersion = "28.0.3"
     coreKtxVersion = "1.6.0"
     kotlinXCoroutinesVersion = "1.6.4"
-
+    kotlinVersion = '1.7.21'
 
     // Plugins
     gradleVersion = '7.4.2'
