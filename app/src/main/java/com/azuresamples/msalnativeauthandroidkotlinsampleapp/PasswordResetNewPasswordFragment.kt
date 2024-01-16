@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +18,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResul
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -76,7 +75,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                             getString(R.string.password_reset_success_message),
                             Toast.LENGTH_SHORT
                         ).show()
-                        signInAfterSignUp(
+                        signInAfterPasswordReset(
                             nextState = actionResult.nextState
                         )
                     }
@@ -90,7 +89,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
         }
     }
 
-    private suspend fun signInAfterSignUp(nextState: SignInAfterSignUpState) {
+    private suspend fun signInAfterPasswordReset(nextState: SignInContinuationState) {
         val currentState = nextState
         val actionResult = currentState.signIn(null)
         when (actionResult) {
@@ -103,7 +102,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 finish()
             }
             is SignInError -> {
-                handleSignInAfterSignUpError(actionResult)
+                handleSignInAfterPasswordResetError(actionResult)
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
@@ -125,7 +124,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
         }
     }
 
-    private fun handleSignInAfterSignUpError(error: SignInError) {
+    private fun handleSignInAfterPasswordResetError(error: SignInError) {
         when {
             error.isBrowserRequired() || error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
