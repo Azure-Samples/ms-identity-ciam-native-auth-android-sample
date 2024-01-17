@@ -35,7 +35,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
         val view = binding.root
 
         val bundle = this.arguments
-        currentState = bundle!!.getSerializable(Constants.STATE) as ResetPasswordPasswordRequiredState
+        currentState = (bundle?.getParcelable(Constants.STATE) as? ResetPasswordPasswordRequiredState)!!
 
         init()
 

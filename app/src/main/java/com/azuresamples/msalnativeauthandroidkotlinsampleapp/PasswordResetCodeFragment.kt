@@ -33,7 +33,7 @@ class PasswordResetCodeFragment : Fragment() {
         val view = binding.root
 
         val bundle = this.arguments
-        currentState = bundle!!.getSerializable(Constants.STATE) as ResetPasswordCodeRequiredState
+        currentState = (bundle?.getParcelable(Constants.STATE) as? ResetPasswordCodeRequiredState)!!
 
         init()
 
