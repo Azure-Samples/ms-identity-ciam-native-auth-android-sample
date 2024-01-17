@@ -73,7 +73,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                         Toast.makeText(
                             requireContext(),
                             getString(R.string.password_reset_success_message),
-                            Toast.LENGTH_SHORT
+                            Toast.LENGTH_LONG
                         ).show()
                         signInAfterPasswordReset(
                             nextState = actionResult.nextState
@@ -91,13 +91,13 @@ class PasswordResetNewPasswordFragment : Fragment() {
 
     private suspend fun signInAfterPasswordReset(nextState: SignInContinuationState) {
         val currentState = nextState
-        val actionResult = currentState.signIn(null)
+        val actionResult = currentState.signIn()
         when (actionResult) {
             is SignInResult.Complete -> {
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.sign_in_successful_message),
-                    Toast.LENGTH_SHORT
+                    Toast.LENGTH_LONG
                 ).show()
                 finish()
             }
