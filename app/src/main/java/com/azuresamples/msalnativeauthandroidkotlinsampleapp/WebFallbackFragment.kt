@@ -20,7 +20,7 @@ import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInUsingPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -87,9 +87,9 @@ class WebFallbackFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length())
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInUsingPasswordResult
+                val actionResult: SignInResult
                 try {
-                    actionResult = authClient.signInUsingPassword(
+                    actionResult = authClient.signIn(
                         username = email,
                         password = password
                     )
