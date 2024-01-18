@@ -31,7 +31,7 @@
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
     <string name="sign_in_switch_to_otp_message">"Account requires code for sign in"</string>
     <string name="sign_out_successful_message">"Sign out successful"</string>
-    <string name="password_reset_success_message">"Password change successful"</string>
+    <string name="password_reset_success_message">"Password change successful. Signing in."</string>
     <string name="resend_code_message">"New code sent"</string>
 
     <!-- Errors -->
