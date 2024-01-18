@@ -32,7 +32,7 @@ class SignInCodeFragment : Fragment() {
         _binding = FragmentCodeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = bundle!!.getSerializable(Constants.STATE) as SignInCodeRequiredState
+        currentState = (bundle?.getParcelable(Constants.STATE) as? SignInCodeRequiredState)!!
 
         init()
 
