@@ -270,7 +270,7 @@ class EmailSignInSignUpFragment : Fragment() {
 
     private fun navigateToSignIn(signInstate: SignInCodeRequiredState) {
         val bundle = Bundle()
-        bundle.putSerializable(Constants.STATE, signInstate)
+        bundle.putParcelable(Constants.STATE, signInstate)
         val fragment = SignInCodeFragment()
         fragment.arguments = bundle
 
@@ -284,7 +284,7 @@ class EmailSignInSignUpFragment : Fragment() {
 
     private fun navigateToSignUp(nextState: SignUpCodeRequiredState) {
         val bundle = Bundle()
-        bundle.putSerializable(Constants.STATE, nextState)
+        bundle.putParcelable(Constants.STATE, nextState)
         val fragment = SignUpCodeFragment()
         fragment.arguments = bundle
 
