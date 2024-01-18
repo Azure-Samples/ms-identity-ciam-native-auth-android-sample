@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,9 +13,12 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
+import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,7 +75,9 @@ class PasswordResetNewPasswordFragment : Fragment() {
                             getString(R.string.password_reset_success_message),
                             Toast.LENGTH_LONG
                         ).show()
-                        finish()
+                        signInAfterPasswordReset(
+                            nextState = actionResult.nextState
+                        )
                     }
                     is ResetPasswordSubmitPasswordError -> {
                         handleError(actionResult)
@@ -81,6 +85,28 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 }
             } catch (exception: MsalException) {
                 displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+            }
+        }
+    }
+
+    private suspend fun signInAfterPasswordReset(nextState: SignInContinuationState) {
+        val currentState = nextState
+        val actionResult = currentState.signIn()
+        when (actionResult) {
+            is SignInResult.Complete -> {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.sign_in_successful_message),
+                    Toast.LENGTH_LONG
+                ).show()
+                finish()
+            }
+            is SignInError -> {
+                handleSignInAfterPasswordResetError(actionResult)
+            }
+            is SignInResult.CodeRequired,
+            is SignInResult.PasswordRequired -> {
+                displayDialog("Unexpected result", actionResult.toString())
             }
         }
     }
@@ -94,6 +120,18 @@ class PasswordResetNewPasswordFragment : Fragment() {
             else -> {
                 // Unexpected error
                 displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+            }
+        }
+    }
+
+    private fun handleSignInAfterPasswordResetError(error: SignInError) {
+        when {
+            error.isBrowserRequired() || error.isUserNotFound() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog("Unexpected error", error.toString())
             }
         }
     }

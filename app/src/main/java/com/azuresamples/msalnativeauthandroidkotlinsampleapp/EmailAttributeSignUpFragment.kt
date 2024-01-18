@@ -23,7 +23,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
-import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -143,7 +143,7 @@ class EmailAttributeSignUpFragment : Fragment() {
     }
 
 
-    private suspend fun signInAfterSignUp(nextState: SignInAfterSignUpState) {
+    private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
         val currentState = nextState
         val actionResult = currentState.signIn()
         when (actionResult) {
