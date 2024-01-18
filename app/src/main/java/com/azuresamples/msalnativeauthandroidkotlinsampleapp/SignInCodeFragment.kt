@@ -91,7 +91,7 @@ class SignInCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    handleResendCodeError(actionResult)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
                 }
             }
         }
@@ -104,19 +104,6 @@ class SignInCodeFragment : Fragment() {
     private fun handleSubmitCodeError(error: SubmitCodeError) {
         when {
             error.isInvalidCode() || error.isBrowserRequired() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-
-    private fun handleResendCodeError(error: ResendCodeError) {
-        when {
-            error.isBrowserRequired() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
