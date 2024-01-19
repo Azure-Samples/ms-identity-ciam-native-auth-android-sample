@@ -20,7 +20,7 @@
     <string name="create">"Create New User"</string>
     <string name="verify_email">"Send"</string>
     <string name="verify_code">"Next"</string>
-    <string name="resend_code_text">"Resend Passcode"</string>
+    <string name="resend_code_text">"Resend Code"</string>
     <string name="api_get">"API - Perform GET"</string>
 
     <string name="hint_text_value">"Please fill in the required information:"</string>
