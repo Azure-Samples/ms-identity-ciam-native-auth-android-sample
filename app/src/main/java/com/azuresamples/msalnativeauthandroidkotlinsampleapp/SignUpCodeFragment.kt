@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
@@ -95,8 +95,8 @@ class SignUpCodeFragment : Fragment() {
                 ).show()
                 finish()
             }
-            is SignInError -> {
-                handleSignInAfterSignUpError(actionResult)
+            is SignInContinuationError -> {
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
@@ -134,18 +134,6 @@ class SignUpCodeFragment : Fragment() {
     private fun handleSubmitError(error: SubmitCodeError) {
         when {
             error.isBrowserRequired() || error.isInvalidCode() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-    private fun handleSignInAfterSignUpError(error: SignInError) {
-        when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {

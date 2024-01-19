@@ -14,6 +14,7 @@ import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpUsingPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
@@ -155,8 +156,8 @@ class EmailAttributeSignUpFragment : Fragment() {
                 ).show()
                 displaySignedInState(accountState = actionResult.resultValue)
             }
-            is SignInError -> {
-                handleSignInAfterSignUpError(actionResult)
+            is SignInContinuationError -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -248,18 +249,6 @@ class EmailAttributeSignUpFragment : Fragment() {
                     error.isUserAlreadyExists() || error.isAuthNotSupported() || error.isBrowserRequired()
             -> {
                 displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-    private fun handleSignInAfterSignUpError(error: SignInError) {
-        when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
-                displayDialog(error.toString(), error.errorMessage)
             }
             else -> {
                 // Unexpected error
