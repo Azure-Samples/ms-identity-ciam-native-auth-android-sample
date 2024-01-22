@@ -15,13 +15,12 @@ import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignUpUsingPasswordError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignUpUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
@@ -101,9 +100,9 @@ class EmailAttributeSignUpFragment : Fragment() {
                     .city(city)
                     .build()
 
-                val actionResult: SignUpUsingPasswordResult
+                val actionResult: SignUpResult
                 try {
-                    actionResult = authClient.signUpUsingPassword(
+                    actionResult = authClient.signUp(
                         username = email,
                         password = password,
                         attributes = attributes
@@ -129,7 +128,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is SignUpUsingPasswordError -> {
+                    is SignUpError -> {
                         handleSignUpError(actionResult)
                     }
                     is SignUpResult.AttributesRequired -> {
@@ -242,7 +241,7 @@ class EmailAttributeSignUpFragment : Fragment() {
         }
     }
 
-    private fun handleSignUpError(error: SignUpUsingPasswordError) {
+    private fun handleSignUpError(error: SignUpError) {
         when {
             error.isInvalidUsername() || error.isInvalidPassword() || error.isInvalidAttributes() ||
                     error.isUserAlreadyExists() || error.isAuthNotSupported() || error.isBrowserRequired()

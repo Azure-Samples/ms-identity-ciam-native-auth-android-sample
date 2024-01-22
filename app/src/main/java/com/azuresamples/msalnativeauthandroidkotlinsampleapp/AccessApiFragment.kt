@@ -13,11 +13,10 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInUsingPasswordError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import kotlinx.coroutines.CoroutineScope
@@ -93,9 +92,9 @@ class AccessApiFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length())
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInUsingPasswordResult
+                val actionResult: SignInResult
                 try {
-                    actionResult = authClient.signInUsingPassword(
+                    actionResult = authClient.signIn(
                         username = email,
                         password = password,
                         scopes = scopes
@@ -117,7 +116,7 @@ class AccessApiFragment : Fragment() {
                     is SignInResult.CodeRequired -> {
                         displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                     }
-                    is SignInUsingPasswordError -> {
+                    is SignInError -> {
                         handleSignInError(actionResult)
                     }
                 }
@@ -175,7 +174,7 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun handleSignInError(error: SignInUsingPasswordError) {
+    private fun handleSignInError(error: SignInError) {
         when {
             error.isInvalidCredentials() || error.isBrowserRequired() || error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
