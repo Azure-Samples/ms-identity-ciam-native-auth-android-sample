@@ -13,16 +13,14 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInUsingPasswordError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignUpUsingPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignInUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
-import com.microsoft.identity.nativeauth.statemachine.results.SignUpUsingPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
@@ -96,9 +94,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length())
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInUsingPasswordResult
+                val actionResult: SignInResult
                 try {
-                    actionResult = authClient.signInUsingPassword(
+                    actionResult = authClient.signIn(
                         username = email,
                         password = password
                     )
@@ -119,7 +117,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     is SignInResult.CodeRequired -> {
                         displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                     }
-                    is SignInUsingPasswordError -> {
+                    is SignInError -> {
                         handleSignInError(actionResult)
                     }
                 }
@@ -136,10 +134,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 val password = CharArray(binding.passwordText.length())
                 binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignUpUsingPasswordResult
+                val actionResult: SignUpResult
 
                 try {
-                    actionResult = authClient.signUpUsingPassword(
+                    actionResult = authClient.signUp(
                         username = email,
                         password = password
                     )
@@ -164,7 +162,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                             nextState = actionResult.nextState
                         )
                     }
-                    is SignUpUsingPasswordError -> {
+                    is SignUpError -> {
                         handleSignUpError(actionResult)
                     }
                 }
@@ -265,7 +263,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         }
     }
 
-    private fun handleSignInError(error: SignInUsingPasswordError) {
+    private fun handleSignInError(error: SignInError) {
         when {
             error.isInvalidCredentials() || error.isBrowserRequired() || error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
@@ -277,7 +275,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         }
     }
 
-    private fun handleSignUpError(error: SignUpUsingPasswordError) {
+    private fun handleSignUpError(error: SignUpError) {
         when {
             error.isInvalidUsername() || error.isInvalidPassword() || error.isUserAlreadyExists() ||
                     error.isAuthNotSupported() || error.isBrowserRequired() || error.isInvalidAttributes()
