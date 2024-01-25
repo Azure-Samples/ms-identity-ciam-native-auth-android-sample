@@ -113,7 +113,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
 
     private fun handleError(error: ResetPasswordSubmitPasswordError) {
         when {
-            error.isBrowserRequired() || error.isInvalidPassword() || error.isPasswordResetFailed()
+            error.isInvalidPassword() || error.isPasswordResetFailed()
             -> {
                 displayDialog(error.error, error.errorMessage)
             }
