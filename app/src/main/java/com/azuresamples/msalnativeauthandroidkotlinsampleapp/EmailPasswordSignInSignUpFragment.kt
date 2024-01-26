@@ -15,6 +15,7 @@ import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
@@ -182,11 +183,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 ).show()
                 displaySignedInState(accountState = actionResult.resultValue)
             }
-            is SignInError -> {
-                handleSignInAfterSignUpError(actionResult)
+            is SignInContinuationError -> {
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
-            is SignInResult.CodeRequired,
-            is SignInResult.PasswordRequired -> {
+            else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -279,18 +279,6 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             error.isInvalidUsername() || error.isInvalidPassword() || error.isUserAlreadyExists() ||
                     error.isAuthNotSupported() || error.isBrowserRequired() || error.isInvalidAttributes()
             -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-    private fun handleSignInAfterSignUpError(error: SignInError) {
-        when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
