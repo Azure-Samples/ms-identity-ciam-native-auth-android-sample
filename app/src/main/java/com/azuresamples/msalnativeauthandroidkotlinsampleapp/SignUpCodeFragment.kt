@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
@@ -144,15 +145,7 @@ class SignUpCodeFragment : Fragment() {
     }
 
     private fun handleResendError(error: ResendCodeError) {
-        when {
-            error.isBrowserRequired() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
+        displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
     }
 
     private fun handleSignInAfterSignUpError(error: SignInError) {
