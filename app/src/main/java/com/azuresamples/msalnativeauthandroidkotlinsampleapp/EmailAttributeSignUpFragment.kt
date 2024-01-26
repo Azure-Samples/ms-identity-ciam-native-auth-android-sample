@@ -156,7 +156,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -177,7 +177,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog( "Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }

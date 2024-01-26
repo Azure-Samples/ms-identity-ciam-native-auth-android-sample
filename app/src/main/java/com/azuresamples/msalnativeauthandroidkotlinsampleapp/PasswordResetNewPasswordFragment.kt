@@ -104,9 +104,8 @@ class PasswordResetNewPasswordFragment : Fragment() {
             is SignInContinuationError -> {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
-            is SignInResult.CodeRequired,
-            is SignInResult.PasswordRequired -> {
-                displayDialog("Unexpected result", actionResult.toString())
+            else -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }

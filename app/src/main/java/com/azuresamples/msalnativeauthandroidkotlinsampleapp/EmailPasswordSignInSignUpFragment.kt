@@ -183,12 +183,11 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 ).show()
                 displaySignedInState(accountState = actionResult.resultValue)
             }
-            is SignInResult.CodeRequired,
-            is SignInResult.PasswordRequired -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-            }
             is SignInContinuationError -> {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+            }
+            else -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }

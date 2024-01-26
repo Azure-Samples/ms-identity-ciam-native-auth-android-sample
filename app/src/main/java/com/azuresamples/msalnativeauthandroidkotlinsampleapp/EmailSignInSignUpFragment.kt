@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
@@ -136,7 +137,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     }
                     is SignUpResult.AttributesRequired,
                     is SignUpResult.PasswordRequired -> {
-                        displayDialog("Unexpected result", actionResult.toString())
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                     }
                     is SignUpError -> {
                         handleSignUpError(actionResult)
@@ -160,8 +161,11 @@ class EmailSignInSignUpFragment : Fragment() {
                 ).show()
                 displaySignedInState(accountState = actionResult.resultValue)
             }
+            is SignInContinuationError -> {
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+            }
             else -> {
-                displayDialog("Unexpected result", actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -179,7 +183,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
-                    displayDialog("Unexpected result", signOutResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
         }
@@ -242,7 +246,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_result_title), error.toString())
             }
         }
     }
@@ -255,7 +259,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog("Unexpected error", error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
     }
