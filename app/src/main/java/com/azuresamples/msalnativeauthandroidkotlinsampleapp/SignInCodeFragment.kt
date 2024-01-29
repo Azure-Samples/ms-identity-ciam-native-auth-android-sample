@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
@@ -92,7 +91,7 @@ class SignInCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    handleResendCodeError(actionResult)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
                 }
             }
         }
@@ -112,11 +111,6 @@ class SignInCodeFragment : Fragment() {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
             }
         }
-    }
-
-
-    private fun handleResendCodeError(error: ResendCodeError) {
-        displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
     }
 
     private fun displayDialog(error: String?, message: String?) {

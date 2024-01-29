@@ -13,7 +13,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordSubmitPasswordResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
@@ -101,12 +101,11 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 ).show()
                 finish()
             }
-            is SignInError -> {
-                handleSignInAfterPasswordResetError(actionResult)
+            is SignInContinuationError -> {
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
-            is SignInResult.CodeRequired,
-            is SignInResult.PasswordRequired -> {
-                displayDialog("Unexpected result", actionResult.toString())
+            else -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -120,18 +119,6 @@ class PasswordResetNewPasswordFragment : Fragment() {
             else -> {
                 // Unexpected error
                 displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-    private fun handleSignInAfterPasswordResetError(error: SignInError) {
-        when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog("Unexpected error", error.toString())
             }
         }
     }
