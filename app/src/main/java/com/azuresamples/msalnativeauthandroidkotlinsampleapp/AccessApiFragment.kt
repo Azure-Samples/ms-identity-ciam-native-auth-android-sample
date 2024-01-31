@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -158,10 +157,10 @@ class AccessApiFragment : Fragment() {
                                 displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
                                 return@launch
                             }
-                            val apiResponseCode = withContext(Dispatchers.IO) {
+                            val apiResponse = withContext(Dispatchers.IO) {
                                 ApiClient.performGetApiRequest(WEB_API_BASE_URL, accessToken)
                             }
-                            binding.requestResponse.text = getString(R.string.response_code) + apiResponseCode
+                            binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
                         } catch (e: Exception) {
                             displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
                         }
@@ -212,8 +211,7 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun emptyResults() {
-        binding.resultAccessToken.text = ""
-        binding.requestResponse.text = ""
+        binding.resultText.text = ""
     }
 
     private fun displayAccount(accountState: AccountState) {
@@ -221,7 +219,7 @@ class AccessApiFragment : Fragment() {
             val accessTokenState = accountState.getAccessToken()
             if (accessTokenState is GetAccessTokenResult.Complete) {
                 val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultAccessToken.text = accessToken
+                binding.resultText.text = accessToken
             }
         }
     }

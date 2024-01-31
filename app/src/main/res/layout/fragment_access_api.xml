@@ -109,16 +109,6 @@
             app:layout_constraintTop_toBottomOf="@+id/sign_out" />
 
         <TextView
-            android:id="@+id/request_response"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/dimens_55dp"
-            android:layout_marginTop="@dimen/dimens_30dp"
-            android:text=""
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/get_api" />
-
-        <TextView
             android:id="@+id/result"
             style="@style/TextViewStyle"
             android:layout_width="wrap_content"
@@ -126,10 +116,10 @@
             android:layout_marginTop="@dimen/dimens_15dp"
             android:text="@string/result_access_token_text"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/request_response" />
+            app:layout_constraintTop_toBottomOf="@+id/get_api" />
 
         <TextView
-            android:id="@+id/result_access_token"
+            android:id="@+id/result_text"
             style="@style/TextViewStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
