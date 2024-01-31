@@ -31,8 +31,8 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_BASE_URL = "https://todolistapi20231027124634.azurewebsites.net" // Developers should set the respective URL of their web API here
-        private val scopes = listOf<String>("api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.Read", "api://d005f889-cdaa-46d5-9c8b-fc447a653422/ToDoList.ReadWrite") // Developers should set the respective scopes of their web API here
+        private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
+        private val scopes = listOf<String>() // Developers should set the respective sc
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

@@ -1,9 +1,9 @@
 {
-  "client_id": "a91e4274-5e9c-421c-a0a8-55c617b26830",
+  "client_id": "Enter_the_Application_Id_Here",
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://nativeauthasampleapp.ciamlogin.com/nativeauthasampleapp.onmicrosoft.com"
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
     }
   ],
   "challenge_types": ["oob", "password"],
@@ -11,6 +11,5 @@
     "pii_enabled": false,
     "log_level": "INFO",
     "logcat_enabled": true
-  },
-  "dc": "ESTS-PUB-SCUS-LZ1-FD000-TEST1"
+  }
 }
