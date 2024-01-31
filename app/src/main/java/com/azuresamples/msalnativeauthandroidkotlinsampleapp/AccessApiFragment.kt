@@ -32,7 +32,7 @@ class AccessApiFragment : Fragment() {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
         private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
-        private val scopes = listOf<String>() // Developers should set the respective sc
+        private val scopes = listOf<String>() // Developers should set the respective scopes of their web API here
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
