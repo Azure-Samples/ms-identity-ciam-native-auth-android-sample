@@ -56,5 +56,6 @@
     <string name="result_account_text">"Account username: "</string>
     <string name="result_access_token_text">"Access token: "</string>
     <string name="result_id_token_text">"ID token: "</string>
-    <string name="response_code">"API response code is: "</string>
+    <string name="result_text">"Result: "</string>
+    <string name="response_api">"API response is: "</string>
 </resources>
