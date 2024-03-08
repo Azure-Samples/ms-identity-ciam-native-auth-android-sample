@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
@@ -71,6 +73,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         binding.signOut.setOnClickListener {
             signOut()
         }
+
+        binding.biometric.setOnClickListener {
+            useBiometricAuth()
+        }
     }
 
     private fun getStateAndUpdateUI() {
@@ -78,9 +84,11 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val accountResult = authClient.getCurrentAccount()
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
-                    displaySignedInState(accountResult.resultValue)
+                    binding.biometric.visibility = View.VISIBLE
+                    //displaySignedInState(accountResult.resultValue)
                 }
                 is GetAccountResult.NoAccountFound -> {
+                    binding.biometric.visibility = View.INVISIBLE
                     displaySignedOutState()
                 }
             }
@@ -208,6 +216,55 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
+        }
+    }
+
+    private fun useBiometricAuth() {
+        CoroutineScope(Dispatchers.Main).launch {
+
+            val callback = object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errCode, errString)
+                    Log.d(TAG, "errCode is $errCode and errString is: $errString")
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Log.d(TAG, "User biometric rejected.")
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    Log.d(TAG, "Authentication was successful")
+                    CoroutineScope(Dispatchers.Main).launch {
+                        val accountResult = authClient.getCurrentAccount()
+
+                        when (accountResult) {
+                            is GetAccountResult.AccountFound -> {
+                                displaySignedInState(accountResult.resultValue)
+                            }
+                            is GetAccountResult.NoAccountFound -> {
+                                binding.biometric.visibility = View.INVISIBLE
+                                displaySignedOutState()
+                            }
+                        }
+                    }
+                }
+            }
+
+            val executor = ContextCompat.getMainExecutor(activity)
+
+            val promptInfo = BiometricPrompt.PromptInfo.Builder().apply {
+                setTitle(requireActivity().getString(R.string.use_biometric))
+                setSubtitle(requireActivity().getString(R.string.prompt_info_subtitle))
+                setDescription(requireActivity().getString(R.string.prompt_info_description))
+                setConfirmationRequired(false)
+                setNegativeButtonText(requireActivity().getString(R.string.prompt_info_use_app_password))
+            }.build()
+
+            val biometricPrompt = BiometricPrompt(requireActivity(), executor, callback)
+
+            biometricPrompt.authenticate(promptInfo)
         }
     }
 

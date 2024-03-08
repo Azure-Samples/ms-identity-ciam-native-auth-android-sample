@@ -23,6 +23,13 @@
     <string name="resend_code_text">"Resend Code"</string>
     <string name="api_get">"API - Perform GET"</string>
 
+    <string name="use_biometric">"Use biometric"</string>
+    <string name="prompt_info_title">Sample App Authentication</string>
+    <string name="prompt_info_subtitle">Please login to get access</string>
+    <string name="prompt_info_description">Sample App is using Android biometric authentication</string>
+    <string name="prompt_info_use_app_password">use app password</string>
+
+
     <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
