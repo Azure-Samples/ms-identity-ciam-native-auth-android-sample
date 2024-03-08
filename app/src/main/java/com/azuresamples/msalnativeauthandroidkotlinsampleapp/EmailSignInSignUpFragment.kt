@@ -100,6 +100,9 @@ class EmailSignInSignUpFragment : Fragment() {
                             signInstate = actionResult.nextState
                         )
                     }
+                    is SignInResult.PasswordRequired -> {
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    }
                     is SignInError -> {
                         handleSignInError(actionResult)
                     }
