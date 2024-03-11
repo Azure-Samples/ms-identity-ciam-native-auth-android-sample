@@ -32,6 +32,8 @@ This sample iOS sample applications demonstrates how to sign-up, sign in, sign o
 
 To enable your application to authenicate users with Microsoft Entra, Microsoft Entra ID for customers must be made aware of the application you create. The following steps show you how to:
 
+## Register an application in the Microsoft Entra admin center
+
 1. [Register an application](https://review.learn.microsoft.com/en-us/entra/external-id/customers/how-to-run-native-authentication-sample-android-app?branch=pr-en-us-2024#register-an-application)
 1. [Enable public client and native authentication flows](https://review.learn.microsoft.com/en-us/entra/external-id/customers/how-to-run-native-authentication-sample-android-app?branch=pr-en-us-2024#enable-public-client-and-native-authentication-flows)
 1. [Grant API permissions](https://review.learn.microsoft.com/en-us/entra/external-id/customers/how-to-run-native-authentication-sample-android-app?branch=pr-en-us-2024#grant-api-permissions)
