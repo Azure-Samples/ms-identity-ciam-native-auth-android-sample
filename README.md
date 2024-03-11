@@ -1,4 +1,4 @@
-# A native authentication Android (Kotlin) sample app using MSAL to authenticate users and call a web API using Microsoft Entra External ID
+# Sign in users and call a protected web API in an Android (Kotlin) mobile app by using Microsoft Entra's native authentication
 
 * [Overview](#overview)
 * [Contents](#contents)
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This sample iOS sample applications demonstrates how to sign-up, sign in, sign out, and password reset scenarios using Microsoft Entra External ID for customers.
+This sample Android application demonstrates how to handle sign-up, sign-in, sign-out, and password reset scenarios using Microsoft Entra External ID for customers. You can configure the sample to call a protected web API.
 
 ## Contents
 
