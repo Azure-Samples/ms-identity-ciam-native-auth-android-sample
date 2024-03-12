@@ -18,8 +18,6 @@ This sample Android application demonstrates how to handle sign-up, sign-in, sig
 |-------------|-------------|
 | `app/src/main/res/raw/native_auth_sample_app_config.json`       | Configuration file. |
 | `.gitignore` | Define what to ignore at commit time. |
-| `CHANGELOG.md` | List of changes to the sample. |
-| `CONTRIBUTING.md` | Guidelines for contributing to the sample. |
 | `README.md` | This README file. |
 | `LICENSE`   | The license for the sample. |
 
@@ -122,7 +120,5 @@ In the `onCreate` method, create MSAL library instance so that we can perform au
 * Nothing similar? [Open an issue](https://github.com/Azure-Samples/ms-identity-ciam-native-auth-android-sample/issues/new) that clearly explains the problem you're having running the sample app.
 
 ## Contributing
-
-If you'd like to contribute to this sample, see [CONTRIBUTING.MD](/CONTRIBUTING.md).
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information, see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
