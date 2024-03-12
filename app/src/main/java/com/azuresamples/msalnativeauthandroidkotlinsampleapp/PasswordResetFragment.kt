@@ -168,7 +168,10 @@ class PasswordResetFragment : Fragment() {
 
     private fun handleError(error: ResetPasswordError) {
         when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
+            error.isBrowserRequired() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            error.isUserNotFound() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
