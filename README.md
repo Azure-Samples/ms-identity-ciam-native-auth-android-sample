@@ -114,7 +114,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 } 
 ```
 
-To learn more, see [Tutorial: Prepare your Android app for native authentication](https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-prepare-android-app#create-sdk-instance)
+In the `onCreate` method, create MSAL library instance so that we can perform authentication logic and interact with our tenant through native authentication APIs. The `INativeAuthPublicClientApplication` create an instance called `authClient`. The JSON configuration `app/src/main/res/raw/native_auth_sample_app_config.json` file is passed as parameter. For more information about SDK instance, see [Tutorial: Prepare your Android app for native authentication](https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-prepare-android-app#create-sdk-instance)
 
 ## Reporting problems
 
