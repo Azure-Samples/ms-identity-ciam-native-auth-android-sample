@@ -32,41 +32,41 @@ This sample Android application demonstrates how to handle sign-up, sign-in, sig
 
 To enable your application to authenicate users with Microsoft Entra, Microsoft Entra ID for customers must be made aware of the application you create. The following steps show you how to:
 
-### Step 1: Register an application in the Microsoft Entra admin center
+### Step 1: Register an application
 
-To register your app in the Microsoft Entra admin center use the steps in [Register an application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#register-an-application)
+Register your app in the Microsoft Entra admin center using the steps in [Register an application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#register-an-application).
 
 ### Step 2: Enable public client and native authentication flows
 
-To enable public client and native authentication flows for the registered application, use the steps in [Enable public client and native authentication flows](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#enable-public-client-and-native-authentication-flows)
+Enable public client and native authentication flows for the registered application using the steps in [Enable public client and native authentication flows](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#enable-public-client-and-native-authentication-flows).
 
 ### Step 3: Grant API permissions
 
-To grant API permissions to the registered application, use the steps in [Grant API permissions](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#grant-api-permissions)
+Grant API permissions to the registered application by following the steps in [Grant API permissions](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#grant-api-permissions).
 
 ### Step 4: Create user flow
 
-To create user flow, use the steps in [Create a user flow](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#create-a-user-flow)
+Create a user flow by following the steps in [Create a user flow](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#create-a-user-flow).
 
 ### Step 5: Associate the app with the user flow
 
-To associate user flow and the registered application, use the steps in [Associate the application with the user flow](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#associate-the-app-with-the-user-flow)
+Associate the application with the user flow by following the steps in [Associate the application with the user flow](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#associate-the-app-with-the-user-flow).
 
 ### Step 6: Clone sample Android mobile application
 
-To download or clone this sample application, use the steps in [Clone sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#clone-sample-android-mobile-application)
+Clone the sample Android mobile application by following the steps outlined in [Clone sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#clone-sample-android-mobile-application).
 
 ### Step 7: Configure the sample Android mobile application
 
-To configure the sample Android mobile application, use the steps in [Configure the sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#configure-the-sample-android-mobile-application)
+Configure the sample Android mobile application by following the steps in [Configure the sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#configure-the-sample-android-mobile-application).
 
 ### Step 8: Run and test sample Android mobile application
 
-To build and run the Android sample, use the steps in [Run and test sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#run-and-test-sample-android-mobile-application)
+Run and test the Android sample mobile application by following the steps in [Run and test sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#run-and-test-sample-android-mobile-application).
 
 ### Step 9: Call a protected web API
 
-To call a protected a protected web API, use the steps in [Sign in users and call an API in a sample Android mobile app by using native authentication](https://learn.microsoft.com/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api)
+Follow the steps in [Sign in users and call an API in a sample Android mobile app by using native authentication](https://learn.microsoft.com/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api) to sign in users and call a protected API in the Android sample mobile app.
 
 ## Key concepts
 
