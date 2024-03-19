@@ -10,7 +10,8 @@
 
 ## Overview
 
-This sample Android application demonstrates how to handle sign-up, sign-in, sign-out, and password reset scenarios using Microsoft Entra External ID for customers. You can configure the sample to call a protected web API.
+This sample Android application demonstrates how to handle sign-up, sign-in, sign-out, and password reset scenarios using Microsoft Entra for customers. 
+You can configure the sample to call a protected web API after authenticating successfully.
 
 ## Contents
 
@@ -28,7 +29,7 @@ This sample Android application demonstrates how to handle sign-up, sign-in, sig
 
 ## Project setup
 
-To enable your application to authenicate users with Microsoft Entra, Microsoft Entra ID for customers must be made aware of the application you create. The following steps show you how to:
+To enable your application to authenicate users with Microsoft Entra, Microsoft Entra for customers must be made aware of the application you create. The following steps show you how to:
 
 ### Step 1: Register an application
 
@@ -68,7 +69,7 @@ Follow the steps in [Sign in users and call an API in a sample Android mobile ap
 
 ## Key concepts
 
-Open `app/src/main/res/raw/native_auth_sample_app_config.json` file and you find the following lines of code:
+Open `app/src/main/res/raw/native_auth_sample_app_config.json` file and you find the following json configurations:
 
 ```kotlin
 {
