@@ -1,4 +1,4 @@
-# Sign in users and call a protected web API in an Android (Kotlin) mobile app by using native authentication
+# Sign in users and call a protected web API in Android (Kotlin) using native authentication
 
 * [Overview](#overview)
 * [Contents](#contents)
