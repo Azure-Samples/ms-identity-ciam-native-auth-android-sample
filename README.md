@@ -1,4 +1,4 @@
-# Sign in users and call a protected web API in an Android (Kotlin) mobile app by using native authentication
+# Sign in users and call a protected web API in Android (Kotlin) using native authentication
 
 * [Overview](#overview)
 * [Contents](#contents)
@@ -109,11 +109,10 @@ override fun onCreate(savedInstanceState: Bundle?) {
         this, 
         R.raw.auth_config_native_auth 
     ) 
-    getAccountState() 
 } 
 ```
 
-In the `onCreate` method, create MSAL library instance so that we can perform authentication logic and interact with our tenant through native authentication APIs. The `INativeAuthPublicClientApplication` create an instance called `authClient`. The JSON configuration `app/src/main/res/raw/native_auth_sample_app_config.json` file is passed as parameter. For more information about SDK instance, see [Tutorial: Prepare your Android app for native authentication](https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-prepare-android-app#create-sdk-instance)
+In the `onCreate` method, create an MSAL instance so that we can perform authentication logic and interact with our tenant through native authentication APIs. The `createNativeAuthPublicClientApplication()` method returns an instance called `authClient`. The JSON configuration `app/src/main/res/raw/native_auth_sample_app_config.json` file is passed as parameter. For more information about SDK instance, see [Tutorial: Prepare your Android app for native authentication](https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-prepare-android-app#create-sdk-instance)
 
 ## Reporting problems
 
