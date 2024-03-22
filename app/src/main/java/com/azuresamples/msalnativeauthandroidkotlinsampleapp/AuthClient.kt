@@ -26,7 +26,7 @@ object AuthClient : Application() {
 
         authClient = PublicClientApplication.createNativeAuthPublicClientApplication(
             context,
-            R.raw.native_auth_sample_app_config
+            R.raw.auth_config_native_auth
         )
     }
 }
