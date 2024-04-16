@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
+import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResendCodeResult
@@ -72,6 +73,9 @@ class SignInCodeFragment : Fragment() {
                     is SubmitCodeError -> {
                         handleSubmitCodeError(actionResult)
                     }
+                    is ClientExceptionError -> {
+                        displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    }
                 }
             } catch (exception: MsalException) {
                 displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
@@ -92,6 +96,9 @@ class SignInCodeFragment : Fragment() {
                 }
                 is ResendCodeError -> {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
                 }
             }
         }

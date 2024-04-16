@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -71,30 +71,32 @@ class PasswordResetFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                }
             }
         }
     }
 
     private fun forgetPassword() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
+            val email = binding.emailText.text.toString()
 
-                val actionResult = authClient.resetPassword(
-                    username = email
-                )
-                when (actionResult) {
-                    is ResetPasswordStartResult.CodeRequired -> {
-                        navigateToResetPasswordCodeFragment(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is ResetPasswordError -> {
-                        handleError(actionResult)
-                    }
+            val actionResult = authClient.resetPassword(
+                username = email
+            )
+            when (actionResult) {
+                is ResetPasswordStartResult.CodeRequired -> {
+                    navigateToResetPasswordCodeFragment(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is ResetPasswordError -> {
+                    handleError(actionResult)
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                }
             }
         }
     }

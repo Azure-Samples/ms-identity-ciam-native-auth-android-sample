@@ -6,9 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.client.exception.MsalException
+import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -56,23 +58,22 @@ class PasswordResetCodeFragment : Fragment() {
 
     private fun submitCode() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val code = binding.codeText.text.toString()
+            val code = binding.codeText.text.toString()
 
-                val actionResult = currentState.submitCode(code)
+            val actionResult = currentState.submitCode(code)
 
-                when (actionResult) {
-                    is ResetPasswordSubmitCodeResult.PasswordRequired -> {
-                        navigateToResetPasswordPasswordFragment(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SubmitCodeError -> {
-                        handleError(actionResult)
-                    }
+            when (actionResult) {
+                is ResetPasswordSubmitCodeResult.PasswordRequired -> {
+                    navigateToResetPasswordPasswordFragment(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SubmitCodeError -> {
+                    handleError(actionResult)
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message.toString())
+                }
             }
         }
     }
@@ -90,6 +91,9 @@ class PasswordResetCodeFragment : Fragment() {
                 }
                 is ResendCodeError -> {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
                 }
             }
         }
