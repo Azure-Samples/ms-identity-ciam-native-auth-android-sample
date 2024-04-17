@@ -84,7 +84,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
                 }
             }
         }
@@ -138,7 +138,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }
@@ -161,7 +161,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
             is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -237,7 +237,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())

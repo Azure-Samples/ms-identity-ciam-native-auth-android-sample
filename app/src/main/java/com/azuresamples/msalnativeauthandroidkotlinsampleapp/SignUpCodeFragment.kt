@@ -77,7 +77,7 @@ class SignUpCodeFragment : Fragment() {
                     handleSubmitError(actionResult)
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }
@@ -103,7 +103,7 @@ class SignUpCodeFragment : Fragment() {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
             is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
         }
     }
@@ -123,7 +123,7 @@ class SignUpCodeFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }

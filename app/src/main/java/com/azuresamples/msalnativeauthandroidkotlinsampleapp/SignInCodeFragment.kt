@@ -56,29 +56,25 @@ class SignInCodeFragment : Fragment() {
 
     private fun verifyCode() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val emailCode = binding.codeText.text.toString()
+            val emailCode = binding.codeText.text.toString()
 
-                val actionResult = currentState.submitCode(emailCode)
+            val actionResult = currentState.submitCode(emailCode)
 
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        finish()
-                    }
-                    is SubmitCodeError -> {
-                        handleSubmitCodeError(actionResult)
-                    }
-                    is ClientExceptionError -> {
-                        displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
-                    }
+            when (actionResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SubmitCodeError -> {
+                    handleSubmitCodeError(actionResult)
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                }
             }
         }
     }
@@ -98,7 +94,7 @@ class SignInCodeFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }

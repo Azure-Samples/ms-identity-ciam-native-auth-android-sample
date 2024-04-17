@@ -78,7 +78,7 @@ class WebFallbackFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
                 }
             }
         }

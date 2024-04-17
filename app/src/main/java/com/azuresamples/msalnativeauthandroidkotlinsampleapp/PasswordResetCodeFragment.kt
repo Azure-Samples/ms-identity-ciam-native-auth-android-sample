@@ -72,7 +72,7 @@ class PasswordResetCodeFragment : Fragment() {
                     handleError(actionResult)
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
                 }
             }
         }
@@ -93,7 +93,7 @@ class PasswordResetCodeFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }

@@ -80,6 +80,9 @@ class AccessApiFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
@@ -118,7 +121,7 @@ class AccessApiFragment : Fragment() {
                     handleSignInError(actionResult)
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }
@@ -169,7 +172,7 @@ class AccessApiFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
                 }
             }
         }
@@ -225,7 +228,7 @@ class AccessApiFragment : Fragment() {
                     binding.resultText.text = getString(R.string.result_access_token_text) + accessToken
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())

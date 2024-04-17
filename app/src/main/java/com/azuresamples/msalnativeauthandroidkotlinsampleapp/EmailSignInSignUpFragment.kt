@@ -8,10 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
-import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
@@ -83,7 +81,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
                 }
             }
         }
@@ -110,7 +108,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     handleSignInError(actionResult)
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }
@@ -118,39 +116,38 @@ class EmailSignInSignUpFragment : Fragment() {
 
     private fun signUp() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
+            val email = binding.emailText.text.toString()
 
-                val actionResult = authClient.signUp(
-                    username = email
-                )
+            val actionResult = authClient.signUp(
+                username = email
+            )
 
-                when (actionResult) {
-                    is SignUpResult.CodeRequired -> {
-                        navigateToSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_up_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        signInAfterSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpResult.AttributesRequired,
-                    is SignUpResult.PasswordRequired -> {
-                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                    }
-                    is SignUpError -> {
-                        handleSignUpError(actionResult)
-                    }
+            when (actionResult) {
+                is SignUpResult.CodeRequired -> {
+                    navigateToSignUp(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignUpResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_up_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    signInAfterSignUp(
+                        nextState = actionResult.nextState
+                    )
+                }
+                is SignUpResult.AttributesRequired,
+                is SignUpResult.PasswordRequired -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
+                is SignUpError -> {
+                    handleSignUpError(actionResult)
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                }
             }
         }
     }
@@ -170,8 +167,8 @@ class EmailSignInSignUpFragment : Fragment() {
             is SignInContinuationError -> {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
-            else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+            is ClientExceptionError -> {
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
         }
     }
@@ -243,7 +240,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
