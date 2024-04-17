@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.ActivityMainBinding
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,7 +27,7 @@ class MainActivity : AppCompatActivity() {
 
         setCurrentFragment(emailSignInSignUpFragment, R.string.title_email_oob_sisu)
 
-        bottom_navigation_view.setOnNavigationItemSelectedListener {
+        binding.bottomNavigationView.setOnNavigationItemSelectedListener {
             when (it.itemId) {
                 R.id.email_oob_sisu -> setCurrentFragment(emailSignInSignUpFragment, R.string.title_email_oob_sisu)
                 R.id.email_password_sisu -> setCurrentFragment(emailPasswordSignInSignUpFragment, R.string.title_email_password_sisu)
