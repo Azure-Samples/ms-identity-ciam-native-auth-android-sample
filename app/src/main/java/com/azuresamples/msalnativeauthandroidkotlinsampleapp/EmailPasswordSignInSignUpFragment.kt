@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +9,6 @@ import android.widget.Toast
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
@@ -85,7 +83,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
                 }
             }
         }
@@ -93,43 +91,39 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
 
     private fun signIn() {
         CoroutineScope(Dispatchers.Main).launch {
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+
+            val actionResult: SignInResult
             try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+                actionResult = authClient.signIn(
+                    username = email,
+                    password = password
+                )
+            } finally {
+                binding.passwordText.text?.clear()
+                StringUtil.overwriteWithNull(password)
+            }
 
-                val actionResult: SignInResult
-                try {
-                    actionResult = authClient.signIn(
-                        username = email,
-                        password = password
-                    )
-                } finally {
-                    binding.passwordText.text?.clear()
-                    StringUtil.overwriteWithNull(password)
+            when (actionResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedInState(accountState = actionResult.resultValue)
                 }
-
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        displaySignedInState(accountState = actionResult.resultValue)
-                    }
-                    is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
-                    }
-                    is SignInError -> {
-                        handleSignInError(actionResult)
-                    }
-                    is ClientExceptionError -> {
-                        displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
-                    }
+                is SignInResult.CodeRequired -> {
+                    displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignInError -> {
+                    handleSignInError(actionResult)
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                }
             }
         }
     }
@@ -172,7 +166,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     handleSignUpError(actionResult)
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
                 }
             }
         }
@@ -260,13 +254,20 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenResult = accountState.getAccessToken()
-            if (accessTokenResult is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenResult.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountState.getIdToken()
-                binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                }
             }
         }
     }

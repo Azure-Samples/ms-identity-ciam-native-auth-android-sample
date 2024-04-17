@@ -218,10 +218,18 @@ class AccessApiFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenState = accountState.getAccessToken()
-            if (accessTokenState is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultText.text = accessToken
+            val accessTokenResult = accountState.getAccessToken()
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultText.text = getString(R.string.result_access_token_text) + accessToken
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                }
             }
         }
     }

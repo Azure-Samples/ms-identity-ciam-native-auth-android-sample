@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailAttributeBinding
@@ -83,7 +84,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage.toString())
                 }
             }
         }
@@ -137,7 +138,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage.toString())
                 }
             }
         }
@@ -160,7 +161,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
             }
             is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage.toString())
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -226,22 +227,21 @@ class EmailAttributeSignUpFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val accessTokenResult = accountState.getAccessToken()
-                when (accessTokenResult) {
-                    is GetAccessTokenResult.Complete -> {
-                        binding.resultAccessToken.text =
-                            getString(R.string.result_access_token_text) + accessTokenResult.resultValue.accessToken
+            val accessTokenResult = accountState.getAccessToken()
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                        val idToken = accountState.getIdToken()
-                        binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
-                    }
-                    is GetAccessTokenError -> {
-                        displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message.toString())
-                    }
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-            } catch (exception: Exception) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                }
             }
         }
     }

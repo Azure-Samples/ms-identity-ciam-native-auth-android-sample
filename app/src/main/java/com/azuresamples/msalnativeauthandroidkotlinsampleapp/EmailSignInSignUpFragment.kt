@@ -11,6 +11,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
@@ -80,6 +81,9 @@ class EmailSignInSignUpFragment : Fragment() {
                 }
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message.toString())
                 }
             }
         }
@@ -230,13 +234,20 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenResult = accountState.getAccessToken()
-            if (accessTokenResult is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenResult.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountState.getIdToken()
-                binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                }
+                is ClientExceptionError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage.toString())
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                }
             }
         }
     }
