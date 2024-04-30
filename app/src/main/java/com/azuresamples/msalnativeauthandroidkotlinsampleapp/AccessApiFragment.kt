@@ -12,6 +12,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -120,9 +121,6 @@ class AccessApiFragment : Fragment() {
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -185,7 +183,7 @@ class AccessApiFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
@@ -227,11 +225,8 @@ class AccessApiFragment : Fragment() {
                     val accessToken = accessTokenResult.resultValue.accessToken
                     binding.resultText.text = getString(R.string.result_access_token_text) + accessToken
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
-                }
-                else -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }

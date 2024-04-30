@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
@@ -107,9 +108,6 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -145,9 +143,6 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignUpError -> {
                     handleSignUpError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -165,10 +160,7 @@ class EmailSignInSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-            }
-            is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
         }
     }
@@ -239,11 +231,8 @@ class EmailSignInSignUpFragment : Fragment() {
                     val idToken = accountState.getIdToken()
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
-                }
-                else -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }
@@ -256,7 +245,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
@@ -269,7 +258,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

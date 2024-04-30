@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -94,9 +95,6 @@ class PasswordResetFragment : Fragment() {
                 is ResetPasswordError -> {
                     handleError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -165,11 +163,8 @@ class PasswordResetFragment : Fragment() {
                     val idToken = accountState.getIdToken()
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
-                }
-                else -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }
@@ -182,7 +177,7 @@ class PasswordResetFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

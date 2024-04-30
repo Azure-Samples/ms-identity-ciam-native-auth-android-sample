@@ -6,11 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
-import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -71,9 +68,6 @@ class PasswordResetCodeFragment : Fragment() {
                 is SubmitCodeError -> {
                     handleError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -90,10 +84,7 @@ class PasswordResetCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-                }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
                 }
             }
         }
@@ -110,7 +101,7 @@ class PasswordResetCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

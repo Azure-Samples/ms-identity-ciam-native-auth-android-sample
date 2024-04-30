@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailAttributeBinding
@@ -137,9 +136,6 @@ class EmailAttributeSignUpFragment : Fragment() {
                 is SignUpResult.AttributesRequired -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -158,10 +154,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-            }
-            is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -236,11 +229,8 @@ class EmailAttributeSignUpFragment : Fragment() {
                     val idToken = accountState.getIdToken()
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
-                }
-                else -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), accessTokenResult.toString())
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }
@@ -255,7 +245,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

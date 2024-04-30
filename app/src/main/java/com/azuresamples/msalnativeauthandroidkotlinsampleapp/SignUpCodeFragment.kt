@@ -8,8 +8,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
-import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.nativeauth.statemachine.errors.ClientExceptionError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -76,9 +74,6 @@ class SignUpCodeFragment : Fragment() {
                 is SubmitCodeError -> {
                     handleSubmitError(actionResult)
                 }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
-                }
             }
         }
     }
@@ -96,14 +91,11 @@ class SignUpCodeFragment : Fragment() {
                 finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-            }
-            is ClientExceptionError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
         }
     }
@@ -120,10 +112,7 @@ class SignUpCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-                }
-                is ClientExceptionError -> {
-                    displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
                 }
             }
         }
@@ -140,7 +129,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
