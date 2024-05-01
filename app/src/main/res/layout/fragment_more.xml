@@ -29,7 +29,7 @@
 		android:layout_marginTop="@dimen/dimens_15dp"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:text="Access Protected API"
+		android:text="Access Custom Protected API"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/divider1"
 		style="@style/OptionItemStyle" />
@@ -42,5 +42,43 @@
 		android:background="?android:attr/listDivider"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/use_access_token" />
+
+	<Button
+		android:id="@+id/access_graph_api"
+		android:layout_marginTop="@dimen/dimens_15dp"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="Access Microsoft Graph API"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/divider2"
+		style="@style/OptionItemStyle" />
+
+	<View
+		android:id="@+id/divider3"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/dimens_1dp"
+		android:layout_marginLeft="@dimen/dimens_10dp"
+		android:background="?android:attr/listDivider"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/access_graph_api" />
+
+	<Button
+		android:id="@+id/access_multiple_api"
+		android:layout_marginTop="@dimen/dimens_15dp"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="Access Multiple APIs"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/divider3"
+		style="@style/OptionItemStyle" />
+
+	<View
+		android:id="@+id/divider4"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/dimens_1dp"
+		android:layout_marginLeft="@dimen/dimens_10dp"
+		android:background="?android:attr/listDivider"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/access_multiple_api" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

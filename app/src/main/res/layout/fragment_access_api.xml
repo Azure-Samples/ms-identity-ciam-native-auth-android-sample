@@ -119,7 +119,7 @@
             app:layout_constraintTop_toBottomOf="@+id/get_api" />
 
         <TextView
-            android:id="@+id/result_text"
+            android:id="@+id/result_text_1"
             style="@style/TextViewStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -129,6 +129,18 @@
             android:text=""
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/result"/>
+
+        <TextView
+            android:id="@+id/result_text_2"
+            style="@style/TextViewStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/dimens_15dp"
+            android:paddingEnd="@dimen/dimens_15dp"
+            android:paddingTop="@dimen/dimens_5dp"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/result_text_1"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
