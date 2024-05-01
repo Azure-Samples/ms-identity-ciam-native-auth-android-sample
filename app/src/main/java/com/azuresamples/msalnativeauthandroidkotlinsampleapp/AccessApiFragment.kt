@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContentProviderCompat.requireContext
@@ -33,10 +34,10 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_BASE_URL_1 = "" // Developers should set the respective URL of their web API here
-        private const val WEB_API_BASE_URL_2 = "" // Developers should set the respective URL of their web API here
-        private val scopesForAPI1 = listOf<String>() // Developers should set the respective scopes of their web API here
-        private val scopesForAPI2 = listOf<String>() // Developers should set the respective scopes of their web API here
+        private const val WEB_API_BASE_URL_1 = "" // Developers should set the first respective URL of their web API here
+        private const val WEB_API_BASE_URL_2 = "" // Developers should set the second respective URL of their web API here
+        private val scopesForAPI1 = listOf<String>() // Developers should set the first respective scopes of their web API here
+        private val scopesForAPI2 = listOf<String>() // Developers should set the second respective scopes of their web API here
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -65,8 +66,12 @@ class AccessApiFragment : Fragment() {
             signIn()
         }
 
-        binding.getApi.setOnClickListener {
-            accessWebAPI()
+        binding.getApi1.setOnClickListener {
+            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_1, scopesForAPI1, binding.resultText1)
+        }
+
+        binding.getApi2.setOnClickListener {
+            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_2, scopesForAPI2, binding.resultText2)
         }
 
         binding.signOut.setOnClickListener {
@@ -164,8 +169,8 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun accessWebAPI() {
-        if (WEB_API_BASE_URL_1.isBlank() and WEB_API_BASE_URL_2.isBlank()) {
+    private fun accessWebAPIAndUpdateUI(baseUrl: String, scopes: List<String>, textField: TextView) {
+        if (baseUrl.isBlank()) {
             displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
             return
         }
@@ -175,12 +180,9 @@ class AccessApiFragment : Fragment() {
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     try {
-                        val accessToken1 = getAccessToken(accountResult.resultValue, scopesForAPI1)
-                        val apiResponse1 = useAccessToken(WEB_API_BASE_URL_1, accessToken1)
-                        binding.resultText1.text = getString(R.string.response_api) + apiResponse1.toString()
-                        val accessToken2 = getAccessToken(accountResult.resultValue, scopesForAPI1)
-                        val apiResponse2 = useAccessToken(WEB_API_BASE_URL_2, accessToken2)
-                        binding.resultText2.text = getString(R.string.response_api) + apiResponse2.toString()
+                        val accessToken = getAccessToken(accountResult.resultValue, scopes)
+                        val apiResponse = useAccessToken(WEB_API_BASE_URL_1, accessToken)
+                        textField.text = getString(R.string.response_api) + apiResponse.toString()
                     } catch (e: Exception) {
                         displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
                     }
@@ -219,12 +221,14 @@ class AccessApiFragment : Fragment() {
             STATUS.SignedIn -> {
                 binding.signIn.isEnabled = false
                 binding.signOut.isEnabled = true
-                binding.getApi.isEnabled = true
+                binding.getApi1.isEnabled = true
+                binding.getApi2.isEnabled = true
             }
             STATUS.SignedOut -> {
                 binding.signIn.isEnabled = true
                 binding.signOut.isEnabled = false
-                binding.getApi.isEnabled = false
+                binding.getApi1.isEnabled = false
+                binding.getApi2.isEnabled = true
             }
         }
     }
