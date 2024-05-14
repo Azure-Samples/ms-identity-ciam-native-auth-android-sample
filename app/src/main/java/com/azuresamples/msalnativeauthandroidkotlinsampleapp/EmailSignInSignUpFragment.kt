@@ -199,8 +199,8 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun updateUI(status: STATUS) {
         when (status) {
             STATUS.SignedIn -> {
-                binding.signIn.isEnabled = true
-                binding.signUp.isEnabled = true
+                binding.signIn.isEnabled = false
+                binding.signUp.isEnabled = false
                 binding.signOut.isEnabled = true
             }
             STATUS.SignedOut -> {
