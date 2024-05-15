@@ -85,7 +85,7 @@ class SignInCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
                 }
             }
         }
