@@ -67,11 +67,11 @@ class AccessApiFragment : Fragment() {
         }
 
         binding.getApi1.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_1, scopesForAPI1, binding.resultText1)
+            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_1, scopesForAPI1)
         }
 
         binding.getApi2.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_2, scopesForAPI2, binding.resultText2)
+            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_2, scopesForAPI2)
         }
 
         binding.signOut.setOnClickListener {
@@ -104,8 +104,7 @@ class AccessApiFragment : Fragment() {
                 try {
                     actionResult = authClient.signIn(
                         username = email,
-                        password = password,
-                        scopes = scopesForAPI1 + scopesForAPI2
+                        password = password
                     )
                 } finally {
                     binding.passwordText.text?.clear()
@@ -163,13 +162,12 @@ class AccessApiFragment : Fragment() {
     }
 
     private suspend fun useAccessToken(WEB_API_BASE_URL: String, accessToken: String): Response {
-        // Use the access token to call the web API
         return withContext(Dispatchers.IO) {
             ApiClient.performGetApiRequest(WEB_API_BASE_URL, accessToken)
         }
     }
 
-    private fun accessWebAPIAndUpdateUI(baseUrl: String, scopes: List<String>, textField: TextView) {
+    private fun accessWebAPIAndUpdateUI(baseUrl: String, scopes: List<String>) {
         if (baseUrl.isBlank()) {
             displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
             return
@@ -181,8 +179,8 @@ class AccessApiFragment : Fragment() {
                 is GetAccountResult.AccountFound -> {
                     try {
                         val accessToken = getAccessToken(accountResult.resultValue, scopes)
-                        val apiResponse = useAccessToken(WEB_API_BASE_URL_1, accessToken)
-                        textField.text = getString(R.string.response_api) + apiResponse.toString()
+                        val apiResponse = useAccessToken(baseUrl, accessToken)
+                        binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
                     } catch (e: Exception) {
                         displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
                     }
@@ -234,16 +232,13 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun emptyResults() {
-        binding.resultText1.text = ""
-        binding.resultText2.text = ""
+        binding.resultText.text = ""
     }
 
-    private fun displayAccount(accountState: AccountState) {
+    private fun displayAccount(accountState: AccountState, scopes: List<String> = emptyList()) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessToken1 = getAccessToken(accountState, scopesForAPI1)
-            binding.resultText1.text = accessToken1
-            val accessToken2 = getAccessToken(accountState, scopesForAPI2)
-            binding.resultText2.text = accessToken2
+            val accessToken = getAccessToken(accountState, scopes)
+            binding.resultText.text = accessToken
         }
     }
 
