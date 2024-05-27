@@ -34,10 +34,11 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_BASE_URL_1 = "" // Developers should set the first respective URL of their web API here
-        private const val WEB_API_BASE_URL_2 = "" // Developers should set the second respective URL of their web API here
-        private val scopesForAPI1 = listOf<String>() // Developers should set the first respective scopes of their web API here
-        private val scopesForAPI2 = listOf<String>() // Developers should set the second respective scopes of their web API here
+        private const val WEB_API_BASE_URL_1 = "" // Developers should set the first respective URL of their web API resource here
+        private const val WEB_API_BASE_URL_2 = "" // Developers should set the second respective URL of their web API resource here
+        // Developers should set the respective scopes for their web API resources here, for example: ["api://<Resource_App_ID>/ToDoList.Read", "api://<Resource_App_ID>/ToDoList.ReadWrite"]
+        private val scopesForAPI1 = listOf<String>()
+        private val scopesForAPI2 = listOf<String>()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -237,7 +238,7 @@ class AccessApiFragment : Fragment() {
         binding.resultText.text = ""
     }
 
-    private fun displayAccount(accountState: AccountState, scopes: List<String> = listOf("openid", "offline_access", "profile") ) {
+    private fun displayAccount(accountState: AccountState, scopes: List<String> = listOf("openid", "offline_access", "profile") ) {  // The default scopes added by the SDK
         CoroutineScope(Dispatchers.Main).launch {
             val accessToken = getAccessToken(accountState, scopes)
             binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
