@@ -180,6 +180,7 @@ class AccessApiFragment : Fragment() {
                     try {
                         val accessToken = getAccessToken(accountResult.resultValue, scopes)
                         val apiResponse = useAccessToken(baseUrl, accessToken)
+                        binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
                         binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
                     } catch (e: Exception) {
                         displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
@@ -232,12 +233,14 @@ class AccessApiFragment : Fragment() {
     }
 
     private fun emptyResults() {
+        binding.result.text = ""
         binding.resultText.text = ""
     }
 
-    private fun displayAccount(accountState: AccountState, scopes: List<String> = emptyList()) {
+    private fun displayAccount(accountState: AccountState, scopes: List<String> = listOf("openid", "offline_access", "profile") ) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessToken = getAccessToken(accountState, scopes)
+            binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
             binding.resultText.text = accessToken
         }
     }
