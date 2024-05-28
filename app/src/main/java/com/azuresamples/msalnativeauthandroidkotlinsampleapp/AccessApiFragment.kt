@@ -228,7 +228,7 @@ class AccessApiFragment : Fragment() {
                 binding.signIn.isEnabled = true
                 binding.signOut.isEnabled = false
                 binding.getApi1.isEnabled = false
-                binding.getApi2.isEnabled = true
+                binding.getApi2.isEnabled = false
             }
         }
     }
