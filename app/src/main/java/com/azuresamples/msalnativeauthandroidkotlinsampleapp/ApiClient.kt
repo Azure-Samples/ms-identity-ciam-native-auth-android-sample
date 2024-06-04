@@ -8,8 +8,8 @@ import okhttp3.Response
 object ApiClient {
     private val client = OkHttpClient()
 
-    fun performGetApiRequest(WEB_API_BASE_URL: String, accessToken: String): Response {
-        val fullUrl = "$WEB_API_BASE_URL/api/todolist"
+    fun performGetApiRequest(WEB_API_URL: String, accessToken: String): Response {
+        val fullUrl = "$WEB_API_URL/api/todolist"
 
         val requestBuilder = Request.Builder()
                 .url(fullUrl)

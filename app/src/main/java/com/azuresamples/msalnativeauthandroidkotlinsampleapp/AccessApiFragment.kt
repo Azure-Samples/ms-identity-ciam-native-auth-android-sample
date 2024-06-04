@@ -5,10 +5,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
 import com.microsoft.identity.client.exception.MsalException
@@ -38,8 +36,8 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_BASE_URL_1 = "" // Developers should set the first respective URL of their web API resource here
-        private const val WEB_API_BASE_URL_2 = "" // Developers should set the second respective URL of their web API resource here
+        private const val WEB_API_URL_1 = "" // Developers should set the URL of their first web API resource here
+        private const val WEB_API_URL_2 = "" // Developers should set the URL of their second web API resource here
         // Developers should set the respective scopes for their web API resources here, for example: ["api://<Resource_App_ID>/ToDoList.Read", "api://<Resource_App_ID>/ToDoList.ReadWrite"]
         private val scopesForAPI1 = listOf<String>()
         private val scopesForAPI2 = listOf<String>()
@@ -72,11 +70,11 @@ class AccessApiFragment : Fragment() {
         }
 
         binding.getApi1.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_1, scopesForAPI1)
+            accessWebAPIAndUpdateUI(WEB_API_URL_1, scopesForAPI1)
         }
 
         binding.getApi2.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_BASE_URL_2, scopesForAPI2)
+            accessWebAPIAndUpdateUI(WEB_API_URL_2, scopesForAPI2)
         }
 
         binding.signOut.setOnClickListener {
@@ -166,14 +164,14 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private suspend fun useAccessToken(WEB_API_BASE_URL: String, accessToken: String): Response {
+    private suspend fun useAccessToken(WEB_API_URL: String, accessToken: String): Response {
         return withContext(Dispatchers.IO) {
-            ApiClient.performGetApiRequest(WEB_API_BASE_URL, accessToken)
+            ApiClient.performGetApiRequest(WEB_API_URL, accessToken)
         }
     }
 
-    private fun accessWebAPIAndUpdateUI(baseUrl: String, scopes: List<String>) {
-        if (baseUrl.isBlank()) {
+    private fun accessWebAPIAndUpdateUI(webApiUrl: String, scopes: List<String>) {
+        if (webApiUrl.isBlank()) {
             displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
             return
         }
@@ -184,7 +182,7 @@ class AccessApiFragment : Fragment() {
                 is GetAccountResult.AccountFound -> {
                     try {
                         val accessToken = getAccessToken(accountResult.resultValue, scopes)
-                        val apiResponse = useAccessToken(baseUrl, accessToken)
+                        val apiResponse = useAccessToken(webApiUrl, accessToken)
                         binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
                         binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
                     } catch (e: Exception) {
