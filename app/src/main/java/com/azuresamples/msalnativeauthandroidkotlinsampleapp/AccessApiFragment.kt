@@ -26,6 +26,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Response
 
+/**
+ * AccessApiFragment class implements samples for accessing custom web APIs using Entra External ID identity tokens.
+ * Learn documentation: https://learn.microsoft.com/en-us/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api
+ */
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
     private var _binding: FragmentAccessApiBinding? = null
