@@ -52,12 +52,9 @@ class AccessApiFragment : Fragment() {
 
         init()
 
-        return binding.root
-    }
-
-    override fun onResume() {
-        super.onResume()
         getStateAndUpdateUI()
+
+        return binding.root
     }
 
     private fun init() {
@@ -240,11 +237,11 @@ class AccessApiFragment : Fragment() {
         binding.resultText.text = ""
     }
 
-    private fun displayAccount(accountState: AccountState, scopes: List<String> = listOf("openid", "offline_access", "profile") ) {  // The default scopes added by the SDK
+    private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessToken = getAccessToken(accountState, scopes)
-            binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
-            binding.resultText.text = accessToken
+            val username = accountState.getAccount().username
+            binding.result.text = getString(R.string.result_account_text)
+            binding.resultText.text = username
         }
     }
 
