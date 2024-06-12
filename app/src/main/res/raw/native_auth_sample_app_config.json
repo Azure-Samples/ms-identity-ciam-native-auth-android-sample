@@ -1,16 +1,12 @@
 {
-  "client_id": "f87f7d65-cf66-4370-a9ef-24d370ed9e64",
-  "authorization_user_agent": "DEFAULT",
+  "client_id": "Enter_the_Application_Id_Here",
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://DirectSsprPp1.ciamlogin.com/DirectSsprPp1.onmicrosoft.com/"
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
     }
   ],
-  "challenge_types": [
-    "oob",
-    "password"
-  ],
+  "challenge_types": ["oob", "password"],
   "logging": {
     "pii_enabled": false,
     "log_level": "INFO",
