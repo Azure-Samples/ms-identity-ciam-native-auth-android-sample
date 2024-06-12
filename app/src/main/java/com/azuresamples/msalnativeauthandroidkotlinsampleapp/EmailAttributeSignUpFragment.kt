@@ -102,17 +102,13 @@ class EmailAttributeSignUpFragment : Fragment() {
                 .city(city)
                 .build()
 
-            val actionResult: SignUpResult
-            try {
-                actionResult = authClient.signUp(
-                    username = email,
-                    password = password,
-                    attributes = attributes
-                )
-            } finally {
-                binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
-                StringUtil.overwriteWithNull(password)
-            }
+            val actionResult: SignUpResult = authClient.signUp(
+                username = email,
+                password = password,
+                attributes = attributes
+            )
+            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {

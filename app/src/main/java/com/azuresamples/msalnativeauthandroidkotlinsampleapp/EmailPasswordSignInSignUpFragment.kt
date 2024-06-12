@@ -96,16 +96,12 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult
-            try {
-                actionResult = authClient.signIn(
-                    username = email,
-                    password = password
-                )
-            } finally {
-                binding.passwordText.text?.clear()
-                StringUtil.overwriteWithNull(password)
-            }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.clear()
+            StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
                 is SignInResult.Complete -> {
@@ -132,17 +128,12 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignUpResult
-
-            try {
-                actionResult = authClient.signUp(
-                    username = email,
-                    password = password
-                )
-            } finally {
-                binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
-                StringUtil.overwriteWithNull(password)
-            }
+            val actionResult: SignUpResult = authClient.signUp(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {

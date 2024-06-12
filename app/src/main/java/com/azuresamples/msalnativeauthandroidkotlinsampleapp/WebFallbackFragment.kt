@@ -90,20 +90,16 @@ class WebFallbackFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult
-            try {
-                actionResult = authClient.signIn(
-                    username = email,
-                    password = password
-                )
-            } finally {
-                binding.passwordText.text?.set(
-                    0,
-                    binding.passwordText.text?.length?.minus(1) ?: 0,
-                    0
-                )
-                StringUtil.overwriteWithNull(password)
-            }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.set(
+                0,
+                binding.passwordText.text?.length?.minus(1) ?: 0,
+                0
+            )
+            StringUtil.overwriteWithNull(password)
 
             if (actionResult is SignInError && actionResult.isBrowserRequired()) {
                 Toast.makeText(requireContext(), actionResult.errorMessage, Toast.LENGTH_SHORT)

@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
-import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
@@ -103,16 +102,12 @@ class AccessApiFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInResult
-                try {
-                    actionResult = authClient.signIn(
-                        username = email,
-                        password = password
-                    )
-                } finally {
-                    binding.passwordText.text?.clear()
-                    StringUtil.overwriteWithNull(password)
-                }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.clear()
+            StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
                 is SignInResult.Complete -> {
