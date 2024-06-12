@@ -10,7 +10,7 @@
         android:layout_marginTop="@dimen/dimens_15dp"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Web Fallback"
+        android:text="@string/title_web_fallback"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         style="@style/OptionItemStyle" />
@@ -29,7 +29,7 @@
 		android:layout_marginTop="@dimen/dimens_15dp"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:text="Access Protected API"
+		android:text="@string/title_access_web_api"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/divider1"
 		style="@style/OptionItemStyle" />
@@ -42,5 +42,4 @@
 		android:background="?android:attr/listDivider"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/use_access_token" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

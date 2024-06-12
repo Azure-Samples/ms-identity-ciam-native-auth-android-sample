@@ -22,7 +22,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Response
 
+/**
+ * AccessApiFragment class implements samples for accessing custom web APIs using Entra External ID identity tokens.
+ * Learn documentation: https://learn.microsoft.com/en-us/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api
+ */
 class AccessApiFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
     private var _binding: FragmentAccessApiBinding? = null
@@ -31,8 +36,11 @@ class AccessApiFragment : Fragment() {
     companion object {
         private val TAG = AccessApiFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_BASE_URL = "" // Developers should set the respective URL of their web API here
-        private val scopes = listOf<String>() // Developers should set the respective scopes of their web API here
+        private const val WEB_API_URL_1 = "" // Developers should set the URL of their first web API resource here
+        private const val WEB_API_URL_2 = "" // Developers should set the URL of their second web API resource here
+        // Developers should set the respective scopes for their web API resources here, for example: ["api://<Resource_App_ID>/ToDoList.Read", "api://<Resource_App_ID>/ToDoList.ReadWrite"]
+        private val scopesForAPI1 = listOf<String>()
+        private val scopesForAPI2 = listOf<String>()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -44,12 +52,9 @@ class AccessApiFragment : Fragment() {
 
         init()
 
-        return binding.root
-    }
-
-    override fun onResume() {
-        super.onResume()
         getStateAndUpdateUI()
+
+        return binding.root
     }
 
     private fun init() {
@@ -61,8 +66,12 @@ class AccessApiFragment : Fragment() {
             signIn()
         }
 
-        binding.getApi.setOnClickListener {
-            accessWebAPI()
+        binding.getApi1.setOnClickListener {
+            accessWebAPIAndUpdateUI(WEB_API_URL_1, scopesForAPI1)
+        }
+
+        binding.getApi2.setOnClickListener {
+            accessWebAPIAndUpdateUI(WEB_API_URL_2, scopesForAPI2)
         }
 
         binding.signOut.setOnClickListener {
@@ -95,8 +104,7 @@ class AccessApiFragment : Fragment() {
                 try {
                     actionResult = authClient.signIn(
                         username = email,
-                        password = password,
-                        scopes = scopes
+                        password = password
                     )
                 } finally {
                     binding.passwordText.text?.clear()
@@ -144,26 +152,38 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private fun accessWebAPI() {
+    private suspend fun getAccessToken(accountState: AccountState, scopes: List<String>): String {
+        val accessTokenState = accountState.getAccessToken(false, scopes)
+        return if (accessTokenState is GetAccessTokenResult.Complete) {
+            accessTokenState.resultValue.accessToken
+        } else {
+            throw Exception("Failed to get access token")
+        }
+    }
+
+    private suspend fun useAccessToken(WEB_API_URL: String, accessToken: String): Response {
+        return withContext(Dispatchers.IO) {
+            ApiClient.performGetApiRequest(WEB_API_URL, accessToken)
+        }
+    }
+
+    private fun accessWebAPIAndUpdateUI(webApiUrl: String, scopes: List<String>) {
+        if (webApiUrl.isBlank()) {
+            displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
+            return
+        }
+
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
-                    val accessTokenState = accountResult.resultValue.getAccessToken()
-                    if (accessTokenState is GetAccessTokenResult.Complete) {
-                        val accessToken = accessTokenState.resultValue.accessToken
-                        try {
-                            if (WEB_API_BASE_URL.isBlank()) {
-                                displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
-                                return@launch
-                            }
-                            val apiResponse = withContext(Dispatchers.IO) {
-                                ApiClient.performGetApiRequest(WEB_API_BASE_URL, accessToken)
-                            }
-                            binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
-                        } catch (e: Exception) {
-                            displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
-                        }
+                    try {
+                        val accessToken = getAccessToken(accountResult.resultValue, scopes)
+                        val apiResponse = useAccessToken(webApiUrl, accessToken)
+                        binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
+                        binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
+                    } catch (e: Exception) {
+                        displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
                     }
                 }
                 is GetAccountResult.NoAccountFound -> {
@@ -200,27 +220,28 @@ class AccessApiFragment : Fragment() {
             STATUS.SignedIn -> {
                 binding.signIn.isEnabled = false
                 binding.signOut.isEnabled = true
-                binding.getApi.isEnabled = true
+                binding.getApi1.isEnabled = true
+                binding.getApi2.isEnabled = true
             }
             STATUS.SignedOut -> {
                 binding.signIn.isEnabled = true
                 binding.signOut.isEnabled = false
-                binding.getApi.isEnabled = false
+                binding.getApi1.isEnabled = false
+                binding.getApi2.isEnabled = false
             }
         }
     }
 
     private fun emptyResults() {
+        binding.result.text = ""
         binding.resultText.text = ""
     }
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenState = accountState.getAccessToken()
-            if (accessTokenState is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenState.resultValue.accessToken
-                binding.resultText.text = accessToken
-            }
+            val username = accountState.getAccount().username
+            binding.result.text = getString(R.string.result_account_text)
+            binding.resultText.text = username
         }
     }
 

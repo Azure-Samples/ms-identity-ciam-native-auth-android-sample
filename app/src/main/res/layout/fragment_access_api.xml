@@ -99,14 +99,24 @@
             style="@style/ActionButtonStyle" />
 
         <Button
-            android:id="@+id/get_api"
+            android:id="@+id/get_api_1"
             style="@style/ActionButtonStyle"
             android:layout_marginTop="@dimen/dimens_15dp"
             android:enabled="false"
-            android:text="@string/api_get"
+            android:text="API 1 - Perform GET"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sign_out" />
+
+        <Button
+            android:id="@+id/get_api_2"
+            style="@style/ActionButtonStyle"
+            android:layout_marginTop="@dimen/dimens_15dp"
+            android:enabled="false"
+            android:text="API 2 - Perform GET"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/get_api_1" />
 
         <TextView
             android:id="@+id/result"
@@ -116,7 +126,7 @@
             android:layout_marginTop="@dimen/dimens_15dp"
             android:text="@string/result_access_token_text"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/get_api" />
+            app:layout_constraintTop_toBottomOf="@+id/get_api_2" />
 
         <TextView
             android:id="@+id/result_text"
@@ -129,7 +139,6 @@
             android:text=""
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/result"/>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </ScrollView>

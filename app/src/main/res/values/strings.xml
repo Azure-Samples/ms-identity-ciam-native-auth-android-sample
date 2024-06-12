@@ -9,7 +9,7 @@
     <string name="title_email_oob_sspr">"Password Reset"</string>
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
-    <string name="title_access_web_api">"Access Web API"</string>
+    <string name="title_access_web_api">"Access Protected Web APIs"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -55,6 +55,7 @@
     <!-- Results -->
     <string name="result_account_text">"Account username: "</string>
     <string name="result_access_token_text">"Access token: "</string>
+    <string name="result_access_token_of_scopes_text">"Access token of scopes:\n"</string>
     <string name="result_id_token_text">"ID token: "</string>
     <string name="result_text">"Result: "</string>
     <string name="response_api">"API response is: "</string>
