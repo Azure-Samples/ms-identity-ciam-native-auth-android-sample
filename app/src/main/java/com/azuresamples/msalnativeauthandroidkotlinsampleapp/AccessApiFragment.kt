@@ -9,9 +9,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -89,46 +89,41 @@ class AccessApiFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
 
     private fun signIn() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInResult
-                try {
-                    actionResult = authClient.signIn(
-                        username = email,
-                        password = password
-                    )
-                } finally {
-                    binding.passwordText.text?.clear()
-                    StringUtil.overwriteWithNull(password)
-                }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.clear()
+            StringUtil.overwriteWithNull(password)
 
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        displaySignedInState(accountState = actionResult.resultValue)
-                    }
-                    is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
-                    }
-                    is SignInError -> {
-                        handleSignInError(actionResult)
-                    }
+            when (actionResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedInState(accountState = actionResult.resultValue)
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignInResult.CodeRequired -> {
+                    displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
+                }
+                is SignInError -> {
+                    handleSignInError(actionResult)
+                }
             }
         }
     }
@@ -189,6 +184,9 @@ class AccessApiFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message ?: accountResult.errorMessage)
+                }
             }
         }
     }
@@ -200,7 +198,7 @@ class AccessApiFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

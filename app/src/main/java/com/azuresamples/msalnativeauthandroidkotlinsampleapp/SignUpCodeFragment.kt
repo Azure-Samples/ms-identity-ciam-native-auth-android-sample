@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -57,28 +56,24 @@ class SignUpCodeFragment : Fragment() {
 
     private fun verifyCode() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val oobCode = binding.codeText.text.toString()
+            val oobCode = binding.codeText.text.toString()
 
-                val actionResult = currentState.submitCode(oobCode)
+            val actionResult = currentState.submitCode(oobCode)
 
-                when (actionResult) {
-                    is SignUpResult.Complete -> {
-                        Toast.makeText(requireContext(), getString(R.string.sign_up_successful_message), Toast.LENGTH_SHORT).show()
-                        signInAfterSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpResult.AttributesRequired,
-                    is SignUpResult.PasswordRequired -> {
-                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                    }
-                    is SubmitCodeError -> {
-                        handleSubmitError(actionResult)
-                    }
+            when (actionResult) {
+                is SignUpResult.Complete -> {
+                    Toast.makeText(requireContext(), getString(R.string.sign_up_successful_message), Toast.LENGTH_SHORT).show()
+                    signInAfterSignUp(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignUpResult.AttributesRequired,
+                is SignUpResult.PasswordRequired -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
+                is SubmitCodeError -> {
+                    handleSubmitError(actionResult)
+                }
             }
         }
     }
@@ -96,7 +91,7 @@ class SignUpCodeFragment : Fragment() {
                 finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
@@ -109,20 +104,16 @@ class SignUpCodeFragment : Fragment() {
         clearCode()
 
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val actionResult = currentState.resendCode()
+            val actionResult = currentState.resendCode()
 
-                when (actionResult) {
-                    is SignUpResendCodeResult.Success -> {
-                        currentState = actionResult.nextState
-                        Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
-                    }
-                    is ResendCodeError -> {
-                        displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-                    }
+            when (actionResult) {
+                is SignUpResendCodeResult.Success -> {
+                    currentState = actionResult.nextState
+                    Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is ResendCodeError -> {
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
+                }
             }
         }
     }
@@ -138,7 +129,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }

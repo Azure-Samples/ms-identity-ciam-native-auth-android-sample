@@ -18,6 +18,7 @@ import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
@@ -76,50 +77,44 @@ class WebFallbackFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
 
     private fun signIn() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInResult
-                try {
-                    actionResult = authClient.signIn(
-                        username = email,
-                        password = password
-                    )
-                } finally {
-                    binding.passwordText.text?.set(
-                        0,
-                        binding.passwordText.text?.length?.minus(1) ?: 0,
-                        0
-                    )
-                    StringUtil.overwriteWithNull(password)
-                }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.set(
+                0,
+                binding.passwordText.text?.length?.minus(1) ?: 0,
+                0
+            )
+            StringUtil.overwriteWithNull(password)
 
-                if (actionResult is SignInError && actionResult.isBrowserRequired()) {
-                    Toast.makeText(requireContext(), actionResult.errorMessage, Toast.LENGTH_SHORT)
-                        .show()
+            if (actionResult is SignInError && actionResult.isBrowserRequired()) {
+                Toast.makeText(requireContext(), actionResult.errorMessage, Toast.LENGTH_SHORT)
+                    .show()
 
-                    authClient.acquireToken(
-                        AcquireTokenParameters(
-                            AcquireTokenParameters.Builder()
-                                .startAuthorizationFromActivity(requireActivity())
-                                .withScopes(mutableListOf("profile", "openid", "email"))
-                                .withCallback(getAuthInteractiveCallback())
-                        )
+                authClient.acquireToken(
+                    AcquireTokenParameters(
+                        AcquireTokenParameters.Builder()
+                            .startAuthorizationFromActivity(requireActivity())
+                            .withScopes(mutableListOf("profile", "openid", "email"))
+                            .withCallback(getAuthInteractiveCallback())
                     )
-                } else {
+                )
+            } else {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                }
-
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
             }
         }
     }

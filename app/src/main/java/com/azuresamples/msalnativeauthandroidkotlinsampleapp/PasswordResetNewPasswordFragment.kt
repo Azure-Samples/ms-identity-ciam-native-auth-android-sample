@@ -10,7 +10,6 @@ import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
@@ -56,35 +55,27 @@ class PasswordResetNewPasswordFragment : Fragment() {
 
     private fun resetPassword() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: ResetPasswordSubmitPasswordResult
-                try {
-                    actionResult = currentState.submitPassword(password)
-                } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
-                    StringUtil.overwriteWithNull(password)
-                }
+            val actionResult: ResetPasswordSubmitPasswordResult = currentState.submitPassword(password)
+            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            StringUtil.overwriteWithNull(password)
 
-                when (actionResult) {
-                    is ResetPasswordResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.password_reset_success_message),
-                            Toast.LENGTH_LONG
-                        ).show()
-                        signInAfterPasswordReset(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is ResetPasswordSubmitPasswordError -> {
-                        handleError(actionResult)
-                    }
+            when (actionResult) {
+                is ResetPasswordResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.password_reset_success_message),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    signInAfterPasswordReset(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is ResetPasswordSubmitPasswordError -> {
+                    handleError(actionResult)
+                }
             }
         }
     }
@@ -102,10 +93,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
-            }
-            else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
         }
     }
@@ -117,7 +105,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }

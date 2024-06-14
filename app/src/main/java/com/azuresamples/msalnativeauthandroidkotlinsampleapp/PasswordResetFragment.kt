@@ -8,8 +8,9 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -71,30 +72,29 @@ class PasswordResetFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
 
     private fun forgetPassword() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
+            val email = binding.emailText.text.toString()
 
-                val actionResult = authClient.resetPassword(
-                    username = email
-                )
-                when (actionResult) {
-                    is ResetPasswordStartResult.CodeRequired -> {
-                        navigateToResetPasswordCodeFragment(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is ResetPasswordError -> {
-                        handleError(actionResult)
-                    }
+            val actionResult = authClient.resetPassword(
+                username = email
+            )
+            when (actionResult) {
+                is ResetPasswordStartResult.CodeRequired -> {
+                    navigateToResetPasswordCodeFragment(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is ResetPasswordError -> {
+                    handleError(actionResult)
+                }
             }
         }
     }
@@ -155,13 +155,17 @@ class PasswordResetFragment : Fragment() {
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenResult = accountState.getAccessToken()
-            if (accessTokenResult is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenResult.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountState.getIdToken()
-                binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                }
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
+                }
             }
         }
     }
@@ -173,7 +177,7 @@ class PasswordResetFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }

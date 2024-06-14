@@ -2,14 +2,12 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResendCodeResult
@@ -55,26 +53,22 @@ class SignInCodeFragment : Fragment() {
 
     private fun verifyCode() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val emailCode = binding.codeText.text.toString()
+            val emailCode = binding.codeText.text.toString()
 
-                val actionResult = currentState.submitCode(emailCode)
+            val actionResult = currentState.submitCode(emailCode)
 
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        finish()
-                    }
-                    is SubmitCodeError -> {
-                        handleSubmitCodeError(actionResult)
-                    }
+            when (actionResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SubmitCodeError -> {
+                    handleSubmitCodeError(actionResult)
+                }
             }
         }
     }
@@ -91,7 +85,7 @@ class SignInCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
                 }
             }
         }

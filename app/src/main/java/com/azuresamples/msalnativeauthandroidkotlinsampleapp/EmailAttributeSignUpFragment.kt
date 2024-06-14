@@ -9,13 +9,12 @@ import android.widget.Toast
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailAttributeBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -83,61 +82,56 @@ class EmailAttributeSignUpFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
 
     private fun signUp() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
-                val country = binding.countryText.text.toString()
-                val city = binding.cityText.text.toString()
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val country = binding.countryText.text.toString()
+            val city = binding.cityText.text.toString()
 
-                val attributes = UserAttributes.Builder
-                    .country(country)
-                    .city(city)
-                    .build()
+            val attributes = UserAttributes.Builder
+                .country(country)
+                .city(city)
+                .build()
 
-                val actionResult: SignUpResult
-                try {
-                    actionResult = authClient.signUp(
-                        username = email,
-                        password = password,
-                        attributes = attributes
+            val actionResult: SignUpResult = authClient.signUp(
+                username = email,
+                password = password,
+                attributes = attributes
+            )
+            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            StringUtil.overwriteWithNull(password)
+
+            when (actionResult) {
+                is SignUpResult.CodeRequired -> {
+                    navigateToSignUp(
+                        nextState = actionResult.nextState
                     )
-                } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
-                    StringUtil.overwriteWithNull(password)
                 }
-
-                when (actionResult) {
-                    is SignUpResult.CodeRequired -> {
-                        navigateToSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_up_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        signInAfterSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpError -> {
-                        handleSignUpError(actionResult)
-                    }
-                    is SignUpResult.AttributesRequired -> {
-                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                    }
+                is SignUpResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_up_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    signInAfterSignUp(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignUpError -> {
+                    handleSignUpError(actionResult)
+                }
+                is SignUpResult.AttributesRequired -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
             }
         }
     }
@@ -156,7 +150,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -222,22 +216,18 @@ class EmailAttributeSignUpFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val accessTokenResult = accountState.getAccessToken()
-                when (accessTokenResult) {
-                    is GetAccessTokenResult.Complete -> {
-                        binding.resultAccessToken.text =
-                            getString(R.string.result_access_token_text) + accessTokenResult.resultValue.accessToken
+            val accessTokenResult = accountState.getAccessToken()
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                        val idToken = accountState.getIdToken()
-                        binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
-                    }
-                    is GetAccessTokenError -> {
-                        displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message.toString())
-                    }
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-            } catch (exception: Exception) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
+                }
             }
         }
     }
@@ -251,7 +241,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }

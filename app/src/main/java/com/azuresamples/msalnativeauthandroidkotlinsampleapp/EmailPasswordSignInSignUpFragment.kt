@@ -2,7 +2,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,9 +9,10 @@ import android.widget.Toast
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
-import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
@@ -83,91 +83,77 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 is GetAccountResult.NoAccountFound -> {
                     displaySignedOutState()
                 }
+                is GetAccountError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                }
             }
         }
     }
 
     private fun signIn() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignInResult
-                try {
-                    actionResult = authClient.signIn(
-                        username = email,
-                        password = password
-                    )
-                } finally {
-                    binding.passwordText.text?.clear()
-                    StringUtil.overwriteWithNull(password)
-                }
+            val actionResult: SignInResult = authClient.signIn(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.clear()
+            StringUtil.overwriteWithNull(password)
 
-                when (actionResult) {
-                    is SignInResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_in_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        displaySignedInState(accountState = actionResult.resultValue)
-                    }
-                    is SignInResult.CodeRequired -> {
-                        displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
-                    }
-                    is SignInError -> {
-                        handleSignInError(actionResult)
-                    }
+            when (actionResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedInState(accountState = actionResult.resultValue)
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignInResult.CodeRequired -> {
+                    displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
+                }
+                is SignInError -> {
+                    handleSignInError(actionResult)
+                }
             }
         }
     }
 
     private fun signUp() {
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val email = binding.emailText.text.toString()
-                val password = CharArray(binding.passwordText.length())
-                binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+            val email = binding.emailText.text.toString()
+            val password = CharArray(binding.passwordText.length())
+            binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-                val actionResult: SignUpResult
+            val actionResult: SignUpResult = authClient.signUp(
+                username = email,
+                password = password
+            )
+            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            StringUtil.overwriteWithNull(password)
 
-                try {
-                    actionResult = authClient.signUp(
-                        username = email,
-                        password = password
+            when (actionResult) {
+                is SignUpResult.CodeRequired -> {
+                    navigateToSignUp(
+                        nextState = actionResult.nextState
                     )
-                } finally {
-                    binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
-                    StringUtil.overwriteWithNull(password)
                 }
-
-                when (actionResult) {
-                    is SignUpResult.CodeRequired -> {
-                        navigateToSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpResult.Complete -> {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.sign_up_successful_message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        signInAfterSignUp(
-                            nextState = actionResult.nextState
-                        )
-                    }
-                    is SignUpError -> {
-                        handleSignUpError(actionResult)
-                    }
+                is SignUpResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_up_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    signInAfterSignUp(
+                        nextState = actionResult.nextState
+                    )
                 }
-            } catch (exception: MsalException) {
-                displayDialog(getString(R.string.msal_exception_title), exception.message.toString())
+                is SignUpError -> {
+                    handleSignUpError(actionResult)
+                }
             }
         }
     }
@@ -184,7 +170,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.toString())
+                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -251,13 +237,17 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
             val accessTokenResult = accountState.getAccessToken()
-            if (accessTokenResult is GetAccessTokenResult.Complete) {
-                val accessToken = accessTokenResult.resultValue.accessToken
-                binding.resultAccessToken.text =
-                    getString(R.string.result_access_token_text) + accessToken
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
 
-                val idToken = accountState.getIdToken()
-                binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
+                }
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
+                }
             }
         }
     }
@@ -269,7 +259,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }
@@ -283,7 +273,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }
