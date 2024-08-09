@@ -97,7 +97,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             val country = binding.countryText.text.toString()
             val city = binding.cityText.text.toString()
 
-            val attributes = UserAttributes.Builder
+            val attributes = UserAttributes.Builder()
                 .country(country)
                 .city(city)
                 .build()
