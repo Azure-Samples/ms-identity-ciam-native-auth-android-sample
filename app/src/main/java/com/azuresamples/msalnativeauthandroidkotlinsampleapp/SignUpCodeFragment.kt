@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 
 class SignUpCodeFragment : Fragment() {
     private lateinit var currentState: SignUpCodeRequiredState
+    private lateinit var appUtil: AppUtil
     private var _binding: FragmentCodeBinding? = null
     private val binding get() = _binding!!
 
@@ -33,7 +36,9 @@ class SignUpCodeFragment : Fragment() {
         _binding = FragmentCodeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? SignUpCodeRequiredState)!!
+        currentState = (bundle?.getParcelable(NavigationUtil.STATE) as? SignUpCodeRequiredState)!!
+
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         init()
 
@@ -69,10 +74,10 @@ class SignUpCodeFragment : Fragment() {
                 }
                 is SignUpResult.AttributesRequired,
                 is SignUpResult.PasswordRequired -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    appUtil.errorHandler.handleUnexpectedError(actionResult.toString())
                 }
                 is SubmitCodeError -> {
-                    handleSubmitError(actionResult)
+                    appUtil.errorHandler.handleSubmitCodeError(actionResult)
                 }
             }
         }
@@ -88,14 +93,14 @@ class SignUpCodeFragment : Fragment() {
                     getString(R.string.sign_in_successful_message),
                     Toast.LENGTH_SHORT
                 ).show()
-                finish()
+                appUtil.navigation.finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                appUtil.errorHandler.handleSignInContinuationError(actionResult)
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                appUtil.errorHandler.handleUnexpectedError(actionResult.toString())
             }
         }
     }
@@ -112,7 +117,7 @@ class SignUpCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
+                    appUtil.errorHandler.handleResendCodeError(actionResult)
                 }
             }
         }
@@ -120,29 +125,5 @@ class SignUpCodeFragment : Fragment() {
 
     private fun clearCode() {
         binding.codeText.text?.clear()
-    }
-
-    private fun handleSubmitError(error: SubmitCodeError) {
-        when {
-            error.isBrowserRequired() || error.isInvalidCode() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
-            }
-        }
-    }
-
-    private fun displayDialog(error: String?, message: String?) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
-    }
-
-    private fun finish() {
-        requireActivity().supportFragmentManager.popBackStackImmediate()
     }
 }

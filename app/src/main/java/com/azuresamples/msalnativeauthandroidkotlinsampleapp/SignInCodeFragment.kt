@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResendCodeResult
@@ -19,6 +21,7 @@ import kotlinx.coroutines.launch
 
 class SignInCodeFragment : Fragment() {
     private lateinit var currentState: SignInCodeRequiredState
+    private lateinit var appUtil: AppUtil
     private var _binding: FragmentCodeBinding? = null
     private val binding get() = _binding!!
 
@@ -30,7 +33,9 @@ class SignInCodeFragment : Fragment() {
         _binding = FragmentCodeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? SignInCodeRequiredState)!!
+        currentState = (bundle?.getParcelable(NavigationUtil.STATE) as? SignInCodeRequiredState)!!
+
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         init()
 
@@ -64,10 +69,10 @@ class SignInCodeFragment : Fragment() {
                         getString(R.string.sign_in_successful_message),
                         Toast.LENGTH_SHORT
                     ).show()
-                    finish()
+                    appUtil.navigation.finish()
                 }
                 is SubmitCodeError -> {
-                    handleSubmitCodeError(actionResult)
+                    appUtil.errorHandler.handleSubmitCodeError(actionResult)
                 }
             }
         }
@@ -85,7 +90,7 @@ class SignInCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.errorMessage)
+                    appUtil.errorHandler.handleResendCodeError(actionResult)
                 }
             }
         }
@@ -93,29 +98,5 @@ class SignInCodeFragment : Fragment() {
 
     private fun clearCode() {
         binding.codeText.text?.clear()
-    }
-
-    private fun handleSubmitCodeError(error: SubmitCodeError) {
-        when {
-            error.isInvalidCode() || error.isBrowserRequired() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.toString())
-            }
-        }
-    }
-
-    private fun displayDialog(error: String?, message: String?) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
-    }
-
-    private fun finish() {
-        requireActivity().supportFragmentManager.popBackStackImmediate()
     }
 }

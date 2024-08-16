@@ -1,4 +1,4 @@
-package com.azuresamples.msalnativeauthandroidkotlinsampleapp
+package com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients
 
 import okhttp3.OkHttpClient
 import okhttp3.Request

@@ -9,21 +9,25 @@ import android.widget.Toast
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients.AuthClient
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
+import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
+import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
-import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +35,7 @@ import kotlinx.coroutines.launch
 class EmailPasswordSignInSignUpFragment : Fragment() {
 
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var appUtil: AppUtil
     private var _binding: FragmentEmailPasswordBinding? = null
     private val binding get() = _binding!!
 
@@ -44,6 +49,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         val view = binding.root
 
         authClient = AuthClient.getAuthClient()
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         init()
 
@@ -84,7 +90,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                    appUtil.errorHandler.handleGetAccountError(accountResult)
                 }
             }
         }
@@ -96,27 +102,46 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult = authClient.signIn(
+            val signInActionResult: SignInResult = authClient.signIn(
                 username = email,
                 password = password
             )
             binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
-            when (actionResult) {
+            when (signInActionResult) {
                 is SignInResult.Complete -> {
                     Toast.makeText(
                         requireContext(),
                         getString(R.string.sign_in_successful_message),
                         Toast.LENGTH_SHORT
                     ).show()
-                    displaySignedInState(accountState = actionResult.resultValue)
+                    displaySignedInState(accountState = signInActionResult.resultValue)
+                }
+                is SignInResult.MFARequired -> {
+                    val awaitingMFAState = signInActionResult.nextState
+                    val checkDefaultResult = awaitingMFAState.sendChallenge()
+                    when (checkDefaultResult) {
+                        is MFARequiredResult.SelectionRequired -> {
+                            appUtil.navigation.navigateToSignInMFA(
+                                nextState = checkDefaultResult.nextState
+                            )
+                        }
+                        is MFARequiredResult.VerificationRequired -> {
+//                            appUtil.navigation.navigateToSignInCode(
+//                                nextState = checkDefaultResult.nextState
+//                            )
+                        }
+                        is MFAError -> {
+                            appUtil.errorHandler.handleMFAError(checkDefaultResult)
+                        }
+                    }
                 }
                 is SignInResult.CodeRequired -> {
                     displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
                 is SignInError -> {
-                    handleSignInError(actionResult)
+                    appUtil.errorHandler.handleSignInError(signInActionResult)
                 }
             }
         }
@@ -137,7 +162,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {
-                    navigateToSignUp(
+                    appUtil.navigation.navigateToSignUpCode(
                         nextState = actionResult.nextState
                     )
                 }
@@ -152,7 +177,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     )
                 }
                 is SignUpError -> {
-                    handleSignUpError(actionResult)
+                    appUtil.errorHandler.handleSignUpError(actionResult)
                 }
             }
         }
@@ -183,15 +208,21 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val getAccountResult = authClient.getCurrentAccount()
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
-                if (signOutResult is SignOutResult.Complete) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sign_out_successful_message),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    displaySignedOutState()
-                } else {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
+                when (signOutResult) {
+                    is SignOutResult.Complete -> {
+                        Toast.makeText(
+                            requireContext(),
+                            getString(R.string.sign_out_successful_message),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        displaySignedOutState()
+                    }
+                    is SignOutError -> {
+                        appUtil.errorHandler.handleSignOutError(signOutResult)
+                    }
+                    else -> {
+                        appUtil.errorHandler.handleUnexpectedError(signOutResult.toString())
+                    }
                 }
             }
         }
@@ -252,51 +283,11 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         }
     }
 
-    private fun handleSignInError(error: SignInError) {
-        when {
-            error.isInvalidCredentials() || error.isBrowserRequired() || error.isUserNotFound() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
-            }
-        }
-    }
-
-    private fun handleSignUpError(error: SignUpError) {
-        when {
-            error.isInvalidUsername() || error.isInvalidPassword() || error.isUserAlreadyExists() ||
-                    error.isAuthNotSupported() || error.isBrowserRequired() || error.isInvalidAttributes()
-            -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
-            }
-        }
-    }
-
     private fun displayDialog(error: String? = null, message: String?) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(error)
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
-    }
-
-    private fun navigateToSignUp(nextState: SignUpCodeRequiredState) {
-        val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, nextState)
-        val fragment = SignUpCodeFragment()
-        fragment.arguments = bundle
-
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .setReorderingAllowed(true)
-            .addToBackStack(fragment::class.java.name)
-            .replace(R.id.scenario_fragment, fragment)
-            .commit()
     }
 }

@@ -1,8 +1,9 @@
-package com.azuresamples.msalnativeauthandroidkotlinsampleapp
+package com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients
 
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.R
 import com.microsoft.identity.client.Logger
 import com.microsoft.identity.client.PublicClientApplication
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication

@@ -8,22 +8,26 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients.AuthClient
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordStartResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
-import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class PasswordResetFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var appUtil: AppUtil
     private var _binding: FragmentEmailSsprBinding? = null
     private val binding get() = _binding!!
 
@@ -37,6 +41,7 @@ class PasswordResetFragment : Fragment() {
         val view = binding.root
 
         authClient = AuthClient.getAuthClient()
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         init()
 
@@ -73,7 +78,7 @@ class PasswordResetFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                    appUtil.errorHandler.handleGetAccountError(accountResult)
                 }
             }
         }
@@ -88,12 +93,12 @@ class PasswordResetFragment : Fragment() {
             )
             when (actionResult) {
                 is ResetPasswordStartResult.CodeRequired -> {
-                    navigateToResetPasswordCodeFragment(
+                    appUtil.navigation.navigateToResetPasswordCodeFragment(
                         nextState = actionResult.nextState
                     )
                 }
                 is ResetPasswordError -> {
-                    handleError(actionResult)
+                    appUtil.errorHandler.handleResetPasswordError(actionResult)
                 }
             }
         }
@@ -104,15 +109,21 @@ class PasswordResetFragment : Fragment() {
             val getAccountResult = authClient.getCurrentAccount()
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
-                if (signOutResult is SignOutResult.Complete) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sign_out_successful_message),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    displaySignedOutState()
-                } else {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
+                when (signOutResult) {
+                    is SignOutResult.Complete -> {
+                        Toast.makeText(
+                            requireContext(),
+                            getString(R.string.sign_out_successful_message),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        displaySignedOutState()
+                    }
+                    is SignOutError -> {
+                        appUtil.errorHandler.handleSignOutError(signOutResult)
+                    }
+                    else -> {
+                        appUtil.errorHandler.handleUnexpectedError(signOutResult.toString())
+                    }
                 }
             }
         }
@@ -164,43 +175,9 @@ class PasswordResetFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is GetAccessTokenError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.errorMessage)
+                    appUtil.errorHandler.handleGetAccessTokenError(accessTokenResult)
                 }
             }
         }
-    }
-
-    private fun handleError(error: ResetPasswordError) {
-        when {
-            error.isBrowserRequired() || error.isUserNotFound() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
-            }
-        }
-    }
-
-    private fun displayDialog(error: String?, message: String?) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
-    }
-
-    private fun navigateToResetPasswordCodeFragment(nextState: ResetPasswordCodeRequiredState) {
-        val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, nextState)
-        val fragment = PasswordResetCodeFragment()
-        fragment.arguments = bundle
-
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .setReorderingAllowed(true)
-            .addToBackStack(fragment::class.java.name)
-            .replace(R.id.scenario_fragment, fragment)
-            .commit()
     }
 }

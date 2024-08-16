@@ -11,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentWebFallbackBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients.AuthClient
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.microsoft.identity.client.AcquireTokenParameters
 import com.microsoft.identity.client.AuthenticationCallback
 import com.microsoft.identity.client.IAccount
@@ -20,6 +22,7 @@ import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
@@ -29,6 +32,7 @@ import kotlinx.coroutines.launch
 
 class WebFallbackFragment : Fragment() {
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var appUtil: AppUtil
     private var accountResult: IAccount? = null
     private var _binding: FragmentWebFallbackBinding? = null
     private val binding get() = _binding!!
@@ -44,6 +48,7 @@ class WebFallbackFragment : Fragment() {
         (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_web_fallback)
 
         authClient = AuthClient.getAuthClient()
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         initializeButtonListeners()
 
@@ -78,7 +83,7 @@ class WebFallbackFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.errorMessage)
+                    appUtil.errorHandler.handleGetAccountError(accountResult)
                 }
             }
         }
@@ -114,7 +119,7 @@ class WebFallbackFragment : Fragment() {
                     )
                 )
             } else {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                appUtil.errorHandler.handleUnexpectedError(actionResult.toString())
             }
         }
     }
@@ -143,7 +148,7 @@ class WebFallbackFragment : Fragment() {
 
             override fun onError(exception: MsalException) {
                 /* Failed to acquireToken */
-                displayDialog(getString(R.string.msal_exception_title),"Authentication failed: $exception")
+                appUtil.errorHandler.handleMSALException("Authentication failed: $exception")
             }
 
             override fun onCancel() {
@@ -157,15 +162,21 @@ class WebFallbackFragment : Fragment() {
             val getAccountResult = authClient.getCurrentAccount()
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
-                if (signOutResult is SignOutResult.Complete) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sign_out_successful_message),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    displaySignedOutState()
-                } else {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
+                when (signOutResult) {
+                    is SignOutResult.Complete -> {
+                        Toast.makeText(
+                            requireContext(),
+                            getString(R.string.sign_out_successful_message),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        displaySignedOutState()
+                    }
+                    is SignOutError -> {
+                        appUtil.errorHandler.handleSignOutError(signOutResult)
+                    }
+                    else -> {
+                        appUtil.errorHandler.handleUnexpectedError(signOutResult.toString())
+                    }
                 }
             }
         }
@@ -208,13 +219,5 @@ class WebFallbackFragment : Fragment() {
 
     private fun displayAccount() {
         binding.resultIdToken.text = getString(R.string.result_id_token_text) + accountResult?.idToken
-    }
-
-    private fun displayDialog(error: String? = null, message: String?) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
     }
 }

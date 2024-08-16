@@ -8,8 +8,9 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.text.set
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 
 class PasswordResetNewPasswordFragment : Fragment() {
     private lateinit var currentState: ResetPasswordPasswordRequiredState
+    private lateinit var appUtil: AppUtil
     private var _binding: FragmentPasswordBinding? = null
     private val binding get() = _binding!!
 
@@ -36,7 +38,9 @@ class PasswordResetNewPasswordFragment : Fragment() {
         val view = binding.root
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? ResetPasswordPasswordRequiredState)!!
+        currentState = (bundle?.getParcelable(NavigationUtil.STATE) as? ResetPasswordPasswordRequiredState)!!
+
+        appUtil = AppUtil(requireContext(), requireActivity())
 
         init()
 
@@ -74,7 +78,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                     )
                 }
                 is ResetPasswordSubmitPasswordError -> {
-                    handleError(actionResult)
+                    appUtil.errorHandler.handleResetPasswordSubmitPasswordError(actionResult)
                 }
             }
         }
@@ -90,37 +94,11 @@ class PasswordResetNewPasswordFragment : Fragment() {
                     getString(R.string.sign_in_successful_message),
                     Toast.LENGTH_LONG
                 ).show()
-                finish()
+                appUtil.navigation.finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                appUtil.errorHandler.handleSignInContinuationError(actionResult)
             }
         }
-    }
-
-    private fun handleError(error: ResetPasswordSubmitPasswordError) {
-        when {
-            error.isInvalidPassword() || error.isPasswordResetFailed() -> {
-                displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
-            }
-        }
-    }
-
-    private fun displayDialog(error: String?, message: String?) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(error)
-            .setMessage(message)
-        val alertDialog = builder.create()
-        alertDialog.show()
-    }
-
-    private fun finish() {
-        val fragmentManager = requireActivity().supportFragmentManager
-        val name: String? = fragmentManager.getBackStackEntryAt(0).name
-        fragmentManager.popBackStack(name, FragmentManager.POP_BACK_STACK_INCLUSIVE)
     }
 }
