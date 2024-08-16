@@ -3,6 +3,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients.AuthClient
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {

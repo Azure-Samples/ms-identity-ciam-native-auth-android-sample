@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.clearFragmentResult
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
@@ -61,6 +62,7 @@ class SignInCodeFragment : Fragment() {
             val emailCode = binding.codeText.text.toString()
 
             val actionResult = currentState.submitCode(emailCode)
+//            val actionResult = currentState.submitChallenge(emailCode)
 
             when (actionResult) {
                 is SignInResult.Complete -> {

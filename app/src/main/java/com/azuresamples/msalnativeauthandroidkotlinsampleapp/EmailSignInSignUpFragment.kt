@@ -108,6 +108,10 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignInResult.PasswordRequired -> {
                     appUtil.errorHandler.handleUnexpectedError(actionResult.toString())
                 }
+                is SignInResult.MFARequired -> {
+                    // Do we need to handle MFA here?
+                    appUtil.errorHandler.handleUnexpectedError(actionResult.toString())
+                }
                 is SignInError -> {
                     appUtil.errorHandler.handleSignInError(actionResult)
                 }
