@@ -131,6 +131,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
 //                            appUtil.navigation.navigateToSignInCode(
 //                                nextState = checkDefaultResult.nextState
 //                            )
+                            appUtil.navigation.navigateToSignInMFACode(
+                                nextState = checkDefaultResult.nextState
+                            )
                         }
                         is MFAError -> {
                             appUtil.errorHandler.handleMFAError(checkDefaultResult)
