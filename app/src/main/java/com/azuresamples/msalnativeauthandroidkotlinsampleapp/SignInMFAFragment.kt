@@ -32,13 +32,15 @@ class SignInMFAFragment : Fragment(){
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMfaBinding.inflate(inflater, container, false)
 
+        val bundle = this.arguments
+        currentState = (bundle?.getParcelable(NavigationUtil.STATE) as? MFARequiredState)!!
+
+        appUtil = AppUtil(requireContext(), requireActivity())
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        currentState = (savedInstanceState?.getParcelable(NavigationUtil.STATE) as? MFARequiredState)!!
-        appUtil = AppUtil(requireContext(), requireActivity())
         setupRecyclerView()
         loadMethods()
     }
@@ -79,7 +81,6 @@ class SignInMFAFragment : Fragment(){
                     nextState = sendChallengeResult.nextState,
                 )
             } else {
-
                 appUtil.errorHandler.handleUnexpectedError(sendChallengeResult.toString())
             }
         }

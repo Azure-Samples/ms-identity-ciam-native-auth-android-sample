@@ -102,7 +102,7 @@ class EmailSignInSignUpFragment : Fragment() {
             when (actionResult) {
                 is SignInResult.CodeRequired -> {
                     appUtil.navigation.navigateToSignInCode(
-                        signInstate = actionResult.nextState
+                        nextState = actionResult.nextState
                     )
                 }
                 is SignInResult.PasswordRequired -> {
