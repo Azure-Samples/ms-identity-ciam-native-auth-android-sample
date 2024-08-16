@@ -25,7 +25,7 @@
 
     <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
-    <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
+    <string name="oob_hint_text_value">"Please enter the code that you received in your challengeChannel loginHint."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>

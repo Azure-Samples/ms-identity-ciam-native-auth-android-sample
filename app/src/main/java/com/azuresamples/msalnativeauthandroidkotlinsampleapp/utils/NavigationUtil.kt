@@ -12,6 +12,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.SignInCodeFragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.SignInMFACodeFragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.SignInMFAFragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.SignUpCodeFragment
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
@@ -21,6 +22,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredS
 class NavigationUtil(private val activity: Activity) {
     companion object {
         const val STATE = "state"
+        const val AUTH_METHOD = "authMethod"
     }
 
     fun navigateToSignUpCode(nextState: SignUpCodeRequiredState) {
@@ -42,9 +44,10 @@ class NavigationUtil(private val activity: Activity) {
     }
 
     // What's the difference between SignInCodeFragment and SignInMFACodeFragment?
-    fun navigateToSignInMFACode(nextState: MFARequiredState) {
+    fun navigateToSignInMFACode(nextState: MFARequiredState, authMethod: AuthMethod) {
         val bundle = Bundle()
         bundle.putParcelable(STATE, nextState)
+//        bundle.putParcelable(AUTH_METHOD, authMethod) // AuthMethod should be parcelable
         val fragment = SignInMFACodeFragment()
         fragment.arguments = bundle
 

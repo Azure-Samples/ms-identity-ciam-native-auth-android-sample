@@ -44,7 +44,12 @@ class SignInCodeFragment : Fragment() {
     }
 
     private fun init() {
+        initializeLabels()
         initializeButtonListeners()
+    }
+
+    private fun initializeLabels() {
+        binding.hintText.text = getString(R.string.oob_hint_text_value).replace("challengeChannel", "email").replace("loginHint", "")
     }
 
     private fun initializeButtonListeners() {

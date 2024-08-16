@@ -14,7 +14,6 @@ import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
-import com.microsoft.identity.nativeauth.statemachine.results.MFAGetAuthMethodsResult
 
 class ErrorHandlerUtil(private val context: Context) {
     private val displayHelper = DisplayHelper(context)

@@ -12,6 +12,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.clients.AuthClient
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
@@ -132,7 +133,13 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
 //                                nextState = checkDefaultResult.nextState
 //                            )
                             appUtil.navigation.navigateToSignInMFACode(
-                                nextState = checkDefaultResult.nextState
+                                nextState = checkDefaultResult.nextState,
+                                authMethod = AuthMethod(
+                                    id = "id",
+                                    challengeType = "oob",
+                                    challengeChannel = checkDefaultResult.channel,
+                                    loginHint = checkDefaultResult.sentTo
+                                )
                             )
                         }
                         is MFAError -> {

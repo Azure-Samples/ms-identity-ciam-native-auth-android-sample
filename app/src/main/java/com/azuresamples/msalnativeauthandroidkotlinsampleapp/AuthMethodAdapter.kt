@@ -20,7 +20,6 @@ class AuthMethodAdapter(
         }
     }
 
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = AuthMethodItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)

@@ -79,6 +79,7 @@ class SignInMFAFragment : Fragment(){
 //                )
                 appUtil.navigation.navigateToSignInMFACode(
                     nextState = sendChallengeResult.nextState,
+                    authMethod = method
                 )
             } else {
                 appUtil.errorHandler.handleUnexpectedError(sendChallengeResult.toString())
