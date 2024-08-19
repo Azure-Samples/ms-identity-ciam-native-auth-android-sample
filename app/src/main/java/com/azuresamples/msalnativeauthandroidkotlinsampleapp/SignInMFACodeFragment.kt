@@ -6,13 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaCodeBinding
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
-import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import kotlinx.coroutines.CoroutineScope

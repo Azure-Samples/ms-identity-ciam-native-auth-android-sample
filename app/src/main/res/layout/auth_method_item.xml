@@ -1,16 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/dimens_15dp">
 
-    <TextView
-        android:id="@+id/methodNameTextView"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView"-->
+<!--            android:layout_width="@dimen/dimens_30dp"-->
+<!--            android:layout_height="@dimen/dimens_30dp"-->
+<!--            android:contentDescription="@string/email_auth_method_description"-->
+<!--            app:srcCompat="@drawable/ic_baseline_email_24"/>-->
+
+        <TextView
+            android:id="@+id/methodNameTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dimens_15dp"
+            android:layout_marginLeft="@dimen/dimens_15dp"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            tools:text="Email" />
+
+        <TextView
+            android:id="@+id/loginHintTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dimens_5dp"
+            android:layout_marginLeft="@dimen/dimens_5dp"
+            tools:text="testemail@gmail.com" />
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -15,6 +15,7 @@ class AuthMethodAdapter(
     class ViewHolder(private val binding: AuthMethodItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(method: AuthMethod, onItemClick: (AuthMethod) -> Unit) {
             binding.methodNameTextView.text = method.challengeChannel
+            binding.loginHintTextView.text = method.loginHint
 
             itemView.setOnClickListener { onItemClick(method) }
         }

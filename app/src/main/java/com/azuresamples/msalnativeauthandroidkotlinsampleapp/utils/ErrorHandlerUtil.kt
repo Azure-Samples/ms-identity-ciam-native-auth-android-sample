@@ -78,7 +78,16 @@ class ErrorHandlerUtil(private val context: Context) {
     }
 
     fun handleMFAError(error: MFAError) {
-        // Handle MFA errors
+        when {
+            error.isError()
+            -> {
+                displayHelper.displayDialog(error.error, error.errorMessage)
+            }
+
+            else -> {
+                handleUnexpectedError(error.errorMessage)
+            }
+        }
     }
 
     fun handleSubmitCodeError(error: SubmitCodeError) {
