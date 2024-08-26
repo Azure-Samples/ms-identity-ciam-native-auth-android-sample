@@ -10,6 +10,7 @@
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
     <string name="title_access_web_api">"Access Protected Web APIs"</string>
+    <string name="title_email_otp_mfa">"Email OTP MFA"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>

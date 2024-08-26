@@ -32,6 +32,10 @@ class MoreFragment : Fragment() {
         binding.useAccessToken.setOnClickListener {
             navigateToAccessApi()
         }
+
+        binding.emailMfa.setOnClickListener {
+            navigateToEmailMFA()
+        }
     }
 
     private fun navigateToWebFallback() {
@@ -46,6 +50,16 @@ class MoreFragment : Fragment() {
 
     private fun navigateToAccessApi() {
         val fragment = AccessApiFragment()
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToEmailMFA() {
+        val fragment = MFAFragment()
         requireActivity().supportFragmentManager
             .beginTransaction()
             .setReorderingAllowed(true)
