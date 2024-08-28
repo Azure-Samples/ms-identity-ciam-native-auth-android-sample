@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaCodeBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
+import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import kotlinx.coroutines.CoroutineScope
@@ -94,7 +95,13 @@ class MFACodeFragment : Fragment() {
             val actionResult = currentState.sendChallenge(authMethodId = authMethod.id)
 
             when (actionResult) {
-                // None
+                is MFARequiredResult.VerificationRequired -> {
+                    currentState = actionResult.nextState
+                    Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
+                }
+                is MFAError -> {
+                    handleMFAError(actionResult)
+                }
             }
         }
     }
