@@ -14,7 +14,7 @@
         android:layout_marginStart="@dimen/dimens_15dp"
         android:layout_marginLeft="@dimen/dimens_15dp"
         android:gravity="start|center_horizontal"
-        android:text="@string/oob_hint_text_value"
+        android:text="@string/mfa_code_hint_text_value"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

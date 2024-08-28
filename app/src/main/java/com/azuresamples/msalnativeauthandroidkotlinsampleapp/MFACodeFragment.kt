@@ -16,14 +16,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class SignInMFACodeFragment : Fragment() {
+class MFACodeFragment : Fragment() {
     private lateinit var currentState: MFARequiredState
     private lateinit var authMethod: AuthMethod
     private var _binding: FragmentMfaCodeBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = SignInMFACodeFragment::class.java.simpleName
+        private val TAG = MFACodeFragment::class.java.simpleName
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -50,7 +50,9 @@ class SignInMFACodeFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.oob_hint_text_value).replace("challengeChannel", authMethod.challengeChannel).replace("loginHint", authMethod.loginHint)
+        binding.hintText.text = getString(R.string.mfa_code_hint_text_value)
+            .replace("challengeChannel", authMethod.challengeChannel)
+            .replace("loginHint", authMethod.loginHint)
     }
 
     private fun initializeButtonListeners() {

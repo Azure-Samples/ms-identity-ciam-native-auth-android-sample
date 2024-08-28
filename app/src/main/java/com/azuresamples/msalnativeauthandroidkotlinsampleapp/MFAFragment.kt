@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
@@ -41,6 +42,8 @@ class MFAFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEmailPasswordBinding.inflate(inflater, container, false)
         val view = binding.root
+
+        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_email_otp_mfa)
 
         authClient = AuthClient.getAuthClient()
 
@@ -220,7 +223,7 @@ class MFAFragment : Fragment() {
     private fun navigateToMFARequired(nextState: MFARequiredState) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
-        val fragment = SignUpCodeFragment()
+        val fragment = MFACodeFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager
