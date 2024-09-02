@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcel
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +15,6 @@ import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
-import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -23,7 +23,6 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -113,16 +112,13 @@ class MFAFragment : Fragment() {
                     displaySignedInState(accountState = actionResult.resultValue)
                 }
                 is SignInResult.MFARequired -> {
-                    val awaitingMFAState = actionResult.nextState
-                    val checkDefaultResult = awaitingMFAState.sendChallenge()
-                    if (checkDefaultResult is MFARequiredResult.VerificationRequired) {
-                        navigateToMFARequired(nextState = checkDefaultResult.nextState)
-                    } else {
-                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                    }
+                    displayMFARequiredDialog(actionResult)
                 }
                 is SignInError -> {
                     handleSignInError(actionResult)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
         }
@@ -220,10 +216,58 @@ class MFAFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun navigateToMFARequired(nextState: MFARequiredState) {
+    private fun displayMFARequiredDialog(actionResult: SignInResult.MFARequired) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.mfa_required_notice)
+
+        // If proceed
+        builder.setPositiveButton("YES") { dialog, which ->
+            CoroutineScope(Dispatchers.Main).launch {
+                val awaitingMFAState = actionResult.nextState
+                val requestDefaultAuthMethodResult = awaitingMFAState.requestChallenge()
+                if (requestDefaultAuthMethodResult is MFARequiredResult.VerificationRequired) {
+//                  navigateToMFARequired(nextState = requestDefaultAuthMethodResult.nextState, requestDefaultAuthMethodResult.authMethod)
+                    navigateToMFARequired(
+                        nextState = requestDefaultAuthMethodResult.nextState,
+                        sentTo = requestDefaultAuthMethodResult.sentTo,
+                        channel = requestDefaultAuthMethodResult.channel,
+                    )
+                } else {
+                    displayDialog(
+                        getString(R.string.unexpected_sdk_result_title),
+                        requestDefaultAuthMethodResult.toString()
+                    )
+                }
+            }
+        }
+
+        // If not proceed
+        builder.setNegativeButton("Cancel") { dialog, which ->
+           dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun navigateToMFARequired(nextState: MFARequiredState, sentTo: String, channel: String) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
-        val fragment = MFACodeFragment()
+
+        val parcel = Parcel.obtain()
+        parcel.writeString("UNSET") // This should be id
+        parcel.writeString("oob") // This should be challengeType
+        parcel.writeString(sentTo) // This should be loginHint
+        parcel.writeString(channel) // This should be challengeChannel
+        parcel.setDataPosition(0)
+        val authMethod = AuthMethod.CREATOR.createFromParcel(parcel)
+        parcel.recycle()
+
+        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
+
+        val fragment = MFAVerificationFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager

@@ -14,31 +14,31 @@
         android:layout_marginStart="@dimen/dimens_15dp"
         android:layout_marginLeft="@dimen/dimens_15dp"
         android:gravity="start|center_horizontal"
-        android:text="@string/mfa_code_hint_text_value"
+        android:text="@string/mfa_challenge_hint_text_value"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/code_hint"
+        android:id="@+id/challenge_hint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/dimens_15dp"
-        android:text="@string/attribute_otp"
+        android:text="@string/attribute_mfa_challenge"
         app:layout_constraintTop_toBottomOf="@id/hint_text"
         app:layout_constraintStart_toStartOf="parent"
         style="@style/TextViewStyle" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/code_layout"
+        android:id="@+id/challenge_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/code_hint"
+        app:layout_constraintTop_toBottomOf="@+id/challenge_hint"
         style="@style/TextInputLayoutStyle">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/code_text"
+            android:id="@+id/challenge_text"
             android:layout_width="match_parent"
             android:inputType="number"
             tools:ignore="SpeakableTextPresentCheck"
@@ -47,23 +47,23 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
-        android:id="@+id/resend_code_text"
+        android:id="@+id/resend_challenge_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/dimens_15dp"
-        android:text="@string/resend_code_text"
+        android:text="@string/resend_challenge_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/code_layout" />
+        app:layout_constraintTop_toBottomOf="@+id/challenge_layout" />
 
     <Button
-        android:id="@+id/verify_code"
+        android:id="@+id/verify_challenge"
         android:text="@string/verify_code"
         android:layout_marginTop="@dimen/dimens_30dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/resend_code_text"
+        app:layout_constraintTop_toBottomOf="@+id/resend_challenge_text"
         style="@style/ActionButtonStyle" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

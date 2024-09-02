@@ -7,9 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaCodeBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaChallengeBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
@@ -17,28 +18,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MFACodeFragment : Fragment() {
+class MFAVerificationFragment : Fragment() {
     private lateinit var currentState: MFARequiredState
     private lateinit var authMethod: AuthMethod
-    private var _binding: FragmentMfaCodeBinding? = null
+    private var _binding: FragmentMfaChallengeBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = MFACodeFragment::class.java.simpleName
+        private val TAG = MFAVerificationFragment::class.java.simpleName
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMfaCodeBinding.inflate(inflater, container, false)
+        _binding = FragmentMfaChallengeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? MFARequiredState)!!
-//        authMethod = (bundle?.getParcelable(NavigationUtil.STATE) as? AuthMethod)!!
-        authMethod = AuthMethod(
-            id = "id",
-            challengeType = "oob",
-            challengeChannel = "email",
-            loginHint = "user@contoso.com"
-        )
+        authMethod = (bundle.getParcelable(Constants.AUTH_METHOD) as? AuthMethod)!!
 
         init()
 
@@ -51,26 +46,26 @@ class MFACodeFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.mfa_code_hint_text_value)
+        binding.hintText.text = getString(R.string.mfa_challenge_hint_text_value)
             .replace("challengeChannel", authMethod.challengeChannel)
             .replace("loginHint", authMethod.loginHint)
     }
 
     private fun initializeButtonListeners() {
-        binding.verifyCode.setOnClickListener {
-            verifyCode()
+        binding.verifyChallenge.setOnClickListener {
+            verifyChallenge()
         }
 
-        binding.resendCodeText.setOnClickListener {
-            resendCode()
+        binding.resendChallengeText.setOnClickListener {
+            resendChallenge()
         }
     }
 
-    private fun verifyCode() {
+    private fun verifyChallenge() {
         CoroutineScope(Dispatchers.Main).launch {
-            val emailCode = binding.codeText.text.toString()
+            val emailCode = binding.challengeText.text.toString()
 
-            val actionResult = currentState.submitChallenge(emailCode.toInt())
+            val actionResult = currentState.submitChallenge(emailCode)
 
             when (actionResult) {
                 is SignInResult.Complete -> {
@@ -81,33 +76,39 @@ class MFACodeFragment : Fragment() {
                     ).show()
                     finish()
                 }
-                is MFAError -> {
-                    handleMFAError(actionResult)
+                is SubmitChallengeError -> {
+                    handleSubmitChallengeError(actionResult)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
         }
     }
 
-    private fun resendCode() {
-        clearCode()
+    private fun resendChallenge() {
+        clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.sendChallenge(authMethodId = authMethod.id)
+            val actionResult = currentState.requestChallenge(authMethod = authMethod) // The current authMethod is a mock one.
 
             when (actionResult) {
                 is MFARequiredResult.VerificationRequired -> {
                     currentState = actionResult.nextState
-                    Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
                 }
                 is MFAError -> {
                     handleMFAError(actionResult)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
         }
     }
 
-    private fun clearCode() {
-        binding.codeText.text?.clear()
+    private fun clearChallengeText() {
+        binding.challengeText.text?.clear()
     }
 
     fun displayDialog(error: String? = null, message: String?) {
@@ -116,6 +117,18 @@ class MFACodeFragment : Fragment() {
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
+    }
+
+    private fun handleSubmitChallengeError(error: SubmitChallengeError) {
+        when {
+            error.isError()
+            -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), error.errorMessage)
+            }
+        }
     }
 
     private fun handleMFAError(error: MFAError) {
