@@ -93,7 +93,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
                 finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.errorMessage)
+                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
             }
         }
     }
