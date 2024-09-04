@@ -20,7 +20,8 @@ import kotlinx.coroutines.launch
 
 class MFAVerificationFragment : Fragment() {
     private lateinit var currentState: MFARequiredState
-    private lateinit var authMethod: AuthMethod
+    private lateinit var sentTo: String
+    private lateinit var channel: String
     private var _binding: FragmentMfaChallengeBinding? = null
     private val binding get() = _binding!!
 
@@ -33,7 +34,8 @@ class MFAVerificationFragment : Fragment() {
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? MFARequiredState)!!
-        authMethod = (bundle.getParcelable(Constants.AUTH_METHOD) as? AuthMethod)!!
+        sentTo = bundle.getString(Constants.SENT_TO)!!
+        channel = bundle.getString(Constants.CHANNEL)!!
 
         init()
 
@@ -47,8 +49,8 @@ class MFAVerificationFragment : Fragment() {
 
     private fun initializeLabels() {
         binding.hintText.text = getString(R.string.mfa_challenge_hint_text_value)
-            .replace("challengeChannel", authMethod.challengeChannel)
-            .replace("loginHint", authMethod.loginHint)
+            .replace("challengeChannel", channel)
+            .replace("loginHint", sentTo)
     }
 
     private fun initializeButtonListeners() {
@@ -90,7 +92,7 @@ class MFAVerificationFragment : Fragment() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.requestChallenge(authMethod = authMethod) // The current authMethod is a mock one.
+            val actionResult = currentState.requestChallenge()
 
             when (actionResult) {
                 is MFARequiredResult.VerificationRequired -> {

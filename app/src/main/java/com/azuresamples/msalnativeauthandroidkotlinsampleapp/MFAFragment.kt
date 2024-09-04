@@ -226,7 +226,6 @@ class MFAFragment : Fragment() {
                 val awaitingMFAState = actionResult.nextState
                 val requestDefaultAuthMethodResult = awaitingMFAState.requestChallenge()
                 if (requestDefaultAuthMethodResult is MFARequiredResult.VerificationRequired) {
-//                  navigateToMFARequired(nextState = requestDefaultAuthMethodResult.nextState, requestDefaultAuthMethodResult.authMethod)
                     navigateToMFARequired(
                         nextState = requestDefaultAuthMethodResult.nextState,
                         sentTo = requestDefaultAuthMethodResult.sentTo,
@@ -255,17 +254,8 @@ class MFAFragment : Fragment() {
     private fun navigateToMFARequired(nextState: MFARequiredState, sentTo: String, channel: String) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
-
-        val parcel = Parcel.obtain()
-        parcel.writeString("UNSET") // This should be id
-        parcel.writeString("oob") // This should be challengeType
-        parcel.writeString(sentTo) // This should be loginHint
-        parcel.writeString(channel) // This should be challengeChannel
-        parcel.setDataPosition(0)
-        val authMethod = AuthMethod.CREATOR.createFromParcel(parcel)
-        parcel.recycle()
-
-        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
+        bundle.putString(Constants.SENT_TO, sentTo)
+        bundle.putString(Constants.CHANNEL, channel)
 
         val fragment = MFAVerificationFragment()
         fragment.arguments = bundle
