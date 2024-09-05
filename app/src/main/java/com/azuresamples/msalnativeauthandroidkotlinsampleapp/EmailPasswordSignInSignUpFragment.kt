@@ -21,6 +21,7 @@ import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
@@ -121,7 +122,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 }
                 is SignInResult.MFARequired -> {
                     val awaitingMFAState = signInActionResult.nextState
-                    val checkDefaultResult = awaitingMFAState.sendChallenge()
+                    val checkDefaultResult = awaitingMFAState.requestChallenge()
                     when (checkDefaultResult) {
                         is MFARequiredResult.SelectionRequired -> {
                             appUtil.navigation.navigateToSignInMFA(
@@ -129,9 +130,6 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                             )
                         }
                         is MFARequiredResult.VerificationRequired -> {
-//                            appUtil.navigation.navigateToSignInCode(
-//                                nextState = checkDefaultResult.nextState
-//                            )
                             appUtil.navigation.navigateToSignInMFACode(
                                 nextState = checkDefaultResult.nextState,
                                 authMethod = AuthMethod(

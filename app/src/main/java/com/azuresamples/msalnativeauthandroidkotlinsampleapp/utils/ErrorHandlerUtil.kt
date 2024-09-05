@@ -13,6 +13,7 @@ import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationE
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignOutError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 
 class ErrorHandlerUtil(private val context: Context) {

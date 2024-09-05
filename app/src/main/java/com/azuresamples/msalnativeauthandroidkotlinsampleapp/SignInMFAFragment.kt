@@ -12,6 +12,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
+import com.microsoft.identity.nativeauth.statemachine.results.MFASubmitChallengeResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,11 +73,8 @@ class SignInMFAFragment : Fragment(){
 
     private fun handleAuthMethodClick(method: AuthMethod) {
         CoroutineScope(Dispatchers.IO).launch {
-            val sendChallengeResult = currentState.sendChallenge(method.id)
+            val sendChallengeResult = currentState.requestChallenge(authMethod = method)
             if (sendChallengeResult is MFARequiredResult.VerificationRequired) {
-//                appUtil.navigation.navigateToSignInCode(
-//                    nextState = sendChallengeResult.nextState
-//                )
                 appUtil.navigation.navigateToSignInMFACode(
                     nextState = sendChallengeResult.nextState,
                     authMethod = method

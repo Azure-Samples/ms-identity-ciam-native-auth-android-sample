@@ -11,6 +11,7 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.AppUtil
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.utils.NavigationUtil
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
+import com.microsoft.identity.nativeauth.statemachine.errors.SubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import kotlinx.coroutines.CoroutineScope
@@ -70,7 +71,7 @@ class SignInMFACodeFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val emailCode = binding.codeText.text.toString()
 
-            val actionResult = currentState.submitChallenge(emailCode.toInt())
+            val actionResult = currentState.submitChallenge(emailCode)
 
             when (actionResult) {
                 is SignInResult.Complete -> {
@@ -81,8 +82,8 @@ class SignInMFACodeFragment : Fragment() {
                     ).show()
                     appUtil.navigation.finish()
                 }
-                is MFAError -> {
-                    appUtil.errorHandler.handleMFAError(actionResult)
+                is SubmitChallengeError -> {
+//                    appUtil.errorHandler.handleMFAError(actionResult)
                 }
             }
         }
@@ -90,9 +91,8 @@ class SignInMFACodeFragment : Fragment() {
 
     private fun resendCode() {
         clearCode()
-
         CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.sendChallenge(authMethodId = "1")
+            val actionResult = currentState.requestChallenge()
 //            val actionResult = currentState.sendChallenge(authMethodId = authMethod.id)
 
             when (actionResult) {
