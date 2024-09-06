@@ -123,7 +123,7 @@ class MFAVerificationFragment : Fragment() {
 
     private fun handleSubmitChallengeError(error: SubmitChallengeError) {
         when {
-            error.isError()
+            error.isInvalidChallenge()
             -> {
                 displayDialog(error.error, error.errorMessage)
             }
