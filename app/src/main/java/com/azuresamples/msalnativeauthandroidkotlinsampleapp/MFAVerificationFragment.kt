@@ -8,9 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaChallengeBinding
-import com.microsoft.identity.nativeauth.AuthMethod
-import com.microsoft.identity.nativeauth.statemachine.errors.MFAError
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitChallengeError
+import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
+import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
@@ -78,8 +77,8 @@ class MFAVerificationFragment : Fragment() {
                     ).show()
                     finish()
                 }
-                is SubmitChallengeError -> {
-                    handleSubmitChallengeError(actionResult)
+                is MFASubmitChallengeError -> {
+                    handleMFASubmitChallengeError(actionResult)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -99,8 +98,8 @@ class MFAVerificationFragment : Fragment() {
                     currentState = actionResult.nextState
                     Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
                 }
-                is MFAError -> {
-                    handleMFAError(actionResult)
+                is MFARequestChallengeError -> {
+                    handleMFARequestChallengeError(actionResult)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -121,7 +120,7 @@ class MFAVerificationFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun handleSubmitChallengeError(error: SubmitChallengeError) {
+    private fun handleMFASubmitChallengeError(error: MFASubmitChallengeError) {
         when {
             error.isInvalidChallenge()
             -> {
@@ -133,7 +132,7 @@ class MFAVerificationFragment : Fragment() {
         }
     }
 
-    private fun handleMFAError(error: MFAError) {
+    private fun handleMFARequestChallengeError(error: MFARequestChallengeError) {
         when {
             error.isError()
             -> {
