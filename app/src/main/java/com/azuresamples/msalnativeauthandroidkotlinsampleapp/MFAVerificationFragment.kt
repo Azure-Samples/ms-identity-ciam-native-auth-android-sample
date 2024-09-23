@@ -122,24 +122,22 @@ class MFAVerificationFragment : Fragment() {
 
     private fun handleMFASubmitChallengeError(error: MFASubmitChallengeError) {
         when {
-            error.isInvalidChallenge()
-            -> {
+            error.isError() || error.isInvalidChallenge() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
             }
         }
     }
 
     private fun handleMFARequestChallengeError(error: MFARequestChallengeError) {
         when {
-            error.isError()
-            -> {
+            error.isError() || error.isBrowserRequired() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
             }
         }
     }

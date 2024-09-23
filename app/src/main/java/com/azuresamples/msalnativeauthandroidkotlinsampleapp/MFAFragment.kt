@@ -201,7 +201,7 @@ class MFAFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
         }
     }
@@ -219,12 +219,12 @@ class MFAFragment : Fragment() {
         builder.setTitle(R.string.mfa_required_notice)
 
         // If proceed
-        builder.setPositiveButton("YES") { dialog, which ->
+        builder.setPositiveButton(getString(R.string.yes_message)) { dialog, which ->
             CoroutineScope(Dispatchers.Main).launch {
                 val awaitingMFAState = actionResult.nextState
                 val requestDefaultAuthMethodResult = awaitingMFAState.requestChallenge()
                 if (requestDefaultAuthMethodResult is MFARequiredResult.VerificationRequired) {
-                    navigateToMFARequired(
+                    navigateToMFAVerification(
                         nextState = requestDefaultAuthMethodResult.nextState,
                         sentTo = requestDefaultAuthMethodResult.sentTo,
                         channel = requestDefaultAuthMethodResult.channel,
@@ -239,7 +239,7 @@ class MFAFragment : Fragment() {
         }
 
         // If not proceed
-        builder.setNegativeButton("Cancel") { dialog, which ->
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, which ->
            dialog.dismiss()
         }
 
@@ -249,7 +249,7 @@ class MFAFragment : Fragment() {
         dialog.show()
     }
 
-    private fun navigateToMFARequired(nextState: MFARequiredState, sentTo: String, channel: String) {
+    private fun navigateToMFAVerification(nextState: MFARequiredState, sentTo: String, channel: String) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putString(Constants.SENT_TO, sentTo)

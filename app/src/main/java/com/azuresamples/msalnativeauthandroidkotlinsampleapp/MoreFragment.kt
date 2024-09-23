@@ -33,7 +33,7 @@ class MoreFragment : Fragment() {
             navigateToAccessApi()
         }
 
-        binding.emailMfa.setOnClickListener {
+        binding.emailMFA.setOnClickListener {
             navigateToEmailMFA()
         }
     }

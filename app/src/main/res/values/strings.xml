@@ -10,7 +10,7 @@
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
     <string name="title_access_web_api">"Access Protected Web APIs"</string>
-    <string name="title_email_otp_mfa">"Email OTP MFA"</string>
+    <string name="title_email_otp_mfa">"Email OTP Multi-factor authentication"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -28,7 +28,7 @@
     <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
-    <string name="mfa_challenge_hint_text_value">"Please enter the challenge code that you received in your challengeChannel loginHint."</string>
+    <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
@@ -36,10 +36,12 @@
     <string name="sign_out_successful_message">"Sign out successful"</string>
     <string name="password_reset_success_message">"Password change successful. Signing in."</string>
     <string name="resend_code_message">"New code sent"</string>
-    <string name="resend_challenge_message">"New challenge code sent"</string>
+    <string name="resend_challenge_message">"New challenge sent"</string>
+    <string name="yes_message">"Yes"</string>
+    <string name="cancel_message">"Cancel"</string>
 
     <!-- Notice -->
-    <string name="mfa_required_notice">"MFA Required. Do you want to proceed with MFA?"</string>
+    <string name="mfa_required_notice">"Multi-factor authentication is required. Do you want to proceed?"</string>
 
     <!-- Errors -->
     <string name="msal_exception_title">"MSAL Exception"</string>
@@ -58,7 +60,7 @@
     <string name="attribute_given">"Given name"</string>
     <string name="attribute_surname">"Surname"</string>
     <string name="attribute_otp">"Code"</string>
-    <string name="attribute_mfa_challenge">"Challenge Code"</string>
+    <string name="attribute_mfa_challenge">"Challenge"</string>
 
     <!-- Results -->
     <string name="result_account_text">"Account username: "</string>
