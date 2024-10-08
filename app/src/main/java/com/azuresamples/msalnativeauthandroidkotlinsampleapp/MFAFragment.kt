@@ -8,70 +8,61 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentAccessApiBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
+import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
+import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.Response
 
-/**
- * AccessApiFragment class implements samples for accessing custom web APIs using Entra External ID identity tokens.
- * Learn documentation: https://learn.microsoft.com/en-us/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api
- */
-class AccessApiFragment : Fragment() {
+class MFAFragment : Fragment() {
+
     private lateinit var authClient: INativeAuthPublicClientApplication
-    private var _binding: FragmentAccessApiBinding? = null
+    private var _binding: FragmentEmailPasswordBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = AccessApiFragment::class.java.simpleName
+        private val TAG = MFAFragment::class.java.simpleName
         private enum class STATUS { SignedIn, SignedOut }
-        private const val WEB_API_URL_1 = "" // Developers should set the URL of their first web API resource here
-        private const val WEB_API_URL_2 = "" // Developers should set the URL of their second web API resource here
-        // Developers should set the respective scopes for their web API resources here, for example: ["api://<Resource_App_ID>/ToDoList.Read", "api://<Resource_App_ID>/ToDoList.ReadWrite"]
-        private val scopesForAPI1 = listOf<String>()
-        private val scopesForAPI2 = listOf<String>()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentAccessApiBinding.inflate(inflater, container, false)
+        _binding = FragmentEmailPasswordBinding.inflate(inflater, container, false)
+        val view = binding.root
 
-        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_access_web_api)
+        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_email_otp_mfa)
 
         authClient = AuthClient.getAuthClient()
 
         init()
 
-        getStateAndUpdateUI()
+        return view
+    }
 
-        return binding.root
+    override fun onResume() {
+        super.onResume()
+        getStateAndUpdateUI()
     }
 
     private fun init() {
+        binding.signUp.visibility = View.GONE
+
         initializeButtonListeners()
     }
 
     private fun initializeButtonListeners() {
         binding.signIn.setOnClickListener {
             signIn()
-        }
-
-        binding.getApi1.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_URL_1, scopesForAPI1)
-        }
-
-        binding.getApi2.setOnClickListener {
-            accessWebAPIAndUpdateUI(WEB_API_URL_2, scopesForAPI2)
         }
 
         binding.signOut.setOnClickListener {
@@ -118,11 +109,14 @@ class AccessApiFragment : Fragment() {
                     ).show()
                     displaySignedInState(accountState = actionResult.resultValue)
                 }
-                is SignInResult.CodeRequired -> {
-                    displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
+                is SignInResult.MFARequired -> {
+                    displayMFARequiredDialog(actionResult)
                 }
                 is SignInError -> {
                     handleSignInError(actionResult)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
         }
@@ -147,45 +141,54 @@ class AccessApiFragment : Fragment() {
         }
     }
 
-    private suspend fun getAccessToken(accountState: AccountState, scopes: List<String>): String {
-        val accessTokenState = accountState.getAccessToken(false, scopes)
-        return if (accessTokenState is GetAccessTokenResult.Complete) {
-            accessTokenState.resultValue.accessToken
-        } else {
-            throw Exception("Failed to get access token")
+    private fun displaySignedInState(accountState: AccountState) {
+        emptyFields()
+        updateUI(STATUS.SignedIn)
+        displayAccount(accountState)
+    }
+
+    private fun displaySignedOutState() {
+        emptyFields()
+        updateUI(STATUS.SignedOut)
+        emptyResults()
+    }
+
+    private fun updateUI(status: STATUS) {
+        when (status) {
+            STATUS.SignedIn -> {
+                binding.signIn.isEnabled = false
+                binding.signOut.isEnabled = true
+            }
+            STATUS.SignedOut -> {
+                binding.signIn.isEnabled = true
+                binding.signOut.isEnabled = false
+            }
         }
     }
 
-    private suspend fun useAccessToken(WEB_API_URL: String, accessToken: String): Response {
-        return withContext(Dispatchers.IO) {
-            ApiClient.performGetApiRequest(WEB_API_URL, accessToken)
-        }
+    private fun emptyFields() {
+        binding.emailText.setText("")
+        binding.passwordText.setText("")
     }
 
-    private fun accessWebAPIAndUpdateUI(webApiUrl: String, scopes: List<String>) {
-        if (webApiUrl.isBlank()) {
-            displayDialog(getString(R.string.invalid_web_url_title), getString(R.string.invalid_web_url_message))
-            return
-        }
+    private fun emptyResults() {
+        binding.resultAccessToken.text = ""
+        binding.resultIdToken.text = ""
+    }
 
+    private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accountResult = authClient.getCurrentAccount()
-            when (accountResult) {
-                is GetAccountResult.AccountFound -> {
-                    try {
-                        val accessToken = getAccessToken(accountResult.resultValue, scopes)
-                        val apiResponse = useAccessToken(webApiUrl, accessToken)
-                        binding.result.text = getString(R.string.result_access_token_of_scopes_text)  + scopes.toString()
-                        binding.resultText.text = getString(R.string.response_api) + apiResponse.toString()
-                    } catch (e: Exception) {
-                        displayDialog(getString(R.string.network_request_exception_titile), e.message ?: getString(R.string.unknown_error_message))
-                    }
+            val accessTokenResult = accountState.getAccessToken()
+            when (accessTokenResult) {
+                is GetAccessTokenResult.Complete -> {
+                    val accessToken = accessTokenResult.resultValue.accessToken
+                    binding.resultAccessToken.text = getString(R.string.result_access_token_text) + accessToken
+
+                    val idToken = accountState.getIdToken()
+                    binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
-                is GetAccountResult.NoAccountFound -> {
-                    displaySignedOutState()
-                }
-                is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message ?: accountResult.errorMessage)
+                is GetAccessTokenError -> {
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message)
                 }
             }
         }
@@ -198,48 +201,8 @@ class AccessApiFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
-        }
-    }
-
-    private fun displaySignedInState(accountState: AccountState) {
-        updateUI(STATUS.SignedIn)
-        displayAccount(accountState)
-    }
-
-    private fun displaySignedOutState() {
-        updateUI(STATUS.SignedOut)
-        emptyResults()
-    }
-
-    private fun updateUI(status: STATUS) {
-        when (status) {
-            STATUS.SignedIn -> {
-                binding.signIn.isEnabled = false
-                binding.signOut.isEnabled = true
-                binding.getApi1.isEnabled = true
-                binding.getApi2.isEnabled = true
-            }
-            STATUS.SignedOut -> {
-                binding.signIn.isEnabled = true
-                binding.signOut.isEnabled = false
-                binding.getApi1.isEnabled = false
-                binding.getApi2.isEnabled = false
-            }
-        }
-    }
-
-    private fun emptyResults() {
-        binding.result.text = ""
-        binding.resultText.text = ""
-    }
-
-    private fun displayAccount(accountState: AccountState) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val username = accountState.getAccount().username
-            binding.result.text = getString(R.string.result_account_text)
-            binding.resultText.text = username
         }
     }
 
@@ -249,5 +212,57 @@ class AccessApiFragment : Fragment() {
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
+    }
+
+    private fun displayMFARequiredDialog(actionResult: SignInResult.MFARequired) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.mfa_required_notice)
+
+        // If proceed
+        builder.setPositiveButton(getString(R.string.yes_message)) { dialog, which ->
+            CoroutineScope(Dispatchers.Main).launch {
+                val awaitingMFAState = actionResult.nextState
+                val requestDefaultAuthMethodResult = awaitingMFAState.requestChallenge()
+                if (requestDefaultAuthMethodResult is MFARequiredResult.VerificationRequired) {
+                    navigateToMFAVerification(
+                        nextState = requestDefaultAuthMethodResult.nextState,
+                        sentTo = requestDefaultAuthMethodResult.sentTo,
+                        channel = requestDefaultAuthMethodResult.channel,
+                    )
+                } else {
+                    displayDialog(
+                        getString(R.string.unexpected_sdk_result_title),
+                        requestDefaultAuthMethodResult.toString()
+                    )
+                }
+            }
+        }
+
+        // If not proceed
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, which ->
+           dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun navigateToMFAVerification(nextState: MFARequiredState, sentTo: String, channel: String) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putString(Constants.SENT_TO, sentTo)
+        bundle.putString(Constants.CHANNEL, channel)
+
+        val fragment = MFAVerificationFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
     }
 }
