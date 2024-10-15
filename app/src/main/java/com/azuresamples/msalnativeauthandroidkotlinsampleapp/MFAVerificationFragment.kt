@@ -122,7 +122,7 @@ class MFAVerificationFragment : Fragment() {
 
     private fun handleMFASubmitChallengeError(error: MFASubmitChallengeError) {
         when {
-            error.isError() || error.isInvalidChallenge() -> {
+            error.isInvalidChallenge() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
@@ -133,7 +133,7 @@ class MFAVerificationFragment : Fragment() {
 
     private fun handleMFARequestChallengeError(error: MFARequestChallengeError) {
         when {
-            error.isError() || error.isBrowserRequired() -> {
+            error.isBrowserRequired() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {

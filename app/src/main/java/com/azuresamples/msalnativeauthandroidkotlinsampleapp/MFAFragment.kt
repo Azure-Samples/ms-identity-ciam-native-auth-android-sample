@@ -222,17 +222,17 @@ class MFAFragment : Fragment() {
         builder.setPositiveButton(getString(R.string.yes_message)) { dialog, which ->
             CoroutineScope(Dispatchers.Main).launch {
                 val awaitingMFAState = actionResult.nextState
-                val requestDefaultAuthMethodResult = awaitingMFAState.requestChallenge()
-                if (requestDefaultAuthMethodResult is MFARequiredResult.VerificationRequired) {
+                val requestChallengeResult = awaitingMFAState.requestChallenge()
+                if (requestChallengeResult is MFARequiredResult.VerificationRequired) {
                     navigateToMFAVerification(
-                        nextState = requestDefaultAuthMethodResult.nextState,
-                        sentTo = requestDefaultAuthMethodResult.sentTo,
-                        channel = requestDefaultAuthMethodResult.channel,
+                        nextState = requestChallengeResult.nextState,
+                        sentTo = requestChallengeResult.sentTo,
+                        channel = requestChallengeResult.channel,
                     )
                 } else {
                     displayDialog(
                         getString(R.string.unexpected_sdk_result_title),
-                        requestDefaultAuthMethodResult.toString()
+                        requestChallengeResult.toString()
                     )
                 }
             }
