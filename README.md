@@ -70,7 +70,7 @@ Run and test the Android sample mobile application by following the steps in [Ru
 
 Follow the steps in [Sign in users and call an API in a sample Android mobile app by using native authentication](https://learn.microsoft.com/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api) to sign in users and call a protected API in the Android sample mobile app.
 
-### Step 10: Add email one-time passcode MFA (Private Preview)
+### Additional step: Add email one-time passcode MFA to your Android app (Private Preview)
 
 Add email one-time passcode MFA to the sign in flow by following the steps in [Add email one-time passcode MFA to your Android app](https://github.com/microsoft/entra-previews/blob/PP5/docs/Native-Auth/Developer-guides/0-Android-Kotlin/3-Add-email-otp-mfa-sign-in.md).
 
