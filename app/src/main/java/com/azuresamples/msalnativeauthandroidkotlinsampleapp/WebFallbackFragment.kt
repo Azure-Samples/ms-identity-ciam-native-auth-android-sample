@@ -78,7 +78,7 @@ class WebFallbackFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message)
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message ?: accountResult.errorMessage)
                 }
             }
         }
@@ -114,8 +114,9 @@ class WebFallbackFragment : Fragment() {
                     )
                 )
             } else {
-                    // Un
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                // Please refer to other sign in fragments for the handling of other possible results.
+                // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
+                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
@@ -166,6 +167,7 @@ class WebFallbackFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
