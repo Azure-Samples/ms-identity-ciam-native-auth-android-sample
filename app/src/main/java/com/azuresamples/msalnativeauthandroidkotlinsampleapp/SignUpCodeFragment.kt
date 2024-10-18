@@ -67,8 +67,16 @@ class SignUpCodeFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.AttributesRequired,
+                is SignUpResult.AttributesRequired -> {
+                    // Please double-check the user flow settings to ensure that the user flow is not set to collect the required attributes.
+                    // If you'd like to collect the required attributes here, you can complete the sign up by continuing to submit the required attributes - actionResult.nextState.submitAttributes(attributes)
+                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-up
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignUpResult.PasswordRequired -> {
+                    // Please double-check the user flow settings of the application (client id) to make sure it's email + otp.
+                    // If you'd like to sign up with email+password flow here, you can complete the sign up by continuing to submit the required password - actionResult.nextState.submitPassword()
+                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SubmitCodeError -> {
@@ -91,10 +99,11 @@ class SignUpCodeFragment : Fragment() {
                 finish()
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
+                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
             is SignInResult.CodeRequired,
             is SignInResult.PasswordRequired -> {
+                // CodeRequired, PasswordRequired never happen under SignInContinuationState.
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -112,7 +121,7 @@ class SignUpCodeFragment : Fragment() {
                     Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                 }
                 is ResendCodeError -> {
-                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message)
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)
                 }
             }
         }
@@ -129,7 +138,7 @@ class SignUpCodeFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

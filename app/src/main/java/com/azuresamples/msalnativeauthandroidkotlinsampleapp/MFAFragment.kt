@@ -81,7 +81,7 @@ class MFAFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message)
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message ?: accountResult.errorMessage)
                 }
             }
         }
@@ -116,6 +116,8 @@ class MFAFragment : Fragment() {
                     handleSignInError(actionResult)
                 }
                 else -> {
+                    // Please refer to other sign in fragments for the handling of other possible results.
+                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
@@ -135,6 +137,7 @@ class MFAFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
@@ -188,7 +191,7 @@ class MFAFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is GetAccessTokenError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message)
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }
@@ -201,7 +204,7 @@ class MFAFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

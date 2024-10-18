@@ -84,7 +84,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     displaySignedOutState()
                 }
                 is GetAccountError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message)
+                    displayDialog(getString(R.string.msal_exception_title), accountResult.exception?.message ?: accountResult.errorMessage)
                 }
             }
         }
@@ -115,6 +115,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 is SignInResult.CodeRequired -> {
                     displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled. MFA is under private preview.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
@@ -132,7 +136,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 username = email,
                 password = password
             )
-            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
@@ -170,9 +174,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
+                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
             else -> {
+                // Unexpected result
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -191,6 +196,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
@@ -246,7 +252,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is GetAccessTokenError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message)
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
                 }
             }
         }
@@ -259,7 +265,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
@@ -273,7 +279,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
