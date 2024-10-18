@@ -69,7 +69,7 @@ class SignUpCodeFragment : Fragment() {
                 }
                 is SignUpResult.AttributesRequired -> {
                     // Please double-check the user flow settings to ensure that the user flow is not set to collect the required attributes.
-                    // If you'd like to collect the required attributes here, you can complete the sign up by continuing to submit the required attributes - actionResult.nextState.submitAttributes(attributes).
+                    // If you'd like to collect the required attributes here, you can complete the sign up by continuing to submit the required attributes - actionResult.nextState.submitAttributes(attributes)
                     // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-up
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }

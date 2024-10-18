@@ -127,7 +127,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     )
                 }
                 is SignUpResult.AttributesRequired -> {
-                    // AttributesRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
+                    // AttributesRequired only happens after CodeRequired. Please refer to the SignUpCodeFragment for more information.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignUpError -> {

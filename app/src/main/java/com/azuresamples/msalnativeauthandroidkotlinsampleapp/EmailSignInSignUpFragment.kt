@@ -143,14 +143,9 @@ class EmailSignInSignUpFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.AttributesRequired -> {
-                    // Please double-check the user flow settings of the application (client id) to ensure that the user flow is not set to collect the required attributes.
-                    // AttributesRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
-                }
+                is SignUpResult.AttributesRequired,
                 is SignUpResult.PasswordRequired -> {
-                    // Please double-check the user flow settings of the application (client id) to make sure it's email + otp.
-                    // PasswordRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
+                    // AttributesRequired and PasswordRequired only happens after CodeRequired. Please refer to the SignUpCodeFragment for more information.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignUpError -> {
