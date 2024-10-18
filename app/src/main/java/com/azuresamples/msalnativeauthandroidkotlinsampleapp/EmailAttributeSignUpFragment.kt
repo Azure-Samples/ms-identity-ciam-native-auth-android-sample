@@ -107,7 +107,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 password = password,
                 attributes = attributes
             )
-            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
@@ -244,7 +244,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }
