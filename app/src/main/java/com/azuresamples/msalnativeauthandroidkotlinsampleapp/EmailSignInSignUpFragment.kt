@@ -103,6 +103,13 @@ class EmailSignInSignUpFragment : Fragment() {
                     )
                 }
                 is SignInResult.PasswordRequired -> {
+                    // Please double-check the type(email+password/email+otp) of email you provided.
+                    // If you'd like to sign in email+password account here, you can complete the sign in by continuing to submit the required password - actionResult.nextState.submitPassword()
+                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled. MFA is under private preview.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignInError -> {
@@ -136,8 +143,14 @@ class EmailSignInSignUpFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.AttributesRequired,
+                is SignUpResult.AttributesRequired -> {
+                    // Please double-check the user flow settings of the application (client id) to ensure that the user flow is not set to collect the required attributes.
+                    // AttributesRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignUpResult.PasswordRequired -> {
+                    // Please double-check the user flow settings of the application (client id) to make sure it's email + otp.
+                    // PasswordRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignUpError -> {
@@ -178,6 +191,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
@@ -245,7 +259,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
         }
     }

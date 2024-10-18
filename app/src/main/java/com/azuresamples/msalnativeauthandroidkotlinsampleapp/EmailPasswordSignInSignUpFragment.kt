@@ -115,6 +115,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 is SignInResult.CodeRequired -> {
                     displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled. MFA is under private preview.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
@@ -173,6 +177,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
             }
             else -> {
+                // Unexpected result
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -191,6 +196,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }

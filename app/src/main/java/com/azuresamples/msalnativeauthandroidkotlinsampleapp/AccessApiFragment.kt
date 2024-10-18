@@ -121,6 +121,10 @@ class AccessApiFragment : Fragment() {
                 is SignInResult.CodeRequired -> {
                     displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
@@ -141,6 +145,7 @@ class AccessApiFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }

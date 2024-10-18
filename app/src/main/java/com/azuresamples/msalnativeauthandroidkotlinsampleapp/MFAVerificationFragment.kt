@@ -81,6 +81,7 @@ class MFAVerificationFragment : Fragment() {
                     handleMFASubmitChallengeError(actionResult)
                 }
                 else -> {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
@@ -102,6 +103,7 @@ class MFAVerificationFragment : Fragment() {
                     handleMFARequestChallengeError(actionResult)
                 }
                 else -> {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
@@ -126,7 +128,8 @@ class MFAVerificationFragment : Fragment() {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                // Unexpected error
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
         }
     }
@@ -137,7 +140,8 @@ class MFAVerificationFragment : Fragment() {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                // Unexpected error
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
         }
     }

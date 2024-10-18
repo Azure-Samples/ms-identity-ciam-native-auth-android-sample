@@ -126,11 +126,12 @@ class EmailAttributeSignUpFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
+                is SignUpResult.AttributesRequired -> {
+                    // AttributesRequired only happens after CodeRequired state. Please refer to the SignUpCodeFragment for more information.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignUpError -> {
                     handleSignUpError(actionResult)
-                }
-                is SignUpResult.AttributesRequired -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
         }
@@ -153,6 +154,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                 displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
             }
             else -> {
+                // Unexpected result
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -171,6 +173,7 @@ class EmailAttributeSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
