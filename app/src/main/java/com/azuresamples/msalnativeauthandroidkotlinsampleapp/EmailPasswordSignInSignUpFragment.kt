@@ -115,6 +115,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 is SignInResult.CodeRequired -> {
                     displayDialog(message = getString(R.string.sign_in_switch_to_otp_message))
                 }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
@@ -132,7 +136,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 username = email,
                 password = password
             )
-            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             when (actionResult) {

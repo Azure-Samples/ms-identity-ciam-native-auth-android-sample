@@ -94,11 +94,7 @@ class WebFallbackFragment : Fragment() {
                 username = email,
                 password = password
             )
-            binding.passwordText.text?.set(
-                0,
-                binding.passwordText.text?.length?.minus(1) ?: 0,
-                0
-            )
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             if (actionResult is SignInError && actionResult.isBrowserRequired()) {
