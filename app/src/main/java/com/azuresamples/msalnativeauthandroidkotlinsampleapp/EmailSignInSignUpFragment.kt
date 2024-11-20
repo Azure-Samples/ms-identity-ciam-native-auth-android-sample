@@ -105,7 +105,7 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignInResult.PasswordRequired -> {
                     // Please double-check the type(email+password/email+otp) of email you provided.
                     // If you'd like to sign in email+password account here, you can complete the sign in by continuing to submit the required password - actionResult.nextState.submitPassword()
-                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
+                  // Please refer to the EmailPasswordSignInSignUpFragment for handling sign in with password.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignInResult.MFARequired -> {
