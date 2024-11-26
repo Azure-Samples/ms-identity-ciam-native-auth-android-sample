@@ -105,6 +105,10 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignInResult.PasswordRequired -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
+                is SignInResult.MFARequired -> {
+                    // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
