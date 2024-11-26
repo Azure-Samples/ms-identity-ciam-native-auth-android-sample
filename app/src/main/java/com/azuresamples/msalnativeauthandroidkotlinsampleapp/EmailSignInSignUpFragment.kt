@@ -168,7 +168,7 @@ class EmailSignInSignUpFragment : Fragment() {
                 displaySignedInState(accountState = actionResult.resultValue)
             }
             is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message ?: actionResult.errorMessage)
+                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
             }
         }
     }
@@ -241,7 +241,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     binding.resultIdToken.text = getString(R.string.result_id_token_text) + idToken
                 }
                 is GetAccessTokenError -> {
-                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message ?: accessTokenResult.errorMessage)
+                    displayDialog(getString(R.string.msal_exception_title), accessTokenResult.exception?.message)
                 }
             }
         }
@@ -254,7 +254,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }
@@ -267,7 +267,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
         }
     }
