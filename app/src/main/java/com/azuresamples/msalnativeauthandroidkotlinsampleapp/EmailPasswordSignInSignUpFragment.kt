@@ -177,6 +177,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                 displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message)
             }
             else -> {
+                // Unexpected result
                 displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
@@ -195,6 +196,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }

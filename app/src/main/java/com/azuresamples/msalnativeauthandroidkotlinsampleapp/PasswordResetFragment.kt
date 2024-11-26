@@ -112,6 +112,7 @@ class PasswordResetFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }

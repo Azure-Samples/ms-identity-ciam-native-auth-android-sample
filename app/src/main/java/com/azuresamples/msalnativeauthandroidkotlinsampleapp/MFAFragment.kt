@@ -116,6 +116,8 @@ class MFAFragment : Fragment() {
                     handleSignInError(actionResult)
                 }
                 else -> {
+                    // Please refer to other sign in fragments for the handling of other possible results.
+                    // https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-android-sign-in-sign-out
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
             }
@@ -135,6 +137,7 @@ class MFAFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }

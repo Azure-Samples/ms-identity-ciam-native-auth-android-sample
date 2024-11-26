@@ -103,6 +103,9 @@ class EmailSignInSignUpFragment : Fragment() {
                     )
                 }
                 is SignInResult.PasswordRequired -> {
+                    // Please double-check the type(email+password/email+otp) of email you provided.
+                    // If you'd like to sign in email+password account here, you can complete the sign in by continuing to submit the required password - actionResult.nextState.submitPassword()
+                  // Please refer to the EmailPasswordSignInSignUpFragment for handling sign in with password.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignInResult.MFARequired -> {
@@ -142,6 +145,7 @@ class EmailSignInSignUpFragment : Fragment() {
                 }
                 is SignUpResult.AttributesRequired,
                 is SignUpResult.PasswordRequired -> {
+                    // AttributesRequired and PasswordRequired only happens after CodeRequired. Please refer to the SignUpCodeFragment for more information.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignUpError -> {
@@ -182,6 +186,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     ).show()
                     displaySignedOutState()
                 } else {
+                    // Unexpected result
                     displayDialog(getString(R.string.unexpected_sdk_result_title), signOutResult.toString())
                 }
             }
@@ -249,7 +254,7 @@ class EmailSignInSignUpFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message)
             }
         }
     }
