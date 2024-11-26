@@ -59,7 +59,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
             val actionResult: ResetPasswordSubmitPasswordResult = currentState.submitPassword(password)
-            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
