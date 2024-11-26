@@ -126,7 +126,7 @@ class MFAVerificationFragment : Fragment() {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
@@ -137,7 +137,7 @@ class MFAVerificationFragment : Fragment() {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), error.exception?.message)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
