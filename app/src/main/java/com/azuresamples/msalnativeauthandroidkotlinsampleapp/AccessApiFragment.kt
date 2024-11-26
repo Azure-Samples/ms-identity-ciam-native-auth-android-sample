@@ -203,7 +203,7 @@ class AccessApiFragment : Fragment() {
             }
             else -> {
                 // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.errorMessage)
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }
