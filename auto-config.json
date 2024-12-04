@@ -1,0 +1,42 @@
+{
+  "Sample": {
+    "Title": "Android mobile app native authentication using Microsoft Entra External ID",
+    "Level": 200,
+    "Client": "Android"
+  },
+  "AppRegistrations": [
+    {
+      "x-ms-id": "ciam-android-native-app",
+      "x-ms-name": "ms-identity-ciam-android-native-app",
+      "x-ms-version": "1.0",
+      "replyUrlsWithType": [
+        {
+          "url": "msal{AppId}://auth",
+          "type": "InstalledClient"
+        }
+      ],
+      "requiredResourceAccess": [
+        {
+          "x-ms-resourceAppName": "Microsoft Graph",
+          "resourceAppId": "00000003-0000-0000-c000-000000000000",
+          "resourceAccess": [
+            {
+              "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+              "type": "Scope",
+              "x-ms-name": "user.read"
+            }
+          ]
+        }
+      ],
+      "codeConfigurations": [		  
+          {
+            "settingFile": "/app/src/main/res/raw/auth_config_native_auth.json",
+            "replaceTokens": {
+                "appId": "Enter_the_Application_Id_Here",
+                "tenantName": "Enter_the_Tenant_Subdomain_Here"
+             }
+          }
+       ]	
+     }
+  ]
+}
