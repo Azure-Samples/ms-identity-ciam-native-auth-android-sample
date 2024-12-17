@@ -9,6 +9,7 @@
         "x-ms-id": "ciam-android-native-app",
         "x-ms-name": "ms-identity-ciam-android-native-app",
         "x-ms-version": "1.0",
+        "allowNativeAuth": true,
         "replyUrlsWithType": [
           {
             "url": "msal{AppId}://auth",
