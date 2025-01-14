@@ -31,7 +31,7 @@
         ],
         "codeConfigurations": [		  
             {
-              "settingFile": "/app/src/main/res/raw/auth_config_native_auth.json",
+              "settingFile": "app/src/main/res/raw/auth_config_native_auth.json",
               "replaceTokens": {
                   "appId": "Enter_the_Application_Id_Here",
                   "tenantName": "Enter_the_Tenant_Subdomain_Here"
