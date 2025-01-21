@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordResult
@@ -81,8 +82,9 @@ class PasswordResetNewPasswordFragment : Fragment() {
     }
 
     private suspend fun signInAfterPasswordReset(nextState: SignInContinuationState) {
-        val currentState = nextState
-        val actionResult = currentState.signIn()
+        val parameters = NativeAuthSignInContinuationParameters()
+        val actionResult = nextState.signIn(parameters)
+
         when (actionResult) {
             is SignInResult.Complete -> {
                 Toast.makeText(

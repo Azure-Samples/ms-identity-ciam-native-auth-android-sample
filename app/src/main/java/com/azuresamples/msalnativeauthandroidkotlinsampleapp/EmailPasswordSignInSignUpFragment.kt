@@ -11,6 +11,10 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
@@ -76,6 +80,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
+
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     displaySignedInState(accountResult.resultValue)
@@ -96,10 +101,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult = authClient.signIn(
-                username = email,
-                password = password
-            )
+            val parameters = NativeAuthSignInParameters(username = email).apply { this.password = password }
+            val actionResult: SignInResult = authClient.signIn(parameters)
+
             binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
@@ -132,11 +136,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignUpResult = authClient.signUp(
-                username = email,
-                password = password
-            )
-            binding.passwordText.text?.set(0, binding.passwordText.text?.length?.minus(1) ?: 0, 0)
+            val parameters = NativeAuthSignUpParameters(username = email).apply { this.password = password }
+            val actionResult: SignUpResult = authClient.signUp(parameters)
+
+            binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
             when (actionResult) {
@@ -163,7 +166,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
     }
 
     private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
-        val actionResult = nextState.signIn()
+        val parameters = NativeAuthSignInContinuationParameters()
+        val actionResult = nextState.signIn(parameters)
+
         when (actionResult) {
             is SignInResult.Complete -> {
                 Toast.makeText(
@@ -185,6 +190,7 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
+
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
                 if (signOutResult is SignOutResult.Complete) {
@@ -240,7 +246,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenResult = accountState.getAccessToken()
+            val getAccessTokenParameters = NativeAuthGetAccessTokenParameters()
+            val accessTokenResult = accountState.getAccessToken(getAccessTokenParameters)
+
             when (accessTokenResult) {
                 is GetAccessTokenResult.Complete -> {
                     val accessToken = accessTokenResult.resultValue.accessToken

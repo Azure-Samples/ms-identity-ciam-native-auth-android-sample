@@ -11,6 +11,9 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
@@ -73,6 +76,7 @@ class MFAFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
+
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     displaySignedInState(accountResult.resultValue)
@@ -93,10 +97,8 @@ class MFAFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult = authClient.signIn(
-                username = email,
-                password = password
-            )
+            val parameters = NativeAuthSignInParameters(username = email).apply { this.password = password }
+            val actionResult: SignInResult = authClient.signIn(parameters)
             binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
@@ -125,6 +127,7 @@ class MFAFragment : Fragment() {
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
+
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
                 if (signOutResult is SignOutResult.Complete) {
@@ -178,7 +181,9 @@ class MFAFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenResult = accountState.getAccessToken()
+            val parameters = NativeAuthGetAccessTokenParameters()
+            val accessTokenResult = accountState.getAccessToken(parameters)
+
             when (accessTokenResult) {
                 is GetAccessTokenResult.Complete -> {
                     val accessToken = accessTokenResult.resultValue.accessToken
