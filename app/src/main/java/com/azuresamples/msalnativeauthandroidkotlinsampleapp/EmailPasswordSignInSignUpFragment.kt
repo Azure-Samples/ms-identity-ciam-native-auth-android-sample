@@ -101,7 +101,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val parameters = NativeAuthSignInParameters(username = email).apply { this.password = password }
+            val parameters = NativeAuthSignInParameters(username = email).apply {
+                this.password = password
+            }
             val actionResult: SignInResult = authClient.signIn(parameters)
 
             binding.passwordText.text?.clear()
@@ -136,7 +138,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val parameters = NativeAuthSignUpParameters(username = email).apply { this.password = password }
+            val parameters = NativeAuthSignUpParameters(username = email).apply {
+                this.password = password
+            }
             val actionResult: SignUpResult = authClient.signUp(parameters)
 
             binding.passwordText.text?.clear()

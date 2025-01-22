@@ -102,10 +102,12 @@ class AccessApiFragment : Fragment() {
     private fun signIn() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
-            var password = CharArray(binding.passwordText.length())
+            val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val signInParameters = NativeAuthSignInParameters(username = email).apply { password = password }
+            val signInParameters = NativeAuthSignInParameters(username = email).apply {
+                this.password = password
+            }
             val actionResult: SignInResult = authClient.signIn(signInParameters)
 
             binding.passwordText.text?.clear()
@@ -155,11 +157,11 @@ class AccessApiFragment : Fragment() {
     }
 
     private suspend fun getAccessToken(accountState: AccountState, scopes: List<String>): String {
-        val getAccessTokenParameters = NativeAuthGetAccessTokenParameters().apply {
+        val parameters = NativeAuthGetAccessTokenParameters().apply {
             this.forceRefresh = false
             this.scopes = scopes
         }
-        val accessTokenState = accountState.getAccessToken(getAccessTokenParameters)
+        val accessTokenState = accountState.getAccessToken(parameters)
         return if (accessTokenState is GetAccessTokenResult.Complete) {
             accessTokenState.resultValue.accessToken
         } else {
