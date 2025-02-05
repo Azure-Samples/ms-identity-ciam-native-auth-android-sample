@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailAttributeBinding
 import com.microsoft.identity.common.java.util.StringUtil
@@ -106,10 +105,9 @@ class EmailAttributeSignUpFragment : Fragment() {
                 .city(city)
                 .build()
 
-            val parameters = NativeAuthSignUpParameters(username = email).apply {
-                this.password = password
-                this.attributes = attributes
-            }
+            val parameters = NativeAuthSignUpParameters(username = email)
+            parameters.password = password
+            parameters.attributes = attributes
             val actionResult: SignUpResult = authClient.signUp(parameters)
 
             binding.passwordText.text?.clear()

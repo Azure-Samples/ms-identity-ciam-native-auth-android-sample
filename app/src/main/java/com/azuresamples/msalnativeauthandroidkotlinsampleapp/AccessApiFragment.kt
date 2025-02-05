@@ -105,9 +105,8 @@ class AccessApiFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val signInParameters = NativeAuthSignInParameters(username = email).apply {
-                this.password = password
-            }
+            val signInParameters = NativeAuthSignInParameters(username = email)
+            signInParameters.password = password
             val actionResult: SignInResult = authClient.signIn(signInParameters)
 
             binding.passwordText.text?.clear()
@@ -157,11 +156,10 @@ class AccessApiFragment : Fragment() {
     }
 
     private suspend fun getAccessToken(accountState: AccountState, scopes: List<String>): String {
-        val parameters = NativeAuthGetAccessTokenParameters().apply {
-            this.forceRefresh = false
-            this.scopes = scopes
-        }
+        val parameters = NativeAuthGetAccessTokenParameters()
+        parameters.scopes = scopes
         val accessTokenState = accountState.getAccessToken(parameters)
+
         return if (accessTokenState is GetAccessTokenResult.Complete) {
             accessTokenState.resultValue.accessToken
         } else {
