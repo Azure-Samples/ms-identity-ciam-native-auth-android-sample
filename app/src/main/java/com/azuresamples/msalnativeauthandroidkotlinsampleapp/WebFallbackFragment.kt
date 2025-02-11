@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.text.set
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentWebFallbackBinding
 import com.microsoft.identity.client.AcquireTokenParameters
@@ -18,6 +17,7 @@ import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.exception.MsalException
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
@@ -70,6 +70,7 @@ class WebFallbackFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
+
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     displaySignedInState()
@@ -90,10 +91,10 @@ class WebFallbackFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            val actionResult: SignInResult = authClient.signIn(
-                username = email,
-                password = password
-            )
+            val parameters = NativeAuthSignInParameters(username = email)
+            parameters.password = password
+            val actionResult: SignInResult = authClient.signIn(parameters)
+
             binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
 
@@ -151,6 +152,7 @@ class WebFallbackFragment : Fragment() {
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
+
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
                 if (signOutResult is SignOutResult.Complete) {
