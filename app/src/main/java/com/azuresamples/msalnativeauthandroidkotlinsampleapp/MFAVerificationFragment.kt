@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaChallengeBinding
 import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
@@ -143,6 +144,9 @@ class MFAVerificationFragment : Fragment() {
     }
 
     private fun finish() {
-        requireActivity().supportFragmentManager.popBackStackImmediate()
+        // Pop back to PasswordResetFragment fragment
+        val fragmentManager = requireActivity().supportFragmentManager
+        val name: String = MFAFragment::class.java.name
+        fragmentManager.popBackStack(name, 0)
     }
 }

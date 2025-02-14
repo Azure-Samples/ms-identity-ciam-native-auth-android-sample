@@ -1,6 +1,7 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.os.Bundle
+import android.text.TextUtils.replace
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.ActivityMainBinding
@@ -41,9 +42,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setCurrentFragment(fragment: Fragment, title: Int) {
         supportActionBar?.title = getString(title)
-        supportFragmentManager.beginTransaction().apply {
-            replace(R.id.scenario_fragment, fragment)
-            commit()
-        }
+        supportFragmentManager.beginTransaction()
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
     }
 }

@@ -120,8 +120,9 @@ class PasswordResetNewPasswordFragment : Fragment() {
     }
 
     private fun finish() {
+        // Pop back to PasswordResetFragment fragment
         val fragmentManager = requireActivity().supportFragmentManager
-        val name: String? = fragmentManager.getBackStackEntryAt(0).name
-        fragmentManager.popBackStack(name, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        val name: String = PasswordResetFragment::class.java.name
+        fragmentManager.popBackStack(name, 0)
     }
 }
