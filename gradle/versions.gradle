@@ -11,7 +11,7 @@ ext {
     kotlinVersion = '1.7.21'
 
     // Plugins
-    gradleVersion = '7.1.0'
+    gradleVersion = '8.1.1'
     androidMavenGradlePluginVersion = "1.4.1"
 
     // Libraries
