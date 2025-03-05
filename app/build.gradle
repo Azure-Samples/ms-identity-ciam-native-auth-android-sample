@@ -80,6 +80,13 @@ dependencies {
     }
     else {
         // Downloads and Builds MSAL from maven central.
-        implementation 'com.microsoft.identity.client:msal:5.+'
+        implementation 'com.microsoft.identity.client:msal:+'
+        constraints {
+            implementation('com.microsoft.identity.client:msal') {
+                version {
+                    require '5.7.0'
+                }
+            }
+        }
     }
 }
