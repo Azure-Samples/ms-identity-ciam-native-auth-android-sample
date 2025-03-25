@@ -9,6 +9,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
@@ -74,6 +78,7 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
+
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     displaySignedInState(accountResult.resultValue)
@@ -92,9 +97,8 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
 
-            val actionResult = authClient.signIn(
-                username = email
-            )
+            val parameters = NativeAuthSignInParameters(username = email)
+            val actionResult = authClient.signIn(parameters)
 
             when (actionResult) {
                 is SignInResult.CodeRequired -> {
@@ -120,9 +124,8 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
 
-            val actionResult = authClient.signUp(
-                username = email
-            )
+            val parameters = NativeAuthSignUpParameters(username = email)
+            val actionResult = authClient.signUp(parameters)
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {
@@ -153,7 +156,9 @@ class EmailSignInSignUpFragment : Fragment() {
 
 
     private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
-        val actionResult = nextState.signIn()
+        val parameters = NativeAuthSignInContinuationParameters()
+        val actionResult = nextState.signIn(parameters)
+
         when (actionResult) {
             is SignInResult.Complete -> {
                 Toast.makeText(
@@ -172,6 +177,7 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
+
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
                 if (signOutResult is SignOutResult.Complete) {
@@ -226,7 +232,9 @@ class EmailSignInSignUpFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenResult = accountState.getAccessToken()
+            val parameters = NativeAuthGetAccessTokenParameters()
+            val accessTokenResult = accountState.getAccessToken(parameters)
+
             when (accessTokenResult) {
                 is GetAccessTokenResult.Complete -> {
                     val accessToken = accessTokenResult.resultValue.accessToken

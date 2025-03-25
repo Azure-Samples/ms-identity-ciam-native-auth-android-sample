@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
@@ -65,6 +67,7 @@ class PasswordResetFragment : Fragment() {
     private fun getStateAndUpdateUI() {
         CoroutineScope(Dispatchers.Main).launch {
             val accountResult = authClient.getCurrentAccount()
+
             when (accountResult) {
                 is GetAccountResult.AccountFound -> {
                     displaySignedInState(accountResult.resultValue)
@@ -83,9 +86,9 @@ class PasswordResetFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
 
-            val actionResult = authClient.resetPassword(
-                username = email
-            )
+            val parameter = NativeAuthResetPasswordParameters(username = email)
+            val actionResult = authClient.resetPassword(parameter)
+
             when (actionResult) {
                 is ResetPasswordStartResult.CodeRequired -> {
                     navigateToResetPasswordCodeFragment(
@@ -102,6 +105,7 @@ class PasswordResetFragment : Fragment() {
     private fun signOut() {
         CoroutineScope(Dispatchers.Main).launch {
             val getAccountResult = authClient.getCurrentAccount()
+
             if (getAccountResult is GetAccountResult.AccountFound) {
                 val signOutResult = getAccountResult.resultValue.signOut()
                 if (signOutResult is SignOutResult.Complete) {
@@ -154,7 +158,9 @@ class PasswordResetFragment : Fragment() {
 
     private fun displayAccount(accountState: AccountState) {
         CoroutineScope(Dispatchers.Main).launch {
-            val accessTokenResult = accountState.getAccessToken()
+            val parameters = NativeAuthGetAccessTokenParameters()
+            val accessTokenResult = accountState.getAccessToken(parameters)
+
             when (accessTokenResult) {
                 is GetAccessTokenResult.Complete -> {
                     val accessToken = accessTokenResult.resultValue.accessToken

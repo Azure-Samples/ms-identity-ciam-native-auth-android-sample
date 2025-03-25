@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
@@ -79,8 +80,9 @@ class SignUpCodeFragment : Fragment() {
     }
 
     private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
-        val currentState = nextState
-        val actionResult = currentState.signIn(null)
+        val parameters = NativeAuthSignInContinuationParameters()
+        val actionResult = nextState.signIn(parameters)
+
         when (actionResult) {
             is SignInResult.Complete -> {
                 Toast.makeText(
