@@ -123,6 +123,10 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                     // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
+                is SignInResult.StrongAuthMethodRegistrationRequired -> {
+                    // Please refer to the MFA Fragment for handling Strong Auth Method Registration branches if conditional access - Strong Auth Method does not exists.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }

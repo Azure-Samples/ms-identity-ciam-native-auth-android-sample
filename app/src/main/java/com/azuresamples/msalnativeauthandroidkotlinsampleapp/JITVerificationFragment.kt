@@ -7,33 +7,33 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaChallengeBinding
-import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
-import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
-import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentJitChallengeBinding
+import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
+import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
+import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthSubmitChallengeError
+import com.microsoft.identity.nativeauth.statemachine.results.RegisterStrongAuthChallengeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthVerificationRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MFAVerificationFragment : Fragment() {
-    private lateinit var currentState: MFARequiredState
+class JITVerificationFragment : Fragment() {
+    private lateinit var currentState: RegisterStrongAuthVerificationRequiredState
     private lateinit var sentTo: String
     private lateinit var channel: String
-    private var _binding: FragmentMfaChallengeBinding? = null
+    private var _binding: FragmentJitChallengeBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = MFAVerificationFragment::class.java.simpleName
+        private val TAG = JITVerificationFragment::class.java.simpleName
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMfaChallengeBinding.inflate(inflater, container, false)
+        _binding = FragmentJitChallengeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? MFARequiredState)!!
+        currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthVerificationRequiredState)!!
         sentTo = bundle.getString(Constants.SENT_TO)!!
         channel = bundle.getString(Constants.CHANNEL)!!
 
@@ -48,7 +48,7 @@ class MFAVerificationFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.mfa_challenge_hint_text_value)
+        binding.hintText.text = getString(R.string.jit_challenge_hint_text_value)
             .replace("challengeChannel", channel)
             .replace("loginHint", sentTo)
     }
@@ -78,8 +78,8 @@ class MFAVerificationFragment : Fragment() {
                     ).show()
                     finish()
                 }
-                is MFASubmitChallengeError -> {
-                    handleMFASubmitChallengeError(actionResult)
+                is RegisterStrongAuthSubmitChallengeError -> {
+                    handleSubmitChallengeError(actionResult)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -92,15 +92,16 @@ class MFAVerificationFragment : Fragment() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.requestChallenge()
+            val params = NativeAuthChallengeAuthMethodParameters() // TODO: SDK return auth methods
+            val actionResult = currentState.challengeAuthMethod(params)
 
             when (actionResult) {
-                is MFARequiredResult.VerificationRequired -> {
-                    currentState = actionResult.nextState
+                is RegisterStrongAuthChallengeResult.VerificationRequired -> {
+                    currentState = actionResult.result.getNextState()
                     Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
                 }
-                is MFARequestChallengeError -> {
-                    handleMFARequestChallengeError(actionResult)
+                is RegisterStrongAuthChallengeError -> {
+                    handleRequestChallengeError(actionResult)
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -121,7 +122,7 @@ class MFAVerificationFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun handleMFASubmitChallengeError(error: MFASubmitChallengeError) {
+    private fun handleSubmitChallengeError(error: RegisterStrongAuthSubmitChallengeError) {
         when {
             error.isInvalidChallenge() -> {
                 displayDialog(error.error, error.errorMessage)
@@ -132,9 +133,9 @@ class MFAVerificationFragment : Fragment() {
         }
     }
 
-    private fun handleMFARequestChallengeError(error: MFARequestChallengeError) {
+    private fun handleRequestChallengeError(error: RegisterStrongAuthChallengeError) {
         when {
-            error.isBrowserRequired() -> {
+            error.isInvalidInput() -> {
                 displayDialog(error.error, error.errorMessage)
             }
             else -> {

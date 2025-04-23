@@ -23,6 +23,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -113,6 +114,9 @@ class MFAFragment : Fragment() {
                 }
                 is SignInResult.MFARequired -> {
                     displayMFARequiredDialog(actionResult)
+                }
+                is SignInResult.StrongAuthMethodRegistrationRequired -> {
+                    displayJITRequiredDialog(actionResult)
                 }
                 is SignInError -> {
                     handleSignInError(actionResult)
@@ -224,7 +228,7 @@ class MFAFragment : Fragment() {
         builder.setTitle(R.string.mfa_required_notice)
 
         // If proceed
-        builder.setPositiveButton(getString(R.string.yes_message)) { dialog, which ->
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
             CoroutineScope(Dispatchers.Main).launch {
                 val awaitingMFAState = actionResult.nextState
                 val requestChallengeResult = awaitingMFAState.requestChallenge()
@@ -244,8 +248,28 @@ class MFAFragment : Fragment() {
         }
 
         // If not proceed
-        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, which ->
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
            dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun displayJITRequiredDialog(actionResult: SignInResult.StrongAuthMethodRegistrationRequired) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.jit_required_notice)
+
+        // If proceed
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
+            navigateToVerificationContact(actionResult.nextState)
+        }
+
+        // If not proceed
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+            dialog.dismiss()
         }
 
         builder.setCancelable(false)
@@ -261,6 +285,22 @@ class MFAFragment : Fragment() {
         bundle.putString(Constants.CHANNEL, channel)
 
         val fragment = MFAVerificationFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putString(Constants.AUTH_METHOD) // TODO: SDK return auth methods
+
+        val fragment = JITVerificationContactFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager

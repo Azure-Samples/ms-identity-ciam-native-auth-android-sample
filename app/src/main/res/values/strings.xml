@@ -21,6 +21,7 @@
     <string name="create">"Create New User"</string>
     <string name="verify_email">"Send"</string>
     <string name="verify_code">"Next"</string>
+    <string name="register_auth_method">"Continue"</string>
     <string name="resend_code_text">"Resend Code"</string>
     <string name="resend_challenge_text">"Resend Challenge"</string>
     <string name="api_get">"API - Perform GET"</string>
@@ -29,6 +30,8 @@
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
+    <string name="jit_challenge_hint_text_value">"Please enter the verification code that was send to your challengeChannel loginHint. This step is needed to register a new strong authentication method."</string>
+    <string name="strong_auth_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
@@ -42,6 +45,7 @@
 
     <!-- Notice -->
     <string name="mfa_required_notice">"Multi-factor authentication is required. Do you want to proceed?"</string>
+    <string name="jit_required_notice">"Registration of strong authentication method is required. Do you want to proceed?"</string>
 
     <!-- Errors -->
     <string name="msal_exception_title">"MSAL Exception"</string>
