@@ -12,18 +12,17 @@ import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthC
 import com.microsoft.identity.nativeauth.statemachine.results.RegisterStrongAuthChallengeResult
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthVerificationRequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class JITVerificationContactFragment : Fragment() {
+class StrongAuthVerificationContactFragment : Fragment() {
     private lateinit var currentState: RegisterStrongAuthState
     private var _binding: FragmentVerificationContactBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = JITVerificationContactFragment::class.java.simpleName
+        private val TAG = StrongAuthVerificationContactFragment::class.java.simpleName
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -43,11 +42,11 @@ class JITVerificationContactFragment : Fragment() {
 
     private fun initializeButtonListeners() {
         binding.verifyCode.setOnClickListener {
-            verifyCode()
+            verifyContact()
         }
     }
 
-    private fun verifyCode() {
+    private fun verifyContact() {
         CoroutineScope(Dispatchers.Main).launch {
             val optionalEmail = binding.emailText.text.toString()
 
@@ -57,7 +56,7 @@ class JITVerificationContactFragment : Fragment() {
 
             when (actionResult) {
                 is RegisterStrongAuthChallengeResult.VerificationRequired -> {
-                    navigateToJITChallengeFragment(actionResult.result.getNextState(), actionResult.result.getChannel(), actionResult.result.getSentTo()) // TODO: actionResult.result.getNextState() or actionResult.nextState
+                    navigateToJITChallengeFragment(actionResult.result.getNextState(), actionResult.result.getChannel(), actionResult.result.getSentTo())
                 }
                 is RegisterStrongAuthChallengeError -> {
                     handleRegisterStrongAuthChallengeError(actionResult)
@@ -92,7 +91,7 @@ class JITVerificationContactFragment : Fragment() {
         bundle.putString(Constants.CHANNEL, channel)
         bundle.putString(Constants.SENT_TO, sentTo)
 
-        val fragment = JITVerificationFragment()
+        val fragment = StrongAuthVerificationChallengeFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager

@@ -30,7 +30,7 @@
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
-    <string name="jit_challenge_hint_text_value">"Please enter the verification code that was send to your challengeChannel loginHint. This step is needed to register a new strong authentication method."</string>
+    <string name="jit_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
     <string name="strong_auth_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>

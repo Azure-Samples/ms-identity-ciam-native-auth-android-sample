@@ -114,7 +114,7 @@ class EmailSignInSignUpFragment : Fragment() {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignInResult.StrongAuthMethodRegistrationRequired -> {
-                    // Please refer to the MFA Fragment for handling Strong Auth Method Registration branches if conditional access - Strong Auth Method does not exists.
+                    // Please refer to the MFA Fragment for handling Strong Auth Method Registration flow.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
                 is SignInError -> {

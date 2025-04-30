@@ -51,7 +51,6 @@ class MFAFragment : Fragment() {
 
         return view
     }
-
     override fun onResume() {
         super.onResume()
         getStateAndUpdateUI()
@@ -300,7 +299,7 @@ class MFAFragment : Fragment() {
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putString(Constants.AUTH_METHOD) // TODO: SDK return auth methods
 
-        val fragment = JITVerificationContactFragment()
+        val fragment = StrongAuthVerificationContactFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager

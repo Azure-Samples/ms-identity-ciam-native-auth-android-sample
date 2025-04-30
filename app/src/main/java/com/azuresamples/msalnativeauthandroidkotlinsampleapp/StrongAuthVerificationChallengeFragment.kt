@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentJitChallengeBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentVerificationChallengeBinding
 import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthSubmitChallengeError
@@ -18,19 +18,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class JITVerificationFragment : Fragment() {
+class StrongAuthVerificationChallengeFragment : Fragment() {
     private lateinit var currentState: RegisterStrongAuthVerificationRequiredState
     private lateinit var sentTo: String
     private lateinit var channel: String
-    private var _binding: FragmentJitChallengeBinding? = null
+    private var _binding: FragmentVerificationChallengeBinding? = null
     private val binding get() = _binding!!
 
     companion object {
-        private val TAG = JITVerificationFragment::class.java.simpleName
+        private val TAG = StrongAuthVerificationChallengeFragment::class.java.simpleName
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentJitChallengeBinding.inflate(inflater, container, false)
+        _binding = FragmentVerificationChallengeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthVerificationRequiredState)!!
@@ -48,9 +48,7 @@ class JITVerificationFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.jit_challenge_hint_text_value)
-            .replace("challengeChannel", channel)
-            .replace("loginHint", sentTo)
+        binding.hintText.text = getString(R.string.jit_challenge_hint_text_value, channel, sentTo)
     }
 
     private fun initializeButtonListeners() {
@@ -93,6 +91,7 @@ class JITVerificationFragment : Fragment() {
 
         CoroutineScope(Dispatchers.Main).launch {
             val params = NativeAuthChallengeAuthMethodParameters() // TODO: SDK return auth methods
+            params.verificationContact = sentTo
             val actionResult = currentState.challengeAuthMethod(params)
 
             when (actionResult) {
