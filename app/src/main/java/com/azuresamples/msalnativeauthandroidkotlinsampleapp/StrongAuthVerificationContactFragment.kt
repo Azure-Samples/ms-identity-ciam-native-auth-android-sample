@@ -1,6 +1,7 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
+import android.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -59,7 +60,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
 
             when (actionResult) {
                 is RegisterStrongAuthChallengeResult.VerificationRequired -> {
-                    navigateToJITChallengeFragment(actionResult.result.getNextState(), actionResult.result.getChannel(), actionResult.result.getSentTo())
+                    navigateToStrongAuthChallengeFragment(actionResult.result.getNextState(), actionResult.result.getChannel(), actionResult.result.getSentTo())
                 }
                 is RegisterStrongAuthChallengeError -> {
                     handleRegisterStrongAuthChallengeError(actionResult)
@@ -88,7 +89,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun navigateToJITChallengeFragment(nextState: RegisterStrongAuthVerificationRequiredState, channel: String, sentTo: String) {
+    private fun navigateToStrongAuthChallengeFragment(nextState: RegisterStrongAuthVerificationRequiredState, channel: String, sentTo: String) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putString(Constants.CHANNEL, channel)
