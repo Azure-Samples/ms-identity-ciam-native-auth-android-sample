@@ -24,7 +24,6 @@
     <string name="register_auth_method">"Continue"</string>
     <string name="resend_code_text">"Resend Code"</string>
     <string name="resend_challenge_text">"Resend Challenge"</string>
-    <string name="re_register_text">"Register Challenge Again"</string>
     <string name="api_get">"API - Perform GET"</string>
 
     <string name="hint_text_value">"Please fill in the required information:"</string>

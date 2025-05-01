@@ -51,7 +51,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.jit_challenge_hint_text_value, channel, sentTo)
+        binding.hintText.text = getString(R.string.strong_auth_challenge_hint_text_value, channel, sentTo)
     }
 
     private fun initializeButtonListeners() {
