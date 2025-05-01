@@ -59,8 +59,8 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
             verifyChallenge()
         }
 
-        binding.resendChallengeText.setOnClickListener {
-            resendChallenge()
+        binding.registerChallengeText.setOnClickListener {
+            registerChallenge()
         }
     }
 
@@ -89,7 +89,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
         }
     }
 
-    private fun resendChallenge() {
+    private fun registerChallenge() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
