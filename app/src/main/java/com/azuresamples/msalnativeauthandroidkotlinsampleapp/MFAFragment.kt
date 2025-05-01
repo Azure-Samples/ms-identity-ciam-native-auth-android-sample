@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
@@ -263,7 +264,7 @@ class MFAFragment : Fragment() {
 
         // If proceed
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
-            navigateToVerificationContact(actionResult.nextState)
+            navigateToVerificationContact(actionResult.nextState, actionResult.authMethods[0])
         }
 
         // If not proceed
@@ -294,10 +295,10 @@ class MFAFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState) {
+    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState, authMethod: AuthMethod) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
-        bundle.putString(Constants.AUTH_METHOD) // TODO: SDK return auth methods
+        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
 
         val fragment = StrongAuthVerificationContactFragment()
         fragment.arguments = bundle

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentVerificationContactBinding
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.RegisterStrongAuthChallengeResult
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class StrongAuthVerificationContactFragment : Fragment() {
     private lateinit var currentState: RegisterStrongAuthState
+    private lateinit var authMethod: AuthMethod
     private var _binding: FragmentVerificationContactBinding? = null
     private val binding get() = _binding!!
 
@@ -30,6 +32,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthState)!!
+        authMethod = bundle.getParcelable(Constants.AUTH_METHOD)!!
 
         init()
 
@@ -50,7 +53,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val optionalEmail = binding.emailText.text.toString()
 
-            val params = NativeAuthChallengeAuthMethodParameters() // TODO: SDK return auth methods
+            val params = NativeAuthChallengeAuthMethodParameters(authMethod)
             params.verificationContact = optionalEmail
             val actionResult = currentState.challengeAuthMethod(params)
 
@@ -90,6 +93,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putString(Constants.CHANNEL, channel)
         bundle.putString(Constants.SENT_TO, sentTo)
+        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
 
         val fragment = StrongAuthVerificationChallengeFragment()
         fragment.arguments = bundle

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentVerificationChallengeBinding
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthSubmitChallengeError
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 
 class StrongAuthVerificationChallengeFragment : Fragment() {
     private lateinit var currentState: RegisterStrongAuthVerificationRequiredState
+    private lateinit var authMethod: AuthMethod
     private lateinit var sentTo: String
     private lateinit var channel: String
     private var _binding: FragmentVerificationChallengeBinding? = null
@@ -34,6 +36,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthVerificationRequiredState)!!
+        authMethod = bundle.getParcelable(Constants.SENT_TO)!!
         sentTo = bundle.getString(Constants.SENT_TO)!!
         channel = bundle.getString(Constants.CHANNEL)!!
 
@@ -90,7 +93,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val params = NativeAuthChallengeAuthMethodParameters() // TODO: SDK return auth methods
+            val params = NativeAuthChallengeAuthMethodParameters(authMethod)
             params.verificationContact = sentTo
             val actionResult = currentState.challengeAuthMethod(params)
 
