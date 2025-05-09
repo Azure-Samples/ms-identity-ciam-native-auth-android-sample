@@ -1,7 +1,6 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
-import android.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View

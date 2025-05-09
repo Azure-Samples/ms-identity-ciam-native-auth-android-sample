@@ -1,7 +1,6 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
-import android.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -261,7 +260,8 @@ class MFAFragment : Fragment() {
 
     private fun displayStrongAuthRequiredDialog(actionResult: SignInResult.StrongAuthMethodRegistrationRequired) {
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle(R.string.jit_required_notice)
+        builder.setTitle(R.string.strong_auth_method_title)
+        builder.setMessage(R.string.strong_auth_method_message)
 
         // If proceed
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
