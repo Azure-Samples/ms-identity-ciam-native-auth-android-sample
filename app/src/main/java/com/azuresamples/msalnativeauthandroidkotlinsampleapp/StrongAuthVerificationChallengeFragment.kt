@@ -36,7 +36,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthVerificationRequiredState)!!
-        authMethod = bundle.getParcelable(Constants.SENT_TO)!!
+        authMethod = (bundle.getParcelable(Constants.AUTH_METHOD) as? AuthMethod)!!
         sentTo = bundle.getString(Constants.SENT_TO)!!
         channel = bundle.getString(Constants.CHANNEL)!!
 

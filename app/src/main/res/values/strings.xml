@@ -45,7 +45,8 @@
 
     <!-- Notice -->
     <string name="mfa_required_notice">"Multi-factor authentication is required. Do you want to proceed?"</string>
-    <string name="jit_required_notice">"Registration of strong authentication method is required. Do you want to proceed?"</string>
+    <string name="strong_auth_method_title">"Strong authentication method"</string>
+    <string name="strong_auth_method_message">"Registration of strong authentication method is required. \nDo you want to proceed?"</string>
 
     <!-- Errors -->
     <string name="msal_exception_title">"MSAL Exception"</string>

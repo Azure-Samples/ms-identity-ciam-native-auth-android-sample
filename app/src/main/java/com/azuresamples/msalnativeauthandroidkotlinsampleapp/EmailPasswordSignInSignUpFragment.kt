@@ -11,21 +11,18 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
-import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -153,41 +150,9 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.Complete -> {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sign_up_successful_message),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    signInAfterSignUp(
-                        nextState = actionResult.nextState
-                    )
-                }
                 is SignUpError -> {
                     handleSignUpError(actionResult)
                 }
-            }
-        }
-    }
-
-    private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
-        val parameters = NativeAuthSignInContinuationParameters()
-        val actionResult = nextState.signIn(parameters)
-
-        when (actionResult) {
-            is SignInResult.Complete -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_in_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                displaySignedInState(accountState = actionResult.resultValue)
-            }
-            is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message ?: actionResult.errorMessage)
-            }
-            else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
             }
         }
     }
