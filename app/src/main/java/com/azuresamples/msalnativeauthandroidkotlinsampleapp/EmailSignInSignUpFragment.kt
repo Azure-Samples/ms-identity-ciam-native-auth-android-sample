@@ -10,12 +10,10 @@ import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
@@ -24,7 +22,6 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
-import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
@@ -113,6 +110,10 @@ class EmailSignInSignUpFragment : Fragment() {
                     // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
+                is SignInResult.StrongAuthMethodRegistrationRequired -> {
+                    // Please refer to the MFA Fragment for handling Strong Auth Method Registration flow.
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
                 is SignInError -> {
                     handleSignInError(actionResult)
                 }
@@ -133,16 +134,6 @@ class EmailSignInSignUpFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.Complete -> {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sign_up_successful_message),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    signInAfterSignUp(
-                        nextState = actionResult.nextState
-                    )
-                }
                 is SignUpResult.AttributesRequired,
                 is SignUpResult.PasswordRequired -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
@@ -150,26 +141,6 @@ class EmailSignInSignUpFragment : Fragment() {
                 is SignUpError -> {
                     handleSignUpError(actionResult)
                 }
-            }
-        }
-    }
-
-
-    private suspend fun signInAfterSignUp(nextState: SignInContinuationState) {
-        val parameters = NativeAuthSignInContinuationParameters()
-        val actionResult = nextState.signIn(parameters)
-
-        when (actionResult) {
-            is SignInResult.Complete -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_in_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                displaySignedInState(accountState = actionResult.resultValue)
-            }
-            is SignInContinuationError -> {
-                displayDialog(getString(R.string.msal_exception_title), actionResult.exception?.message ?: actionResult.errorMessage)
             }
         }
     }

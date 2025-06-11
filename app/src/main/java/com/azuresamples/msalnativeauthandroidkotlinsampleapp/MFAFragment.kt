@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
@@ -23,6 +24,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,7 +52,6 @@ class MFAFragment : Fragment() {
 
         return view
     }
-
     override fun onResume() {
         super.onResume()
         getStateAndUpdateUI()
@@ -113,6 +114,9 @@ class MFAFragment : Fragment() {
                 }
                 is SignInResult.MFARequired -> {
                     displayMFARequiredDialog(actionResult)
+                }
+                is SignInResult.StrongAuthMethodRegistrationRequired -> {
+                    displayStrongAuthRequiredDialog(actionResult)
                 }
                 is SignInError -> {
                     handleSignInError(actionResult)
@@ -224,7 +228,7 @@ class MFAFragment : Fragment() {
         builder.setTitle(R.string.mfa_required_notice)
 
         // If proceed
-        builder.setPositiveButton(getString(R.string.yes_message)) { dialog, which ->
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
             CoroutineScope(Dispatchers.Main).launch {
                 val awaitingMFAState = actionResult.nextState
                 val requestChallengeResult = awaitingMFAState.requestChallenge()
@@ -244,8 +248,29 @@ class MFAFragment : Fragment() {
         }
 
         // If not proceed
-        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, which ->
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
            dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun displayStrongAuthRequiredDialog(actionResult: SignInResult.StrongAuthMethodRegistrationRequired) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.strong_auth_method_title)
+        builder.setMessage(R.string.strong_auth_method_message)
+
+        // If proceed
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
+            navigateToVerificationContact(actionResult.nextState, actionResult.authMethods[0])
+        }
+
+        // If not proceed
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+            dialog.dismiss()
         }
 
         builder.setCancelable(false)
@@ -261,6 +286,22 @@ class MFAFragment : Fragment() {
         bundle.putString(Constants.CHANNEL, channel)
 
         val fragment = MFAVerificationFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState, authMethod: AuthMethod) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
+
+        val fragment = StrongAuthVerificationContactFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager
