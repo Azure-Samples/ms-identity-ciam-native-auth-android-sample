@@ -16,7 +16,6 @@ allprojects {
 android {
     namespace "com.azuresamples.msalnativeauthandroidkotlinsampleapp"
     compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
     defaultConfig {
         applicationId "com.azuresamples.msalnativeauthandroidkotlinsampleapp"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -81,6 +80,6 @@ dependencies {
     }
     else {
         // Downloads and Builds MSAL from maven central.
-        implementation 'com.microsoft.identity.client:msal:5.+'
+        implementation 'com.microsoft.identity.client:msal:6.+'
     }
 }
