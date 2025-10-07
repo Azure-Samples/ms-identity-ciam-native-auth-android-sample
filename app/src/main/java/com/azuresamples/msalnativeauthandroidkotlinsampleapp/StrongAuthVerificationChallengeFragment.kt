@@ -93,8 +93,7 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val params = NativeAuthChallengeAuthMethodParameters(authMethod)
-            params.verificationContact = sentTo
+            val params = NativeAuthChallengeAuthMethodParameters(authMethod, sentTo)
             val actionResult = currentState.challengeAuthMethod(params)
 
             when (actionResult) {

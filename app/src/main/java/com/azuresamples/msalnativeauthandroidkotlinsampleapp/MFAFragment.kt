@@ -231,12 +231,13 @@ class MFAFragment : Fragment() {
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
             CoroutineScope(Dispatchers.Main).launch {
                 val awaitingMFAState = actionResult.nextState
-                val requestChallengeResult = awaitingMFAState.requestChallenge()
+                val requestChallengeResult = awaitingMFAState.requestChallenge(actionResult.authMethods.first())
                 if (requestChallengeResult is MFARequiredResult.VerificationRequired) {
                     navigateToMFAVerification(
                         nextState = requestChallengeResult.nextState,
                         sentTo = requestChallengeResult.sentTo,
                         channel = requestChallengeResult.channel,
+                        authMethod = actionResult.authMethods.first()
                     )
                 } else {
                     displayDialog(
@@ -279,11 +280,12 @@ class MFAFragment : Fragment() {
         dialog.show()
     }
 
-    private fun navigateToMFAVerification(nextState: MFARequiredState, sentTo: String, channel: String) {
+    private fun navigateToMFAVerification(nextState: MFARequiredState, sentTo: String, channel: String, authMethod: AuthMethod) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putString(Constants.SENT_TO, sentTo)
         bundle.putString(Constants.CHANNEL, channel)
+        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
 
         val fragment = MFAVerificationFragment()
         fragment.arguments = bundle
