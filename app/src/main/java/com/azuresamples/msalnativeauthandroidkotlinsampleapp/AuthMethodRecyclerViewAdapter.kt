@@ -23,8 +23,8 @@ class AuthMethodRecyclerViewAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val authMethod = authMethods[position]
-        holder.type.text = authMethod.challengeChannel
-        holder.loginHint.text = authMethod.loginHint
+        holder.type.text = authMethod.challengeChannel.uppercase()
+        holder.loginHint.text = authMethod.loginHint ?: "No default value"
     }
 
     override fun getItemCount(): Int = authMethods.size

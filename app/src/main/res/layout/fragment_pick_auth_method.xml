@@ -8,7 +8,8 @@
         android:id="@+id/type"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
+        android:layout_marginTop="@dimen/dimens_5dp"
+        android:layout_marginStart="@dimen/dimens_10dp"
         android:textAppearance="?attr/textAppearanceListItem"
         android:textSize="18sp" />
 
@@ -16,7 +17,8 @@
         android:id="@+id/login_hint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
+        android:layout_marginStart="@dimen/dimens_10dp"
+        android:layout_marginBottom="@dimen/dimens_5dp"
         android:textAppearance="?attr/textAppearanceListItemSecondary"
         android:textSize="14sp" />
 </LinearLayout>
