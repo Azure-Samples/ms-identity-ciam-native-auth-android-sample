@@ -34,7 +34,7 @@ class MoreFragment : Fragment() {
         }
 
         binding.emailMFA.setOnClickListener {
-            navigateToEmailMFA()
+            navigateToMFA()
         }
     }
 
@@ -58,7 +58,7 @@ class MoreFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToEmailMFA() {
+    private fun navigateToMFA() {
         val fragment = MFAFragment()
         requireActivity().supportFragmentManager
             .beginTransaction()

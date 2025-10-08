@@ -10,7 +10,7 @@
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
     <string name="title_access_web_api">"Access Protected Web APIs"</string>
-    <string name="title_email_otp_mfa">"Email OTP Multi-factor authentication"</string>
+    <string name="title_mfa">"Multi-factor authentication"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -32,6 +32,7 @@
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
     <string name="strong_auth_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
     <string name="strong_auth_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>

@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
@@ -44,7 +45,7 @@ class MFAFragment : Fragment() {
         _binding = FragmentEmailPasswordBinding.inflate(inflater, container, false)
         val view = binding.root
 
-        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_email_otp_mfa)
+        (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_mfa)
 
         authClient = AuthClient.getAuthClient()
 
@@ -266,7 +267,7 @@ class MFAFragment : Fragment() {
 
         // If proceed
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
-            navigateToVerificationContact(actionResult.nextState, actionResult.authMethods[0])
+            navigateToPickAuthMethod(actionResult.nextState, actionResult.authMethods.toCollection(ArrayList()))
         }
 
         // If not proceed
@@ -304,6 +305,22 @@ class MFAFragment : Fragment() {
         bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
 
         val fragment = StrongAuthVerificationContactFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToPickAuthMethod(nextState: RegisterStrongAuthState, authMethods: ArrayList<AuthMethod>) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putSerializable(Constants.AUTH_METHOD_LIST, authMethods)
+
+        val fragment = PickAuthMethodFragment()
         fragment.arguments = bundle
 
         requireActivity().supportFragmentManager
