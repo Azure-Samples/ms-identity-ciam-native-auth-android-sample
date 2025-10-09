@@ -31,7 +31,8 @@
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
     <string name="strong_auth_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
-    <string name="strong_auth_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="strong_auth_sms_hint_text_value">"For Multi-factor authentication using SMS please enter your phone number. The format needs to be \"+&lt;country code&gt; &lt;number&gt;\", for example \"+1 000111222\""</string>
     <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
@@ -60,6 +61,7 @@
 
     <!-- Fields -->
     <string name="attribute_email">"Email"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_phone_number">"Phone number"<font color='@android:color/red'>*</font></string>
     <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
     <string name="attribute_country">"Country"</string>
     <string name="attribute_city">"City"</string>
