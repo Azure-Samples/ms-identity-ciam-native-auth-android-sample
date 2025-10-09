@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.microsoft.identity.nativeauth.AuthMethod
@@ -34,6 +35,9 @@ class PickAuthMethodFragment : Fragment() {
         val recyclerView: RecyclerView = view.findViewById(R.id.authMethodList)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = AuthMethodRecyclerViewAdapter(authMethods)
+
+        val dividerItemDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
+        recyclerView.addItemDecoration(dividerItemDecoration)
 
         return view
     }

@@ -75,4 +75,7 @@
     <string name="result_id_token_text">"ID token: "</string>
     <string name="result_text">"Result: "</string>
     <string name="response_api">"API response is: "</string>
+
+    <!-- Image descriptions -->
+    <string name="chevron_description">"Chevron right"</string>
 </resources>
