@@ -55,7 +55,7 @@
     <string name="unexpected_sdk_error_title">"Unexpected Error"</string>
     <string name="network_request_exception_titile">"Network Request Exception"</string>
     <string name="invalid_web_url_title">"Invalid WEB_API_BASE_URL"</string>
-    <string name="unknown_error_message">"unknown error"</string>
+    <string name="unknown_error_message">"Unknown error"</string>
     <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->

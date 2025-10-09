@@ -299,22 +299,6 @@ class MFAFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState, authMethod: AuthMethod) {
-        val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, nextState)
-        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
-
-        val fragment = StrongAuthVerificationContactFragment()
-        fragment.arguments = bundle
-
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .setReorderingAllowed(true)
-            .addToBackStack(fragment::class.java.name)
-            .replace(R.id.scenario_fragment, fragment)
-            .commit()
-    }
-
     private fun navigateToPickAuthMethod(nextState: RegisterStrongAuthState, authMethods: ArrayList<AuthMethod>) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)

@@ -1,24 +1,25 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPickAuthMethodBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 
+interface OnItemClickListener {
+    fun onItemClick(position: Int)
+}
+
 class AuthMethodRecyclerViewAdapter(
-    private val authMethods: List<AuthMethod>
+    private val authMethods: List<AuthMethod>,
+    private val listener: OnItemClickListener
 ) : RecyclerView.Adapter<AuthMethodRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(
-            FragmentPickAuthMethodBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
-        )
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.fragment_pick_auth_method, parent, false)
+        return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -29,10 +30,15 @@ class AuthMethodRecyclerViewAdapter(
 
     override fun getItemCount(): Int = authMethods.size
 
-    inner class ViewHolder(binding: FragmentPickAuthMethodBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        val type: TextView = binding.type
-        val loginHint: TextView = binding.loginHint
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val type: TextView = itemView.findViewById(R.id.type)
+        val loginHint: TextView = itemView.findViewById(R.id.login_hint)
+
+        init {
+            itemView.setOnClickListener {
+                listener.onItemClick(absoluteAdapterPosition)
+            }
+        }
     }
 
 }
