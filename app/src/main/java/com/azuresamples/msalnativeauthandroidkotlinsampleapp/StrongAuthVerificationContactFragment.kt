@@ -53,8 +53,7 @@ class StrongAuthVerificationContactFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val optionalEmail = binding.emailText.text.toString()
 
-            val params = NativeAuthChallengeAuthMethodParameters(authMethod)
-            params.verificationContact = optionalEmail
+            val params = NativeAuthChallengeAuthMethodParameters(authMethod, optionalEmail)
             val actionResult = currentState.challengeAuthMethod(params)
 
             when (actionResult) {

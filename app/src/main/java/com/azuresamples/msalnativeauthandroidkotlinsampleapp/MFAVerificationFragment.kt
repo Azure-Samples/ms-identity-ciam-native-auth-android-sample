@@ -7,8 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentMfaChallengeBinding
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class MFAVerificationFragment : Fragment() {
     private lateinit var currentState: MFARequiredState
+    private lateinit var authMethod: AuthMethod
     private lateinit var sentTo: String
     private lateinit var channel: String
     private var _binding: FragmentMfaChallengeBinding? = null
@@ -34,6 +35,7 @@ class MFAVerificationFragment : Fragment() {
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? MFARequiredState)!!
+        authMethod = (bundle.getParcelable(Constants.AUTH_METHOD) as? AuthMethod)!!
         sentTo = bundle.getString(Constants.SENT_TO)!!
         channel = bundle.getString(Constants.CHANNEL)!!
 
@@ -92,7 +94,7 @@ class MFAVerificationFragment : Fragment() {
         clearChallengeText()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.requestChallenge()
+            val actionResult = currentState.requestChallenge(authMethod)
 
             when (actionResult) {
                 is MFARequiredResult.VerificationRequired -> {
