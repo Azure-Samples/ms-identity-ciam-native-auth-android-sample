@@ -10,7 +10,7 @@
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
     <string name="title_access_web_api">"Access Protected Web APIs"</string>
-    <string name="title_email_otp_mfa">"Email OTP Multi-factor authentication"</string>
+    <string name="title_mfa">"Multi-factor authentication"</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
@@ -31,7 +31,9 @@
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
     <string name="strong_auth_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
-    <string name="strong_auth_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="strong_auth_sms_hint_text_value">"For Multi-factor authentication using SMS please enter your phone number. The format needs to be \"+&lt;country code&gt; &lt;number&gt;\", for example \"+1 000111222\""</string>
+    <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
@@ -54,11 +56,12 @@
     <string name="unexpected_sdk_error_title">"Unexpected Error"</string>
     <string name="network_request_exception_titile">"Network Request Exception"</string>
     <string name="invalid_web_url_title">"Invalid WEB_API_BASE_URL"</string>
-    <string name="unknown_error_message">"unknown error"</string>
+    <string name="unknown_error_message">"Unknown error"</string>
     <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->
     <string name="attribute_email">"Email"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_phone_number">"Phone number"<font color='@android:color/red'>*</font></string>
     <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
     <string name="attribute_country">"Country"</string>
     <string name="attribute_city">"City"</string>
@@ -74,4 +77,7 @@
     <string name="result_id_token_text">"ID token: "</string>
     <string name="result_text">"Result: "</string>
     <string name="response_api">"API response is: "</string>
+
+    <!-- Image descriptions -->
+    <string name="chevron_description">"Chevron right"</string>
 </resources>

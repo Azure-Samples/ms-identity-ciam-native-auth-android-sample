@@ -23,16 +23,20 @@ class StrongAuthVerificationContactFragment : Fragment() {
     private var _binding: FragmentVerificationContactBinding? = null
     private val binding get() = _binding!!
 
-    companion object {
-        private val TAG = StrongAuthVerificationContactFragment::class.java.simpleName
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVerificationContactBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
         currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthState)!!
         authMethod = bundle.getParcelable(Constants.AUTH_METHOD)!!
+
+        if (authMethod.challengeChannel.uppercase() == "SMS") {
+            binding.hintText.text = getString(R.string.strong_auth_sms_hint_text_value)
+            binding.contactTypeHint.text = getString(R.string.attribute_phone_number)
+        } else {
+            binding.hintText.text = getString(R.string.strong_auth_email_hint_text_value)
+            binding.contactTypeHint.text = getString(R.string.attribute_email)
+        }
 
         init()
 
