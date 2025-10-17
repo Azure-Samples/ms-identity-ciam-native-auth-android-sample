@@ -1,8 +1,8 @@
 // Variables for entire project
 ext {
     // SDK
-    minSdkVersion = 21
-    automationAppMinSDKVersion = 21
+    minSdkVersion = 24
+    automationAppMinSDKVersion = 24
     targetSdkVersion = 33
     compileSdkVersion = 34
     buildToolsVersion = "28.0.3"
