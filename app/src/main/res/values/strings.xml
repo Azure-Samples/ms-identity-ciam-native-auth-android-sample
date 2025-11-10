@@ -9,6 +9,7 @@
     <string name="title_email_oob_sspr">"Password Reset"</string>
     <string name="title_more">"More"</string>
     <string name="title_web_fallback">"Web Fallback"</string>
+    <string name="title_idp_web_flow">"Identity Provider Web Flow"</string>
     <string name="title_access_web_api">"Access Protected Web APIs"</string>
     <string name="title_mfa">"Multi-factor authentication"</string>
 
@@ -25,6 +26,7 @@
     <string name="resend_code_text">"Resend Code"</string>
     <string name="resend_challenge_text">"Resend Challenge"</string>
     <string name="api_get">"API - Perform GET"</string>
+    <string name="result">Result</string>
 
     <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
@@ -34,6 +36,7 @@
     <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
     <string name="strong_auth_sms_hint_text_value">"For Multi-factor authentication using SMS please enter your phone number. The format needs to be \"+&lt;country code&gt; &lt;number&gt;\", for example \"+1 000111222\""</string>
     <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
+    <string name="select_idp">"Please select an Identity Provider (domain_hint)"</string>
 
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>

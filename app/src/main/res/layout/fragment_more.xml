@@ -25,17 +25,36 @@
         app:layout_constraintTop_toBottomOf="@+id/web_fallback" />
 
 	<Button
-		android:id="@+id/use_access_token"
+		android:id="@+id/idp_web_flow"
 		android:layout_marginTop="@dimen/dimens_15dp"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:text="@string/title_access_web_api"
+		android:text="@string/title_idp_web_flow"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/divider1"
 		style="@style/OptionItemStyle" />
 
 	<View
 		android:id="@+id/divider2"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/dimens_1dp"
+		android:layout_marginLeft="@dimen/dimens_10dp"
+		android:background="?android:attr/listDivider"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/idp_web_flow" />
+
+	<Button
+		android:id="@+id/use_access_token"
+		android:layout_marginTop="@dimen/dimens_15dp"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/title_access_web_api"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/divider2"
+		style="@style/OptionItemStyle" />
+
+	<View
+		android:id="@+id/divider3"
 		android:layout_width="match_parent"
 		android:layout_height="@dimen/dimens_1dp"
 		android:layout_marginLeft="@dimen/dimens_10dp"
@@ -50,15 +69,15 @@
 		android:layout_height="wrap_content"
 		android:text="@string/title_mfa"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/divider2"
+		app:layout_constraintTop_toBottomOf="@+id/divider3"
 		style="@style/OptionItemStyle" />
 
 	<View
-		android:id="@+id/divider3"
+		android:id="@+id/divider4"
 		android:layout_width="match_parent"
 		android:layout_height="@dimen/dimens_1dp"
 		android:layout_marginLeft="@dimen/dimens_10dp"
 		android:background="?android:attr/listDivider"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/use_access_token" />
+		app:layout_constraintTop_toBottomOf="@+id/email_MFA" />
 </androidx.constraintlayout.widget.ConstraintLayout>
