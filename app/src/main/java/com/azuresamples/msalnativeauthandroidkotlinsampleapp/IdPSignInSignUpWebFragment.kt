@@ -60,8 +60,7 @@ class IdPSignInSignUpWebFragment : Fragment() {
             "Google",
             "Apple",
             "Facebook",
-            "www.linkedin.com",
-            "\"Empty\""
+            "www.linkedin.com"
         )
         val adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, domainHints)
@@ -89,11 +88,9 @@ class IdPSignInSignUpWebFragment : Fragment() {
         val acquireTokenParametersBuilder = AcquireTokenParameters.Builder()
             .startAuthorizationFromActivity(requireActivity())
             .withScopes(mutableListOf("openid", "profile", "email"))
+            .withDomainHint(domainHint)
             .withPrompt(prompt)
             .withCallback(getAuthInteractiveCallback())
-        if (domainHint.isNotEmpty()) {
-            acquireTokenParametersBuilder.withDomainHint(domainHint)
-        }
         authClient.acquireToken(AcquireTokenParameters(acquireTokenParametersBuilder))
     }
 
