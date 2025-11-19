@@ -29,6 +29,10 @@ class MoreFragment : Fragment() {
             navigateToWebFallback()
         }
 
+        binding.idpWebFlow.setOnClickListener {
+            navigateToIdPWebFlow()
+        }
+
         binding.useAccessToken.setOnClickListener {
             navigateToAccessApi()
         }
@@ -40,6 +44,16 @@ class MoreFragment : Fragment() {
 
     private fun navigateToWebFallback() {
         val fragment = WebFallbackFragment()
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToIdPWebFlow() {
+        val fragment = IdPSignInSignUpWebFragment()
         requireActivity().supportFragmentManager
             .beginTransaction()
             .setReorderingAllowed(true)
