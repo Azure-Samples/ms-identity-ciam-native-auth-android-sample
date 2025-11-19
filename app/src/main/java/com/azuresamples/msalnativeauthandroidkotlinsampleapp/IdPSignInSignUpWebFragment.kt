@@ -60,7 +60,7 @@ class IdPSignInSignUpWebFragment : Fragment() {
             "Google",
             "Apple",
             "Facebook",
-            "www.linkedin.com"
+            "www.linkedin.com" // Custom OIDC
         )
         val adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, domainHints)
