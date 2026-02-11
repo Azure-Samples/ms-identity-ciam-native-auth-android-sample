@@ -56,6 +56,9 @@ dependencies {
 
     implementation 'com.squareup.okhttp3:okhttp:4.9.0'
 
+    // Prove Bot Detection SDK
+    implementation 'com.prove.sdk:proveauth:+'
+
     implementation "androidx.core:core-ktx:$rootProject.ext.coreKtxVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$rootProject.ext.kotlinXCoroutinesVersion"
 

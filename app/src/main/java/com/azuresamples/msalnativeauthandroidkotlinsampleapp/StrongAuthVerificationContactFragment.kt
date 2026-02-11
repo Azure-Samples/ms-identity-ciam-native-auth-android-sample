@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,6 +60,24 @@ class StrongAuthVerificationContactFragment : Fragment() {
             if (optionalEmail.isBlank()) {
                 optionalEmail = authMethod.loginHint.orEmpty()
             }
+
+            // Prove Bot Detection Gate for SMS
+            if (authMethod.challengeChannel.uppercase() == "SMS" && ProveBotDetectionHelper.hasProveKey()) {
+                val botResult = ProveBotDetectionHelper.performBotDetection(optionalEmail)
+                when (botResult) {
+                    is ProveBotDetectionHelper.BotDetectionResult.Failed -> {
+                        displayDialog("SMS Fraud Detection", "This phone number has been flagged: ${botResult.reason}")
+                        return@launch
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Error -> {
+                        Log.w("StrongAuth", "Bot detection error: ${botResult.message}")
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Passed -> {
+                        Log.i("StrongAuth", "Bot detection passed for SMS verification.")
+                    }
+                }
+            }
+
             val params = NativeAuthChallengeAuthMethodParameters(authMethod, optionalEmail)
             val actionResult = currentState.challengeAuthMethod(params)
 

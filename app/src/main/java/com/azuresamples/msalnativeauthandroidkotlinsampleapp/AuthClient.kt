@@ -28,5 +28,8 @@ object AuthClient : Application() {
             context,
             R.raw.auth_config_native_auth
         )
+
+        // Initialize Prove Bot Detection SDK
+        ProveBotDetectionHelper.initialize(context)
     }
 }

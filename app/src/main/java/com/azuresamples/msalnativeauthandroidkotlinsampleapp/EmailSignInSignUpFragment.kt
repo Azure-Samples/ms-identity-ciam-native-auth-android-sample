@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -94,6 +95,25 @@ class EmailSignInSignUpFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
 
+            // Prove Bot Detection Gate
+            val phoneNumber = email // Replace with actual phone number field if available
+            if (ProveBotDetectionHelper.hasProveKey()) {
+                val botResult = ProveBotDetectionHelper.performBotDetection(phoneNumber)
+                when (botResult) {
+                    is ProveBotDetectionHelper.BotDetectionResult.Failed -> {
+                        displayDialog("Fraud Detection", "Sign-in blocked: ${botResult.reason}")
+                        return@launch
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Error -> {
+                        Log.w(TAG, "Bot detection error: ${botResult.message}")
+                        // Continue on error — adjust policy as needed
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Passed -> {
+                        Log.i(TAG, "Bot detection passed. Proceeding with sign-in.")
+                    }
+                }
+            }
+
             val parameters = NativeAuthSignInParameters(username = email)
             val actionResult = authClient.signIn(parameters)
 
@@ -124,6 +144,25 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun signUp() {
         CoroutineScope(Dispatchers.Main).launch {
             val email = binding.emailText.text.toString()
+
+            // Prove Bot Detection Gate
+            val phoneNumber = email // Replace with actual phone number field if available
+            if (ProveBotDetectionHelper.hasProveKey()) {
+                val botResult = ProveBotDetectionHelper.performBotDetection(phoneNumber)
+                when (botResult) {
+                    is ProveBotDetectionHelper.BotDetectionResult.Failed -> {
+                        displayDialog("Fraud Detection", "Sign-up blocked: ${botResult.reason}")
+                        return@launch
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Error -> {
+                        Log.w(TAG, "Bot detection error: ${botResult.message}")
+                        // Continue on error — adjust policy as needed
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Passed -> {
+                        Log.i(TAG, "Bot detection passed. Proceeding with sign-up.")
+                    }
+                }
+            }
 
             val parameters = NativeAuthSignUpParameters(username = email)
             val actionResult = authClient.signUp(parameters)

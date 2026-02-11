@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -97,6 +98,27 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
+            // Prove Bot Detection Gate
+            val phoneNumber = email // Replace with actual phone number field if available
+            if (ProveBotDetectionHelper.hasProveKey()) {
+                val botResult = ProveBotDetectionHelper.performBotDetection(phoneNumber)
+                when (botResult) {
+                    is ProveBotDetectionHelper.BotDetectionResult.Failed -> {
+                        binding.passwordText.text?.clear()
+                        StringUtil.overwriteWithNull(password)
+                        displayDialog("Fraud Detection", "Sign-in blocked: ${botResult.reason}")
+                        return@launch
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Error -> {
+                        Log.w(TAG, "Bot detection error: ${botResult.message}")
+                        // Continue on error — adjust policy as needed
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Passed -> {
+                        Log.i(TAG, "Bot detection passed. Proceeding with sign-in.")
+                    }
+                }
+            }
+
             val parameters = NativeAuthSignInParameters(username = email)
             parameters.password = password
             val actionResult: SignInResult = authClient.signIn(parameters)
@@ -136,6 +158,27 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
             val email = binding.emailText.text.toString()
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+
+            // Prove Bot Detection Gate
+            val phoneNumber = email // Replace with actual phone number field if available
+            if (ProveBotDetectionHelper.hasProveKey()) {
+                val botResult = ProveBotDetectionHelper.performBotDetection(phoneNumber)
+                when (botResult) {
+                    is ProveBotDetectionHelper.BotDetectionResult.Failed -> {
+                        binding.passwordText.text?.clear()
+                        StringUtil.overwriteWithNull(password)
+                        displayDialog("Fraud Detection", "Sign-up blocked: ${botResult.reason}")
+                        return@launch
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Error -> {
+                        Log.w(TAG, "Bot detection error: ${botResult.message}")
+                        // Continue on error — adjust policy as needed
+                    }
+                    is ProveBotDetectionHelper.BotDetectionResult.Passed -> {
+                        Log.i(TAG, "Bot detection passed. Proceeding with sign-up.")
+                    }
+                }
+            }
 
             val parameters = NativeAuthSignUpParameters(username = email)
             parameters.password = password
