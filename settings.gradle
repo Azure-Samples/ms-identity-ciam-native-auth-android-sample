@@ -1,9 +1,1 @@
 include ':app'
-
-dependencyResolutionManagement {
-    repositories {
-        maven {
-            url = "https://prove.jfrog.io/artifactory/libs-public-maven/"
-        }
-    }
-}
