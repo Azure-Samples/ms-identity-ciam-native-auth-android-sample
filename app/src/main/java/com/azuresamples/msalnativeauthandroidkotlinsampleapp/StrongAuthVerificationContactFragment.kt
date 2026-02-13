@@ -55,20 +55,70 @@ class StrongAuthVerificationContactFragment : Fragment() {
 
     private fun verifyContact() {
         CoroutineScope(Dispatchers.Main).launch {
-            var optionalEmail = binding.emailText.text.toString()
-            if (optionalEmail.isBlank()) {
-                optionalEmail = authMethod.loginHint.orEmpty()
-            }
-            val params = NativeAuthChallengeAuthMethodParameters(authMethod, optionalEmail)
-            val actionResult = currentState.challengeAuthMethod(params)
+            binding.verifyCode.isEnabled = false
 
-            when (actionResult) {
-                is RegisterStrongAuthChallengeResult.VerificationRequired -> {
-                    navigateToStrongAuthChallengeFragment(actionResult.result.getNextState(), actionResult.result.getChannel(), actionResult.result.getSentTo())
+            try {
+                var contactValue = binding.emailText.text.toString().trim()
+                if (contactValue.isBlank()) {
+                    contactValue = authMethod.loginHint.orEmpty().trim()
                 }
-                is RegisterStrongAuthChallengeError -> {
-                    handleRegisterStrongAuthChallengeError(actionResult)
+
+                if (contactValue.isBlank()) {
+                    displayDialog(getString(R.string.unexpected_sdk_error_title), "A phone number is required for SMS verification")
+                    return@launch
                 }
+
+                // CHANGE (Prove doc summary #2): for SMS, run Prove customer-supplied possession verification
+                // BEFORE triggering Microsoft NativeAuth to send the SMS OTP.
+                if (authMethod.challengeChannel.equals("SMS", ignoreCase = true)) {
+                    val proveManager = ProveManager.getInstance()
+
+                    when (val startResult = proveManager.initializeWithAuthToken(phoneNumber = contactValue)) {
+                        is ProveManager.ProveResult.Success -> {
+                            when (val possessionResult = proveManager.checkPossession(startResult.correlationId)) {
+                                is ProveManager.ProveResult.Success -> {
+                                    displayDialog(
+                                        getString(R.string.yes_message),
+                                        possessionResult.phoneVerified.toString()
+                                    )
+                                    // Continue to Microsoft SMS OTP (below)
+                                }
+                                is ProveManager.ProveResult.Error -> {
+                                    displayDialog(
+                                        getString(R.string.unexpected_sdk_error_title),
+                                        possessionResult.message
+                                    )
+                                    return@launch
+                                }
+                            }
+                        }
+                        is ProveManager.ProveResult.Error -> {
+                            displayDialog(
+                                getString(R.string.unexpected_sdk_error_title),
+                                startResult.message
+                            )
+                            return@launch
+                        }
+                    }
+                }
+
+                val params = NativeAuthChallengeAuthMethodParameters(authMethod, contactValue)
+                val actionResult = currentState.challengeAuthMethod(params)
+
+                when (actionResult) {
+                    is RegisterStrongAuthChallengeResult.VerificationRequired -> {
+                        navigateToStrongAuthChallengeFragment(
+                            actionResult.result.getNextState(),
+                            actionResult.result.getChannel(),
+                            actionResult.result.getSentTo()
+                        )
+                    }
+                    is RegisterStrongAuthChallengeError -> {
+                        handleRegisterStrongAuthChallengeError(actionResult)
+                    }
+                }
+            } finally {
+                binding.verifyCode.isEnabled = true
             }
         }
     }

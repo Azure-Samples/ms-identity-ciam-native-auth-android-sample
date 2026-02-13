@@ -8,6 +8,9 @@ allprojects {
             url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1'
             name 'Duo-SDK-Feed'
         }
+        maven {
+            url = "https://prove.jfrog.io/artifactory/libs-public-maven/"
+        }
         mavenCentral()
         google()
     }
@@ -31,6 +34,7 @@ android {
     buildFeatures {
         viewBinding true
     }
+    kotlinOptions { jvmTarget = '1.8' }
     buildTypes {
         release {
             minifyEnabled false
@@ -83,4 +87,6 @@ dependencies {
         // Downloads and Builds MSAL from maven central.
         implementation 'com.microsoft.identity.client:msal:[8.1.0,)'
     }
+
+    implementation 'com.prove.sdk:proveauth:6.9.0'
 }

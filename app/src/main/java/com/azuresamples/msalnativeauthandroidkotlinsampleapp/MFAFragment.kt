@@ -29,6 +29,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthS
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Arrays
 
 class MFAFragment : Fragment() {
 
@@ -100,6 +101,7 @@ class MFAFragment : Fragment() {
 
             val parameters = NativeAuthSignInParameters(username = email)
             parameters.password = password
+            parameters.scopes = Arrays.asList("openid", "offline_access", "profile", "api://019f8c18-e680-43b3-9ac3-d9e118b69c0d/App.Read")
             val actionResult: SignInResult = authClient.signIn(parameters)
             binding.passwordText.text?.clear()
             StringUtil.overwriteWithNull(password)
