@@ -4,6 +4,12 @@
       "Level": 200,
       "Client": "Android"
     },
+
+    "Prove": {
+      "clientId": "",
+      "clientSecret": ""
+    },
+
     "AppRegistrations": [
       {
         "x-ms-id": "ciam-android-native-app",
@@ -33,8 +39,8 @@
             {
               "settingFile": "app/src/main/res/raw/auth_config_native_auth.json",
               "replaceTokens": {
-                  "appId": "Enter_the_Application_Id_Here",
-                  "tenantName": "Enter_the_Tenant_Subdomain_Here"
+                "appId": "019f8c18-e680-43b3-9ac3-d9e118b69c0d",
+                "tenantName": "628ff5bc-c796-4a6c-930e-f1ed859b77bc"
                }
             }
          ]	
