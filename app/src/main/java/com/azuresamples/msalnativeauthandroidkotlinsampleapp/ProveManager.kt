@@ -139,11 +139,11 @@ class ProveManager private constructor() {
         try {
             val token = fetchAccessToken()
 
-            val payload = JSONObject().apply {
-                put("clientRequestId", UUID.randomUUID().toString())
-                put("possessionType", "none")
-                phoneNumber?.let { put("phoneNumber", it) }
-            }
+            val payload = FormBody.Builder()
+                .add("clientRequestId", UUID.randomUUID().toString())
+                .add("possessionType", "none")
+                .add("phoneNumber", phoneNumber ?: "")
+                .build()
 
             val request = Request.Builder()
                 .url(V3_UNIFY_URL)

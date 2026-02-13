@@ -9,7 +9,7 @@ allprojects {
             name 'Duo-SDK-Feed'
         }
         maven {
-            url 'https://prove.jfrog.io/artifactory/libs-public-maven/'
+            url = "https://prove.jfrog.io/artifactory/libs-public-maven/"
         }
         mavenCentral()
         google()
@@ -34,6 +34,7 @@ android {
     buildFeatures {
         viewBinding true
     }
+    kotlinOptions { jvmTarget = '1.8' }
     buildTypes {
         release {
             minifyEnabled false
@@ -58,9 +59,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
 
     implementation 'com.squareup.okhttp3:okhttp:4.9.0'
-
-    // Prove Bot Detection SDK
-    implementation 'com.prove.sdk:proveauth:+'
 
     implementation "androidx.core:core-ktx:$rootProject.ext.coreKtxVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$rootProject.ext.kotlinXCoroutinesVersion"
@@ -89,4 +87,6 @@ dependencies {
         // Downloads and Builds MSAL from maven central.
         implementation 'com.microsoft.identity.client:msal:[8.1.0,)'
     }
+
+    implementation 'com.prove.sdk:proveauth:6.9.0'
 }
