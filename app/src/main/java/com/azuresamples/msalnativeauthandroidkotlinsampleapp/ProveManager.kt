@@ -104,15 +104,15 @@ class ProveManager private constructor() {
         val secret = clientSecret
             ?: throw IllegalStateException("Prove clientSecret not set. Call initialize() 2.")
         Log.d(TAG, "2 touch of fetchAccessToken() - fetching new token")
-        val body =  JSONObject().apply {
-            put("grant_type", "client_credentials")
-            put("client_id", id)
-            put("client_secret", secret)
-        }.toString()
-        Log.d(TAG, "${body}")
+        val formBody = FormBody.Builder()
+            .add("grant_type", "client_credentials")
+            .add("client_id", id)
+            .add("client_secret", secret)
+            .build()
+        Log.d(TAG, "${formBody}")
         val request = Request.Builder()
             .url(TOKEN_URL)
-            .post(body.toRequestBody("application/json".toMediaType()))
+            .post(formBody)
             .build()
 
         Log.d(TAG, "${request}")
@@ -195,9 +195,9 @@ class ProveManager private constructor() {
             val token = fetchAccessToken()
 
             val corrId = correlationId ?: this@ProveManager.correlationId
-                ?: return@withContext ProveResult.Error(
-                    message = "No correlation ID available. Call initializeWithAuthToken() first."
-                )
+            ?: return@withContext ProveResult.Error(
+                message = "No correlation ID available. Call initializeWithAuthToken() first."
+            )
 
             Log.d(TAG, "Checking possession for correlationId: $corrId")
 
