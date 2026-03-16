@@ -10,14 +10,14 @@
 
 ## Overview
 
-This sample Android application demonstrates how to handle sign-up, sign-in, sign-out, and password reset scenarios using Microsoft Entra for customers. 
-You can configure the sample to call a protected web API after authenticating successfully.
+This sample Android application demonstrates how to integrate 3P ATO protection for the sign in flow using CIAM Native API end-points. This example is created using Lexis-nexis as the 3P ATO provider.
+
+This example is for demonstration purpose only. Appropriate setup with WAF to intercept calls during signin flow and profiling service with Lexis-Nexis is required for this flow to work. Please contact with Lexis-Nexis to acquire required SDK's required for profiling the requests.
 
 ## Contents
 
 | File/folder | Description |
 |-------------|-------------|
-| `app/src/main/res/raw/native_auth_sample_app_config.json`       | Configuration file. |
 | `.gitignore` | Define what to ignore at commit time. |
 | `README.md` | This README file. |
 | `LICENSE`   | The license for the sample. |
@@ -54,72 +54,17 @@ Create a user flow by following the steps in [Create a user flow](https://learn.
 
 Associate the application with the user flow by following the steps in [Associate the application with the user flow](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#associate-the-app-with-the-user-flow).
 
-### Step 6: Clone sample Android mobile application
+### Step 6: Configure Lexis-Nexis (3P ATO protection provider) service profile
 
-Clone the sample Android mobile application by following the steps outlined in [Clone sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#clone-sample-android-mobile-application).
+Configure the sample Android mobile application by following the steps in [Lexis-Nexis documentation](https://portal.threatmetrix.com/kb-en/Welcome.htm).
 
-### Step 7: Configure the sample Android mobile application
+### Step 7: Configure WAF profile
 
-Configure the sample Android mobile application by following the steps in [Configure the sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#configure-the-sample-android-mobile-application).
-
-### Step 8: Run and test sample Android mobile application
-
-Run and test the Android sample mobile application by following the steps in [Run and test sample Android mobile application](https://learn.microsoft.com/entra/external-id/customers/how-to-run-native-authentication-sample-android-app#run-and-test-sample-android-mobile-application).
-
-### Step 9: Call a protected web API
-
-Follow the steps in [Sign in users and call an API in a sample Android mobile app by using native authentication](https://learn.microsoft.com/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api) to sign in users and call a protected API in the Android sample mobile app.
-
-### Additional step: Add email one-time passcode MFA to your Android app (Private Preview)
-
-Add email one-time passcode MFA to the sign in flow by following the steps in [Add email one-time passcode MFA to your Android app](https://github.com/microsoft/entra-previews/blob/PP5/docs/Native-Auth/Developer-guides/0-Android-Kotlin/Add-email-otp-mfa-sign-in.md).
+Configure WAF to intercept the signin requests following the steps in this [Tutorial](https://review.learn.microsoft.com/en-us/entra/external-id/customers/tutorial-third-party-account-take-over-protection-native-api?branch=pr-en-us-11558).
 
 ## Key concepts
 
-Open `app/src/main/res/raw/native_auth_sample_app_config.json` file and you find the following json configurations:
-
-```kotlin
-{
-  "client_id": "Enter_the_Application_Id_Here",
-  "authorities": [
-    {
-      "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
-    }
-  ],
-  "challenge_types": ["oob", "password"],
-  "logging": {
-    "pii_enabled": false,
-    "log_level": "INFO",
-    "logcat_enabled": true
-  }
-}
-```
-
-The JSON configuration file has:
-
-* _client_id_ - the value _Enter_the_Application_Id_Here_ is replaced with **Application (client) ID** of the app you register during the project setup. The **Application (client) ID** is unique identifier of your registered application.
-* _Enter_the_Tenant_Subdomain_Here_ - the value _Enter_the_Tenant_Subdomain_Here_ is replaced with the Directory (tenant) subdomain. The tenant subdomain URL is used to construct the authentication endpoint for your app.
-
-You use `app/src/main/res/raw/native_auth_sample_app_config.json` file to set configuration options when you initialize the client app in the Microsoft Authentication Library (MSAL).
-
-To create SDK instance, use the following code:
-
-```kotlin
-private lateinit var authClient: INativeAuthPublicClientApplication 
- 
-override fun onCreate(savedInstanceState: Bundle?) { 
-    super.onCreate(savedInstanceState) 
-    setContentView(R.layout.activity_main) 
-
-    authClient = PublicClientApplication.createNativeAuthPublicClientApplication( 
-        this, 
-        R.raw.auth_config_native_auth 
-    ) 
-} 
-```
-
-In the `onCreate` method, create an MSAL instance so that we can perform authentication logic and interact with our tenant through native authentication APIs. The `createNativeAuthPublicClientApplication()` method returns an instance called `authClient`. The JSON configuration `app/src/main/res/raw/native_auth_sample_app_config.json` file is passed as parameter. For more information about SDK instance, see [Tutorial: Prepare your Android app for native authentication](https://learn.microsoft.com/en-us/entra/external-id/customers/tutorial-native-authentication-prepare-android-app#create-sdk-instance)
+This is a sample code to demonstrate an approach to use 3P ATO protection provider (Lexis-Nexis in this example) for the External ID Authentication flow using Native API endpoints. This sample code is not to be used in any Production environment as it is and appropriate API permission with the 3P is required along with a WAF setup is required to achieve this protection. For more information, please refer to [Tutorial](https://review.learn.microsoft.com/en-us/entra/external-id/customers/tutorial-third-party-account-take-over-protection-native-api?branch=pr-en-us-11558).
 
 ## Reporting problems
 
