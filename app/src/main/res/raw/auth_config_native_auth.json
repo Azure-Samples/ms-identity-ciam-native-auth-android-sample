@@ -1,9 +1,9 @@
 {
-  "client_id": "Enter_the_Application_Id_Here",
+  "client_id": "8df01c0a-0d3c-41a2-8f21-ae1e4d27b5b2",
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+      "authority_url": "https://ciam.secureexchange.ssl4saas.com/robezirgEntraExtId.onmicrosoft.com/"
     }
   ],
   "challenge_types": ["oob", "password"],
