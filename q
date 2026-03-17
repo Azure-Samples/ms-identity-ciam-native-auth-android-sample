@@ -1,0 +1,35 @@
+[33mcommit 203a65c176dba7e7aaa701775b172c6c14f5a0b3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msanjibsignup[m[33m)[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Fri Jan 9 19:20:44 2026 -0800
+
+    Update Signup to use pwd signup
+
+[33mcommit db99206250bb63dfd8160d1f6d8010773fa201e8[m[33m ([m[1;31morigin/sanjibsignup[m[33m)[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Tue Jan 6 23:33:16 2026 -0800
+
+    Issue with Human SDK
+
+[33mcommit a3edaba20cc2061403d87aac7da9b2b5d4881343[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Tue Jan 6 17:46:00 2026 -0800
+
+    Signin Risk MFA
+
+[33mcommit 7dd30f019c67bf75c9ec8eeca0138eb54ed99338[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Mon Dec 29 23:03:16 2025 -0800
+
+    Signin activity
+
+[33mcommit e263f4b41956ad266388eeba840a4d27bd6538df[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Tue Dec 16 15:35:54 2025 -0800
+
+    Signup commit
+
+[33mcommit 419c70e04df5061664c10cb06679f325cc311d65[m[33m ([m[1;31morigin/master[m[33m, [m[1;32mmaster[m[33m)[m
+Author: Sanjib Saha <sanjibsaha@microsoft.com>
+Date:   Thu Nov 13 16:52:09 2025 -0800
+
+    Initial Commit - Signup and Signin using EEID Native API
