@@ -59,7 +59,7 @@ class SignUpAttributesFragment : Fragment() {
             val username = binding.usernameText.text.toString()
 
             val attributes = UserAttributes.Builder()
-                .customAttribute("username", username)
+                .flatUsername(username)
                 .build()
 
             val actionResult = currentState.submitAttributes(attributes)

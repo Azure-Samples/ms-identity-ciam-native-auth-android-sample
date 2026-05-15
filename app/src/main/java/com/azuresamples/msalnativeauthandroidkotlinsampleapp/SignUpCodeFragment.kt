@@ -70,9 +70,16 @@ class SignUpCodeFragment : Fragment() {
                     )
                 }
                 is SignUpResult.AttributesRequired -> {
-                    navigateToAttributes(
-                        nextState = actionResult.nextState
-                    )
+                    // Custom implementation for Flat Username / Alias
+                    if (actionResult.requiredAttributes.size == 1 &&
+                        actionResult.requiredAttributes.any { it.name == "flatusername" }
+                    ) {
+                        navigateToAttributes(
+                            nextState = actionResult.nextState
+                        )
+                    } else {
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    }
                 }
                 is SignUpResult.PasswordRequired -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
