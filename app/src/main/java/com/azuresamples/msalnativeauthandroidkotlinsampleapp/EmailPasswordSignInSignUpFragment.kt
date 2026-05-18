@@ -46,9 +46,9 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
     override fun additionalHeaders(requestUrl: URL): Map<String, String>? {
         if (requestUrl.path.contains("oauth2/v2.0/initiate")) {
             return mapOf(
-                "value_1" to "ignored-custom-header",          // Will be ignored: doesn't start with "x-"
-                "x-client-header" to "customer_header_2",      // Will be ignored: starts with reserved prefix "x-client-"
-                "X-my-custom-header" to "my data"              // Will be added to the network request
+                "ignored-custom-header-value" to "ignored-custom-header",       // Will be ignored: doesn't start with "x-"
+                "x-client-header" to "customer_header_2",                       // Will be ignored: starts with reserved prefix "x-client-"
+                "X-my-custom-header" to "my data"                               // Will be added to the network request
             )
         }
         return null
