@@ -31,6 +31,7 @@
     <string name="hint_text_value">"Please fill in the required information:"</string>
     <string name="hint_password_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the code that you received in your email."</string>
+    <string name="attributes_hint_text_value">"Additional attributes are required, please enter them below."</string>
     <string name="mfa_challenge_hint_text_value">"Please enter the challenge that you received in your challengeChannel loginHint."</string>
     <string name="strong_auth_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
     <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
@@ -64,6 +65,7 @@
 
     <!-- Fields -->
     <string name="attribute_email">"Email"<font color='@android:color/red'>*</font></string>
+    <string name="attribute_email_or_username">"Email or Username"<font color='@android:color/red'>*</font></string>
     <string name="attribute_phone_number">"Phone number"<font color='@android:color/red'>*</font></string>
     <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
     <string name="attribute_country">"Country"</string>
@@ -71,6 +73,8 @@
     <string name="attribute_given">"Given name"</string>
     <string name="attribute_surname">"Surname"</string>
     <string name="attribute_otp">"Code"</string>
+    <string name="attribute_username">"Username"</string>
+    <string name="submit_attributes">"Submit"</string>
     <string name="attribute_mfa_challenge">"Challenge"</string>
 
     <!-- Results -->
