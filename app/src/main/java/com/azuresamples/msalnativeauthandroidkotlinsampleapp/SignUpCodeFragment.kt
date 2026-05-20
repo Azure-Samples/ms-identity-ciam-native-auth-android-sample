@@ -16,6 +16,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
+import com.microsoft.identity.nativeauth.statemachine.states.SignUpAttributesRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,18 @@ class SignUpCodeFragment : Fragment() {
                         nextState = actionResult.nextState
                     )
                 }
-                is SignUpResult.AttributesRequired,
+                is SignUpResult.AttributesRequired -> {
+                    // Custom implementation for Flat Username / Alias
+                    if (actionResult.requiredAttributes.size == 1 &&
+                        actionResult.requiredAttributes.any { it.name == "flatusername" }
+                    ) {
+                        navigateToAttributes(
+                            nextState = actionResult.nextState
+                        )
+                    } else {
+                        displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    }
+                }
                 is SignUpResult.PasswordRequired -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
@@ -142,6 +154,23 @@ class SignUpCodeFragment : Fragment() {
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
+    }
+
+    private fun navigateToAttributes(nextState: SignUpAttributesRequiredState) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, nextState)
+        val fragment = SignUpAttributesFragment()
+        fragment.arguments = bundle
+
+        val fragmentManager = requireActivity().supportFragmentManager
+        // Pop the code fragment first, then show the attributes fragment
+        fragmentManager.popBackStackImmediate()
+        fragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
     }
 
     private fun finish() {
