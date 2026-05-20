@@ -8,8 +8,11 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
+import com.microsoft.identity.client.PublicClientApplication
+import com.microsoft.identity.common.java.nativeauth.providers.NativeAuthRequestInterceptor
 import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
@@ -27,8 +30,9 @@ import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredS
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.net.URL
 
-class EmailPasswordSignInSignUpFragment : Fragment() {
+class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestInterceptor {
 
     private lateinit var authClient: INativeAuthPublicClientApplication
     private var _binding: FragmentEmailPasswordBinding? = null
@@ -39,11 +43,25 @@ class EmailPasswordSignInSignUpFragment : Fragment() {
         private enum class STATUS { SignedIn, SignedOut }
     }
 
+    override fun additionalHeaders(requestUrl: URL): Map<String, String>? {
+        if (requestUrl.path.contains("oauth2/v2.0/initiate")) {
+            return mapOf(
+                "ignored-custom-header-value" to "ignored-custom-header",       // Will be ignored: doesn't start with "x-"
+                "x-client-header" to "customer_header_2",                       // Will be ignored: starts with reserved prefix "x-client-"
+                "X-my-custom-header" to "my data"                               // Will be added to the network request
+            )
+        }
+        return null
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEmailPasswordBinding.inflate(inflater, container, false)
         val view = binding.root
 
         authClient = AuthClient.getAuthClient()
+        (authClient as? PublicClientApplication)?.let { app ->
+            (app.configuration as? NativeAuthPublicClientApplicationConfiguration)?.requestInterceptor = this
+        }
 
         init()
 
