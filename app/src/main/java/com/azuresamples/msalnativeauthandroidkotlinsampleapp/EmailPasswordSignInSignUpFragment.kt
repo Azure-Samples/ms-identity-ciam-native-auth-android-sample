@@ -9,8 +9,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.client.PublicClientApplication
-import com.microsoft.identity.nativeauth.NativeAuthRequestInterceptor;
-import com.microsoft.identity.common.java.util.StringUtil
+import com.microsoft.identity.nativeauth.NativeAuthRequestInterceptor
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
@@ -120,7 +119,7 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             val actionResult: SignInResult = authClient.signIn(parameters)
 
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             when (actionResult) {
                 is SignInResult.Complete -> {
@@ -160,7 +159,7 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             val actionResult: SignUpResult = authClient.signUp(parameters)
 
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {

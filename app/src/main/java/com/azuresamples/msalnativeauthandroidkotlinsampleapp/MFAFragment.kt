@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.client.claims.ClaimsRequest
-import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
@@ -102,7 +101,7 @@ class MFAFragment : Fragment() {
             parameters.password = password
             val actionResult: SignInResult = authClient.signIn(parameters)
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             when (actionResult) {
                 is SignInResult.Complete -> {
