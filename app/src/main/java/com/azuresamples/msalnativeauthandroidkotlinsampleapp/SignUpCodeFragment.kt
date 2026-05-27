@@ -72,7 +72,7 @@ class SignUpCodeFragment : Fragment() {
                 is SignUpResult.AttributesRequired -> {
                     // Custom implementation for Flat Username / Alias
                     if (actionResult.requiredAttributes.size == 1 &&
-                        actionResult.requiredAttributes.any { it.name == "flatusername" }
+                        actionResult.requiredAttributes.any { it.attributeName == "flatusername" }
                     ) {
                         navigateToAttributes(
                             nextState = actionResult.nextState

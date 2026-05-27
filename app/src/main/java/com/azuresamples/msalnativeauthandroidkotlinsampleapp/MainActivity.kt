@@ -18,7 +18,9 @@ class MainActivity : AppCompatActivity() {
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        AuthClient.initialize(this@MainActivity)
+        val clientId = intent.getStringExtra(AuthClient.EXTRA_CLIENT_ID)
+        val authorityUrl = intent.getStringExtra(AuthClient.EXTRA_AUTHORITY_URL)
+        AuthClient.initialize(this@MainActivity, clientId, authorityUrl)
 
         val emailSignInSignUpFragment = EmailSignInSignUpFragment()
         val emailPasswordSignInSignUpFragment = EmailPasswordSignInSignUpFragment()
