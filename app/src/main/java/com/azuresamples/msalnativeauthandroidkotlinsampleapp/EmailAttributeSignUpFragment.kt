@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailAttributeBinding
-import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
@@ -111,7 +110,7 @@ class EmailAttributeSignUpFragment : Fragment() {
             val actionResult: SignUpResult = authClient.signUp(parameters)
 
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             when (actionResult) {
                 is SignUpResult.CodeRequired -> {

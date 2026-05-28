@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
-import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
@@ -60,7 +59,7 @@ class PasswordResetNewPasswordFragment : Fragment() {
 
             val actionResult: ResetPasswordSubmitPasswordResult = currentState.submitPassword(password)
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             when (actionResult) {
                 is ResetPasswordResult.Complete -> {

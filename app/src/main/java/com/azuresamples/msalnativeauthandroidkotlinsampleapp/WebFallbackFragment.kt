@@ -15,7 +15,6 @@ import com.microsoft.identity.client.AuthenticationCallback
 import com.microsoft.identity.client.IAccount
 import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.exception.MsalException
-import com.microsoft.identity.common.java.util.StringUtil
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
@@ -96,7 +95,7 @@ class WebFallbackFragment : Fragment() {
             val actionResult: SignInResult = authClient.signIn(parameters)
 
             binding.passwordText.text?.clear()
-            StringUtil.overwriteWithNull(password)
+            password.fill('\u0000')
 
             if (actionResult is SignInError && actionResult.isBrowserRequired()) {
                 Toast.makeText(requireContext(), actionResult.errorMessage, Toast.LENGTH_SHORT)
