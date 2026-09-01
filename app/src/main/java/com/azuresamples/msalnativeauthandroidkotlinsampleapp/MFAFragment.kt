@@ -99,7 +99,7 @@ class MFAFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
-            if (authManager.useV2APIs) {
+            if (Configuration.useNativeAuthV2) {
                 val result = authManager.signIn(email, password)
                 binding.passwordText.text?.clear()
                 password.fill('\u0000')
