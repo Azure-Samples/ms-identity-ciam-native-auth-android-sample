@@ -29,6 +29,13 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     var currentState: NativeAuthBaseStateV2? = null
         private set
 
+    /**
+     * Single switch the MFA screens read to decide whether to drive the Native Auth V2 SDK surface
+     * (true) or the legacy V1 surface (false). Defaults to [Configuration.useNativeAuthV2] so the
+     * whole sample stays on one surface unless overridden.
+     */
+    var useV2APIs: Boolean = Configuration.useNativeAuthV2
+
     suspend fun signIn(email: String, password: CharArray? = null): NativeAuthResultV2 {
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
@@ -94,7 +101,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthVerificationRequired -> result.nextState
-            is NativeAuthErrorV2 -> result.nextState ?: currentState
             else -> null
         }
         return result

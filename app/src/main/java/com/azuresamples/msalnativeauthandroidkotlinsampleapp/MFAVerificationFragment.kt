@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,15 +12,26 @@ import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.Fragmen
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
+import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
+import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MFAVerificationFragment : Fragment() {
-    private lateinit var currentState: MFARequiredState
+    // The challenge (verify) state: V1 MFARequiredState, or V2 MFAVerificationRequiredStateV2 /
+    // StrongAuthVerificationRequiredStateV2. Reassigned when the user resends the challenge.
+    private lateinit var currentState: Parcelable
+    // The pre-challenge selectable state, kept only so V2 can resend by re-selecting the method
+    // (the V2 verification states expose no resend of their own). Null for V1.
+    private var selectionState: Parcelable? = null
     private lateinit var authMethod: AuthMethod
     private lateinit var sentTo: String
     private lateinit var channel: String
@@ -34,7 +46,8 @@ class MFAVerificationFragment : Fragment() {
         _binding = FragmentMfaChallengeBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? MFARequiredState)!!
+        currentState = (bundle?.getParcelable(Constants.STATE) as? Parcelable)!!
+        selectionState = bundle.getParcelable(Constants.SELECTION_STATE) as? Parcelable
         authMethod = (bundle.getParcelable(Constants.AUTH_METHOD) as? AuthMethod)!!
         sentTo = bundle.getString(Constants.SENT_TO)!!
         channel = bundle.getString(Constants.CHANNEL)!!
@@ -66,12 +79,19 @@ class MFAVerificationFragment : Fragment() {
     }
 
     private fun verifyChallenge() {
+        val emailCode = binding.challengeText.text.toString()
+
+        when (val state = currentState) {
+            is MFARequiredState -> verifyChallengeV1(state, emailCode)
+            is MFAVerificationRequiredStateV2 -> verifyChallengeV2 { state.submitChallenge(emailCode) }
+            is StrongAuthVerificationRequiredStateV2 -> verifyChallengeV2 { state.submitChallenge(emailCode) }
+            else -> displayDialog(getString(R.string.unexpected_sdk_result_title), state.toString())
+        }
+    }
+
+    private fun verifyChallengeV1(state: MFARequiredState, emailCode: String) {
         CoroutineScope(Dispatchers.Main).launch {
-            val emailCode = binding.challengeText.text.toString()
-
-            val actionResult = currentState.submitChallenge(emailCode)
-
-            when (actionResult) {
+            when (val actionResult = state.submitChallenge(emailCode)) {
                 is SignInResult.Complete -> {
                     Toast.makeText(
                         requireContext(),
@@ -90,13 +110,39 @@ class MFAVerificationFragment : Fragment() {
         }
     }
 
+    private inline fun verifyChallengeV2(crossinline call: suspend () -> NativeAuthResultV2) {
+        CoroutineScope(Dispatchers.Main).launch {
+            when (val result = call()) {
+                is NativeAuthResultV2.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                }
+                is NativeAuthErrorV2 -> {
+                    displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                }
+            }
+        }
+    }
+
     private fun resendChallenge() {
         clearChallengeText()
 
-        CoroutineScope(Dispatchers.Main).launch {
-            val actionResult = currentState.requestChallenge(authMethod)
+        when (val state = currentState) {
+            is MFARequiredState -> resendChallengeV1(state)
+            else -> resendChallengeV2()
+        }
+    }
 
-            when (actionResult) {
+    private fun resendChallengeV1(state: MFARequiredState) {
+        CoroutineScope(Dispatchers.Main).launch {
+            when (val actionResult = state.requestChallenge(authMethod)) {
                 is MFARequiredResult.VerificationRequired -> {
                     currentState = actionResult.nextState
                     Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
@@ -106,6 +152,39 @@ class MFAVerificationFragment : Fragment() {
                 }
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                }
+            }
+        }
+    }
+
+    private fun resendChallengeV2() {
+        val selection = selectionState
+        val call: (suspend () -> NativeAuthResultV2)? = when (selection) {
+            is MFARequiredStateV2 -> { { selection.selectAuthMethod(authMethod) } }
+            is StrongAuthRegistrationRequiredStateV2 -> { { selection.selectAuthMethod(authMethod) } }
+            else -> null
+        }
+
+        if (call == null) {
+            displayDialog(getString(R.string.unexpected_sdk_result_title), getString(R.string.unknown_error_message))
+            return
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            when (val result = call()) {
+                is NativeAuthResultV2.MFAVerificationRequired -> {
+                    currentState = result.nextState
+                    Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
+                }
+                is NativeAuthResultV2.StrongAuthVerificationRequired -> {
+                    currentState = result.nextState
+                    Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
+                }
+                is NativeAuthErrorV2 -> {
+                    displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
                 }
             }
         }
