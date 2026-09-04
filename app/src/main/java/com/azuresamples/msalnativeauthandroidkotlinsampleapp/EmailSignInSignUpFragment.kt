@@ -2,12 +2,17 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
@@ -25,6 +30,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.SignInPasswordRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -113,7 +119,11 @@ class EmailSignInSignUpFragment : Fragment() {
                     )
                 }
                 is SignInResult.PasswordRequired -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    // Account requires a password even though sign-in was started with email + OTP.
+                    // Collect it via a pop-up and submit it on the returned state.
+                    promptForPassword { password ->
+                        submitPasswordV1(actionResult.nextState, password)
+                    }
                 }
                 is SignInResult.MFARequired -> {
                     // Please refer to the MFA Fragment for handling MFA branches if conditional access - MFA is enabled.
@@ -184,11 +194,58 @@ class EmailSignInSignUpFragment : Fragment() {
             is NativeAuthResultV2.Complete -> {
                 displaySignedInState(result.resultValue)
             }
+            is NativeAuthResultV2.PasswordRequired -> {
+                // Account requires a password even though sign-in was started with email + OTP.
+                // Collect it via a pop-up and submit it on the retained state.
+                promptForPassword { password ->
+                    submitPasswordV2(password)
+                }
+            }
+            is NativeAuthResultV2.MFARequired -> {
+                displayMFARequiredDialog(result.nextState, result.authMethods)
+            }
+            is NativeAuthResultV2.StrongAuthRegistrationRequired -> {
+                displayStrongAuthRequiredDialog(result.nextState, result.authMethods)
+            }
             is NativeAuthErrorV2 -> {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+            }
+        }
+    }
+
+    private fun submitPasswordV2(password: CharArray) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = authManager.submitPassword(password)
+            password.fill('\u0000')
+            if (result != null) {
+                handleResultV2(result)
+            }
+        }
+    }
+
+    private fun submitPasswordV1(passwordRequiredState: SignInPasswordRequiredState, password: CharArray) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val submitResult = passwordRequiredState.submitPassword(password)
+            password.fill('\u0000')
+
+            when (submitResult) {
+                is SignInResult.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    displaySignedInState(submitResult.resultValue)
+                }
+                is SignInError -> {
+                    handleSignInError(submitResult)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), submitResult.toString())
+                }
             }
         }
     }
@@ -280,6 +337,93 @@ class EmailSignInSignUpFragment : Fragment() {
             .setMessage(message)
         val alertDialog = builder.create()
         alertDialog.show()
+    }
+
+    private fun displayMFARequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.mfa_required_notice)
+
+        // If proceed, let the user pick which authentication method to challenge.
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
+            navigateToPickAuthMethod(state, ArrayList(authMethods))
+        }
+
+        // If not proceed
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun displayStrongAuthRequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(R.string.strong_auth_method_title)
+        builder.setMessage(R.string.strong_auth_method_message)
+
+        // If proceed
+        builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
+            navigateToPickAuthMethod(state, ArrayList(authMethods))
+        }
+
+        // If not proceed
+        builder.setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun navigateToPickAuthMethod(state: Parcelable, authMethods: ArrayList<AuthMethod>) {
+        val bundle = Bundle()
+        bundle.putParcelable(Constants.STATE, state)
+        bundle.putSerializable(Constants.AUTH_METHOD_LIST, authMethods)
+
+        val fragment = PickAuthMethodFragment()
+        fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun promptForPassword(onPasswordEntered: (CharArray) -> Unit) {
+        val context = requireContext()
+        val passwordInput = EditText(context).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            hint = getString(R.string.password_required_hint)
+        }
+        val container = FrameLayout(context).apply {
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding / 2, padding, 0)
+            addView(passwordInput)
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle(getString(R.string.password_required_dialog_title))
+            .setMessage(getString(R.string.password_required_dialog_message))
+            .setView(container)
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.submit_password)) { _, _ ->
+                val length = passwordInput.text.length
+                val password = CharArray(length)
+                passwordInput.text.getChars(0, length, password, 0)
+                passwordInput.text.clear()
+                onPasswordEntered(password)
+            }
+            .setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+                dialog.cancel()
+            }
+            .show()
     }
 
     private fun navigateToSignIn(signInstate: SignInCodeRequiredState) {

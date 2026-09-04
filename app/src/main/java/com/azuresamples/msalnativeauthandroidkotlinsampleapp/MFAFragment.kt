@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,15 +17,14 @@ import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenPara
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
+import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
-import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
+import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
-import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 class MFAFragment : Fragment() {
 
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var authManager: AuthManager
     private var _binding: FragmentEmailPasswordBinding? = null
     private val binding get() = _binding!!
 
@@ -47,6 +48,7 @@ class MFAFragment : Fragment() {
         (activity as? AppCompatActivity)?.supportActionBar?.title = getString(R.string.title_mfa)
 
         authClient = AuthClient.getAuthClient()
+        authManager = AuthClient.getAuthManager()
 
         init()
 
@@ -97,6 +99,14 @@ class MFAFragment : Fragment() {
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
+            if (Configuration.useNativeAuthV2) {
+                val result = authManager.signIn(email, password)
+                binding.passwordText.text?.clear()
+                password.fill('\u0000')
+                handleSignInResultV2(result)
+                return@launch
+            }
+
             val parameters = NativeAuthSignInParameters(username = email)
             parameters.password = password
             val actionResult: SignInResult = authClient.signIn(parameters)
@@ -113,10 +123,10 @@ class MFAFragment : Fragment() {
                     displaySignedInState(accountState = actionResult.resultValue)
                 }
                 is SignInResult.MFARequired -> {
-                    displayMFARequiredDialog(actionResult)
+                    displayMFARequiredDialog(actionResult.nextState, actionResult.authMethods)
                 }
                 is SignInResult.StrongAuthMethodRegistrationRequired -> {
-                    displayStrongAuthRequiredDialog(actionResult)
+                    displayStrongAuthRequiredDialog(actionResult.nextState, actionResult.authMethods)
                 }
                 is SignInError -> {
                     handleSignInError(actionResult)
@@ -124,6 +134,31 @@ class MFAFragment : Fragment() {
                 else -> {
                     displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
                 }
+            }
+        }
+    }
+
+    private fun handleSignInResultV2(result: NativeAuthResultV2) {
+        when (result) {
+            is NativeAuthResultV2.Complete -> {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.sign_in_successful_message),
+                    Toast.LENGTH_SHORT
+                ).show()
+                displaySignedInState(accountState = result.resultValue)
+            }
+            is NativeAuthResultV2.MFARequired -> {
+                displayMFARequiredDialog(result.nextState, result.authMethods)
+            }
+            is NativeAuthResultV2.StrongAuthRegistrationRequired -> {
+                displayStrongAuthRequiredDialog(result.nextState, result.authMethods)
+            }
+            is NativeAuthErrorV2 -> {
+                displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
+            }
+            else -> {
+                displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
             }
         }
     }
@@ -223,29 +258,13 @@ class MFAFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun displayMFARequiredDialog(actionResult: SignInResult.MFARequired) {
+    private fun displayMFARequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(R.string.mfa_required_notice)
 
-        // If proceed
+        // If proceed, let the user pick which authentication method to challenge.
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
-            CoroutineScope(Dispatchers.Main).launch {
-                val awaitingMFAState = actionResult.nextState
-                val requestChallengeResult = awaitingMFAState.requestChallenge(actionResult.authMethods.first())
-                if (requestChallengeResult is MFARequiredResult.VerificationRequired) {
-                    navigateToMFAVerification(
-                        nextState = requestChallengeResult.nextState,
-                        sentTo = requestChallengeResult.sentTo,
-                        channel = requestChallengeResult.channel,
-                        authMethod = actionResult.authMethods.first()
-                    )
-                } else {
-                    displayDialog(
-                        getString(R.string.unexpected_sdk_result_title),
-                        requestChallengeResult.toString()
-                    )
-                }
-            }
+            navigateToPickAuthMethod(state, ArrayList(authMethods))
         }
 
         // If not proceed
@@ -259,14 +278,14 @@ class MFAFragment : Fragment() {
         dialog.show()
     }
 
-    private fun displayStrongAuthRequiredDialog(actionResult: SignInResult.StrongAuthMethodRegistrationRequired) {
+    private fun displayStrongAuthRequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(R.string.strong_auth_method_title)
         builder.setMessage(R.string.strong_auth_method_message)
 
         // If proceed
         builder.setPositiveButton(getString(R.string.yes_message)) { _, _ ->
-            navigateToPickAuthMethod(actionResult.nextState, actionResult.authMethods.toCollection(ArrayList()))
+            navigateToPickAuthMethod(state, ArrayList(authMethods))
         }
 
         // If not proceed
@@ -280,27 +299,9 @@ class MFAFragment : Fragment() {
         dialog.show()
     }
 
-    private fun navigateToMFAVerification(nextState: MFARequiredState, sentTo: String, channel: String, authMethod: AuthMethod) {
+    private fun navigateToPickAuthMethod(state: Parcelable, authMethods: ArrayList<AuthMethod>) {
         val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, nextState)
-        bundle.putString(Constants.SENT_TO, sentTo)
-        bundle.putString(Constants.CHANNEL, channel)
-        bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
-
-        val fragment = MFAVerificationFragment()
-        fragment.arguments = bundle
-
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .setReorderingAllowed(true)
-            .addToBackStack(fragment::class.java.name)
-            .replace(R.id.scenario_fragment, fragment)
-            .commit()
-    }
-
-    private fun navigateToPickAuthMethod(nextState: RegisterStrongAuthState, authMethods: ArrayList<AuthMethod>) {
-        val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putParcelable(Constants.STATE, state)
         bundle.putSerializable(Constants.AUTH_METHOD_LIST, authMethods)
 
         val fragment = PickAuthMethodFragment()

@@ -15,6 +15,7 @@ import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
+import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordStartResult
@@ -43,7 +44,7 @@ class PasswordResetFragment : Fragment() {
         val view = binding.root
 
         authClient = AuthClient.getAuthClient()
-        authManager = AuthManager(authClient)
+        authManager = AuthClient.getAuthManager()
 
         init()
 
@@ -194,11 +195,38 @@ class PasswordResetFragment : Fragment() {
             is NativeAuthResultV2.CodeRequired -> {
                 navigateToResetPasswordCodeFragmentV2(result.nextState)
             }
+            is ResetPasswordErrorV2 -> {
+                handleResetPasswordErrorV2(result)
+            }
             is NativeAuthErrorV2 -> {
-                displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
+                handleGenericErrorV2(result)
             }
             else -> {
                 displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+            }
+        }
+    }
+
+    private fun handleResetPasswordErrorV2(error: ResetPasswordErrorV2) {
+        when {
+            error.isBrowserRequired() || error.isUserNotFound() || error.isInvalidUsername() -> {
+                displayDialog(error.error, error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
+            }
+        }
+    }
+
+    private fun handleGenericErrorV2(error: NativeAuthErrorV2) {
+        when {
+            error.isNotImplemented() || error.isBrowserRequired() -> {
+                displayDialog(error.error ?: getString(R.string.unexpected_sdk_error_title), error.errorMessage)
+            }
+            else -> {
+                // Unexpected error
+                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
             }
         }
     }

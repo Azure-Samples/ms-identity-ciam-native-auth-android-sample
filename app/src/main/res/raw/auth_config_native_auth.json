@@ -1,11 +1,12 @@
 {
-  "client_id": "Enter_the_Application_Id_Here",
+  "client_id": "430146fc-27b5-4c63-a677-2e5f2fa9aa00",
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+      "authority_url": "https://spasamples.ciamlogin.com/1eb974cd-0dc5-40a6-9f68-94b19f5535c5/"
     }
   ],
+  "dc": "ESTS-PUB-SEASLR1-FD000-TEST1-100",
   "challenge_types": ["oob", "password"],
   "capabilities": ["mfa_required", "registration_required"],
   "logging": {

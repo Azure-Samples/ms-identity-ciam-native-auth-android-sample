@@ -2,9 +2,12 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
@@ -119,7 +122,8 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
             if (Configuration.useNativeAuthV2) {
-                val result = authManager.signIn(email, password)
+                // An empty field means the password is deferred; the SDK then returns PasswordRequired.
+                val result = authManager.signIn(email, password.takeIf { it.isNotEmpty() })
                 binding.passwordText.text?.clear()
                 password.fill('\u0000')
                 handleResultV2(result)
@@ -281,6 +285,12 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
                 ).show()
                 displaySignedInState(accountState = result.resultValue)
             }
+            is NativeAuthResultV2.PasswordRequired -> {
+                // Sign-in was started without a password. Collect it and submit it on the retained state.
+                promptForPassword { password ->
+                    submitPasswordV2(password)
+                }
+            }
             is NativeAuthErrorV2 -> {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
@@ -288,6 +298,46 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
                 displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
             }
         }
+    }
+
+    private fun submitPasswordV2(password: CharArray) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = authManager.submitPassword(password)
+            password.fill('\u0000')
+            if (result != null) {
+                handleResultV2(result)
+            }
+        }
+    }
+
+    private fun promptForPassword(onPasswordEntered: (CharArray) -> Unit) {
+        val context = requireContext()
+        val passwordInput = EditText(context).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            hint = getString(R.string.password_required_hint)
+        }
+        val container = FrameLayout(context).apply {
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding / 2, padding, 0)
+            addView(passwordInput)
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle(getString(R.string.password_required_dialog_title))
+            .setMessage(getString(R.string.password_required_dialog_message))
+            .setView(container)
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.submit_password)) { _, _ ->
+                val length = passwordInput.text.length
+                val password = CharArray(length)
+                passwordInput.text.getChars(0, length, password, 0)
+                passwordInput.text.clear()
+                onPasswordEntered(password)
+            }
+            .setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+                dialog.cancel()
+            }
+            .show()
     }
 
     private fun handleSignInError(error: SignInError) {

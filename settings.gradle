@@ -1,4 +1,4 @@
-includeBuild('../MSAL Android Main') {
+includeBuild('../android-complete') {
     dependencySubstitution {
         substitute module('com.microsoft.identity.client:msal') using project(':msal')
     }

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentVerificationChallengeBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
@@ -146,9 +147,9 @@ class StrongAuthVerificationChallengeFragment : Fragment() {
     }
 
     private fun finish() {
-        // Pop back to MFAFragment fragment
-        val fragmentManager = requireActivity().supportFragmentManager
-        val name: String = MFAFragment::class.java.name
-        fragmentManager.popBackStack(name, 0)
+        // Pop the whole MFA sub-flow (always entered via PickAuthMethodFragment) and return to
+        // whichever fragment launched it (e.g. MFAFragment or EmailSignInSignUpFragment).
+        requireActivity().supportFragmentManager
+            .popBackStack(PickAuthMethodFragment::class.java.name, FragmentManager.POP_BACK_STACK_INCLUSIVE)
     }
 }

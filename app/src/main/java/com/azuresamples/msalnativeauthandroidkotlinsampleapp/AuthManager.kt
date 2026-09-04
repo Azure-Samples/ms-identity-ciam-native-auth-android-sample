@@ -6,6 +6,7 @@ import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
+import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
@@ -15,6 +16,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequ
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPasswordStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 
@@ -56,6 +58,9 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     suspend fun submitNewPassword(password: CharArray): NativeAuthResultV2? =
         (currentState as? NewPasswordRequiredStateV2)?.let { track(it.submitNewPassword(password)) }
 
+    suspend fun signInAfterPasswordReset(): NativeAuthResultV2? =
+        (currentState as? SignInAfterResetPasswordStateV2)?.let { track(it.signIn()) }
+
     suspend fun submitAttributes(attributes: UserAttributes): NativeAuthResultV2? =
         when (val state = currentState) {
             is AttributesRequiredStateV2 -> track(state.submitAttributes(attributes))
@@ -86,6 +91,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.AttributesInvalid -> result.nextState
             is NativeAuthResultV2.MFARequired -> result.nextState
             is NativeAuthResultV2.MFAVerificationRequired -> result.nextState
+            is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthVerificationRequired -> result.nextState
             else -> null

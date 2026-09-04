@@ -10,6 +10,7 @@ import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationParame
 
 object AuthClient : Application() {
     private lateinit var authClient: INativeAuthPublicClientApplication
+    private lateinit var authManager: AuthManager
 
     const val EXTRA_CLIENT_ID = "native_auth_client_id"
     const val EXTRA_AUTHORITY_URL = "native_auth_authority_url"
@@ -17,6 +18,11 @@ object AuthClient : Application() {
     @JvmStatic
     fun getAuthClient(): INativeAuthPublicClientApplication {
         return authClient
+    }
+
+    @JvmStatic
+    fun getAuthManager(): AuthManager {
+        return authManager
     }
 
     // Initialize the auth client with the provided clientId and authorityUrl, or with the default config file if they are not provided.
@@ -48,5 +54,6 @@ object AuthClient : Application() {
                 R.raw.auth_config_native_auth
             )
         }
+        authManager = AuthManager(authClient)
     }
 }
