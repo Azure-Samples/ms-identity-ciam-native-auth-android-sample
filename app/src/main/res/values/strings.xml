@@ -49,6 +49,11 @@
     <string name="yes_message">"Yes"</string>
     <string name="cancel_message">"Cancel"</string>
 
+    <!-- Password required pop-up -->
+    <string name="password_required_dialog_title">"Password Required"</string>
+    <string name="password_required_dialog_message">"This account requires a password to complete sign in."</string>
+    <string name="password_required_hint">"Password"</string>
+
     <!-- Notice -->
     <string name="mfa_required_notice">"Multi-factor authentication is required. Do you want to proceed?"</string>
     <string name="strong_auth_method_title">"Strong authentication method"</string>
