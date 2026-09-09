@@ -17,6 +17,7 @@ import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
+import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
@@ -115,7 +116,7 @@ class EmailSignInSignUpFragment : Fragment() {
             when (actionResult) {
                 is SignInResult.CodeRequired -> {
                     navigateToSignIn(
-                        signInstate = actionResult.nextState
+                        state = actionResult.nextState
                     )
                 }
                 is SignInResult.PasswordRequired -> {
@@ -194,12 +195,24 @@ class EmailSignInSignUpFragment : Fragment() {
             is NativeAuthResultV2.Complete -> {
                 displaySignedInState(result.resultValue)
             }
+            is NativeAuthResultV2.CodeRequired -> {
+                when (result.scenario) {
+                    NativeAuthFlowScenarioV2.SIGN_UP -> navigateToSignUp(result.nextState)
+                    else -> navigateToSignIn(result.nextState)
+                }
+            }
             is NativeAuthResultV2.PasswordRequired -> {
                 // Account requires a password even though sign-in was started with email + OTP.
                 // Collect it via a pop-up and submit it on the retained state.
                 promptForPassword { password ->
                     submitPasswordV2(password)
                 }
+            }
+            is NativeAuthResultV2.AttributesRequired -> {
+                navigateToAttributesV2(
+                    result.nextState,
+                    result.requiredAttributes.mapNotNull { it.attributeName }
+                )
             }
             is NativeAuthResultV2.MFARequired -> {
                 displayMFARequiredDialog(result.nextState, result.authMethods)
@@ -426,9 +439,9 @@ class EmailSignInSignUpFragment : Fragment() {
             .show()
     }
 
-    private fun navigateToSignIn(signInstate: SignInCodeRequiredState) {
+    private fun navigateToSignIn(state: Parcelable) {
         val bundle = Bundle()
-        bundle.putParcelable(Constants.STATE, signInstate)
+        bundle.putParcelable(Constants.STATE, state)
         val fragment = SignInCodeFragment()
         fragment.arguments = bundle
 
@@ -440,11 +453,27 @@ class EmailSignInSignUpFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToSignUp(nextState: SignUpCodeRequiredState) {
+    private fun navigateToSignUp(nextState: Parcelable) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
         val fragment = SignUpCodeFragment()
         fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToAttributesV2(state: Parcelable, attributeNames: List<String>) {
+        val fragment = SignUpAttributesFragmentV2().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, state)
+                putStringArrayList(Constants.REQUIRED_ATTRIBUTES, ArrayList(attributeNames))
+            }
+        }
 
         requireActivity().supportFragmentManager
             .beginTransaction()

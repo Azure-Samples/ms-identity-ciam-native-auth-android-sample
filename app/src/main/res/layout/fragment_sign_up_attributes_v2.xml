@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/hint_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/dimens_15dp"
+            android:gravity="start|center_horizontal"
+            android:text="@string/attributes_hint_text_value"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/attribute_fields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/hint_text" />
+
+        <Button
+            android:id="@+id/submit_attributes"
+            style="@style/ActionButtonStyle"
+            android:layout_marginTop="@dimen/dimens_15dp"
+            android:text="@string/submit_attributes"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/attribute_fields" />
+
+        <Button
+            android:id="@+id/cancel_attributes"
+            style="@style/ActionButtonStyle"
+            android:layout_marginTop="@dimen/dimens_15dp"
+            android:layout_marginBottom="@dimen/dimens_15dp"
+            android:text="@string/cancel_message"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/submit_attributes" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

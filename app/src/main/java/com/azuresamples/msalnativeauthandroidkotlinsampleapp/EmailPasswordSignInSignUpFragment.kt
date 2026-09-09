@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfig
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
+import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
@@ -281,6 +283,18 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
                 ).show()
                 displaySignedInState(accountState = result.resultValue)
             }
+            is NativeAuthResultV2.CodeRequired -> {
+                when (result.scenario) {
+                    NativeAuthFlowScenarioV2.SIGN_UP -> navigateToSignUp(result.nextState)
+                    else -> navigateToSignIn(result.nextState)
+                }
+            }
+            is NativeAuthResultV2.AttributesRequired -> {
+                navigateToAttributesV2(
+                    result.nextState,
+                    result.requiredAttributes.mapNotNull { it.attributeName }
+                )
+            }
             is NativeAuthErrorV2 -> {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
@@ -329,6 +343,52 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
         bundle.putParcelable(Constants.STATE, nextState)
         val fragment = SignUpCodeFragment()
         fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToSignUp(nextState: Parcelable) {
+        val fragment = SignUpCodeFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, nextState)
+            }
+        }
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToSignIn(nextState: Parcelable) {
+        val fragment = SignInCodeFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, nextState)
+            }
+        }
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToAttributesV2(state: Parcelable, attributeNames: List<String>) {
+        val fragment = SignUpAttributesFragmentV2().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, state)
+                putStringArrayList(Constants.REQUIRED_ATTRIBUTES, ArrayList(attributeNames))
+            }
+        }
 
         requireActivity().supportFragmentManager
             .beginTransaction()

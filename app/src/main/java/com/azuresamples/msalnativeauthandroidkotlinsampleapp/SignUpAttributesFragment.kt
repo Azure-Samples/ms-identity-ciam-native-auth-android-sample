@@ -72,7 +72,10 @@ class SignUpAttributesFragment : Fragment() {
                     )
                 }
                 is SignUpResult.AttributesRequired -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), actionResult.toString())
+                    displayDialog(
+                        getString(R.string.unexpected_sdk_result_title),
+                        actionResult.toString()
+                    )
                 }
                 is SignUpSubmitAttributesError -> {
                     displayDialog(getString(R.string.unexpected_sdk_error_title), actionResult.exception?.message ?: actionResult.errorMessage)

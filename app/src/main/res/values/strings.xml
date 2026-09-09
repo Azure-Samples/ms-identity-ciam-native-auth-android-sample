@@ -51,7 +51,7 @@
 
     <!-- Password required pop-up -->
     <string name="password_required_dialog_title">"Password Required"</string>
-    <string name="password_required_dialog_message">"This account requires a password to complete sign in."</string>
+    <string name="password_required_dialog_message">"A password is required to continue."</string>
     <string name="password_required_hint">"Password"</string>
 
     <!-- Notice -->
@@ -66,6 +66,9 @@
     <string name="network_request_exception_titile">"Network Request Exception"</string>
     <string name="invalid_web_url_title">"Invalid WEB_API_BASE_URL"</string>
     <string name="unknown_error_message">"Unknown error"</string>
+    <string name="invalid_attributes_title">"Invalid attributes"</string>
+    <string name="missing_required_attributes_message">"No required attributes were provided by the service."</string>
+    <string name="required_attribute_message">"This attribute is required."</string>
     <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->
