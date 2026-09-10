@@ -63,9 +63,7 @@ class MFAVerificationFragment : Fragment() {
     }
 
     private fun initializeLabels() {
-        binding.hintText.text = getString(R.string.mfa_challenge_hint_text_value)
-            .replace("challengeChannel", channel)
-            .replace("loginHint", sentTo)
+        binding.hintText.text = getString(R.string.mfa_challenge_hint_text_value, channel, sentTo)
     }
 
     private fun initializeButtonListeners() {
@@ -79,19 +77,23 @@ class MFAVerificationFragment : Fragment() {
     }
 
     private fun verifyChallenge() {
-        val emailCode = binding.challengeText.text.toString()
+        val verificationCode = binding.challengeText.text.toString()
 
         when (val state = currentState) {
-            is MFARequiredState -> verifyChallengeV1(state, emailCode)
-            is MFAVerificationRequiredStateV2 -> verifyChallengeV2 { state.submitChallenge(emailCode) }
-            is StrongAuthVerificationRequiredStateV2 -> verifyChallengeV2 { state.submitChallenge(emailCode) }
+            is MFARequiredState -> verifyChallengeV1(state, verificationCode)
+            is MFAVerificationRequiredStateV2 -> verifyChallengeV2 {
+                state.submitChallenge(verificationCode)
+            }
+            is StrongAuthVerificationRequiredStateV2 -> verifyChallengeV2 {
+                state.submitChallenge(verificationCode)
+            }
             else -> displayDialog(getString(R.string.unexpected_sdk_result_title), state.toString())
         }
     }
 
-    private fun verifyChallengeV1(state: MFARequiredState, emailCode: String) {
+    private fun verifyChallengeV1(state: MFARequiredState, verificationCode: String) {
         CoroutineScope(Dispatchers.Main).launch {
-            when (val actionResult = state.submitChallenge(emailCode)) {
+            when (val actionResult = state.submitChallenge(verificationCode)) {
                 is SignInResult.Complete -> {
                     Toast.makeText(
                         requireContext(),

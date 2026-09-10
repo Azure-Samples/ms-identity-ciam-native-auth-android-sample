@@ -6,6 +6,7 @@ import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -43,6 +44,15 @@ class PickAuthMethodFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_pick_auth_method_list, container, false)
+        val headerText: TextView = view.findViewById(R.id.header_text)
+        headerText.setText(
+            when (currentState) {
+                is RegisterStrongAuthState,
+                is StrongAuthRegistrationRequiredStateV2 ->
+                    R.string.pick_auth_method_registration_text_value
+                else -> R.string.pick_auth_method_text_value
+            }
+        )
 
         val recyclerView: RecyclerView = view.findViewById(R.id.authMethodList)
         recyclerView.layoutManager = LinearLayoutManager(context)
