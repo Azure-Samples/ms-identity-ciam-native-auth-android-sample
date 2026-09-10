@@ -10,8 +10,9 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.client.PublicClientApplication
-import com.microsoft.identity.nativeauth.NativeAuthRequestInterceptor
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.NativeAuthRequestInterceptor
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
@@ -121,9 +122,12 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
             if (Configuration.useNativeAuthV2) {
-                val result = authManager.signIn(email, password)
-                binding.passwordText.text?.clear()
-                password.fill('\u0000')
+                val result = try {
+                    authManager.signIn(email, password)
+                } finally {
+                    binding.passwordText.text?.clear()
+                    password.fill('\u0000')
+                }
                 handleResultV2(result)
                 return@launch
             }
@@ -295,6 +299,9 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
                     result.requiredAttributes.mapNotNull { it.attributeName }
                 )
             }
+            is NativeAuthResultV2.MFARequired -> {
+                displayMFARequiredDialog(result.nextState, result.authMethods)
+            }
             is NativeAuthErrorV2 -> {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
@@ -387,6 +394,36 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             arguments = Bundle().apply {
                 putParcelable(Constants.STATE, state)
                 putStringArrayList(Constants.REQUIRED_ATTRIBUTES, ArrayList(attributeNames))
+            }
+        }
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun displayMFARequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.mfa_required_notice)
+            .setPositiveButton(getString(R.string.yes_message)) { _, _ ->
+                navigateToPickAuthMethod(state, authMethods)
+            }
+            .setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .create()
+            .show()
+    }
+
+    private fun navigateToPickAuthMethod(state: Parcelable, authMethods: List<AuthMethod>) {
+        val fragment = PickAuthMethodFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, state)
+                putSerializable(Constants.AUTH_METHOD_LIST, ArrayList(authMethods))
             }
         }
 

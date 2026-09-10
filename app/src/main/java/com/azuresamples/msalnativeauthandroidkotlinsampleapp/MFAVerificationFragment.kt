@@ -18,7 +18,6 @@ import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
@@ -30,8 +29,8 @@ class MFAVerificationFragment : Fragment() {
     // The challenge (verify) state: V1 MFARequiredState, or V2 MFAVerificationRequiredStateV2 /
     // StrongAuthVerificationRequiredStateV2. Reassigned when the user resends the challenge.
     private lateinit var currentState: Parcelable
-    // The pre-challenge selectable state, kept only so V2 can resend by re-selecting the method
-    // (the V2 verification states expose no resend of their own). Null for V1.
+    // Strong-auth V2 resends by re-selecting its method. MFA V2 resends directly from its
+    // verification state so the latest opaque continuation is preserved.
     private var selectionState: Parcelable? = null
     private lateinit var authMethod: AuthMethod
     private lateinit var sentTo: String
@@ -137,7 +136,9 @@ class MFAVerificationFragment : Fragment() {
 
         when (val state = currentState) {
             is MFARequiredState -> resendChallengeV1(state)
-            else -> resendChallengeV2()
+            is MFAVerificationRequiredStateV2 -> resendMFAChallengeV2(state)
+            is StrongAuthVerificationRequiredStateV2 -> resendStrongAuthChallengeV2()
+            else -> displayDialog(getString(R.string.unexpected_sdk_result_title), state.toString())
         }
     }
 
@@ -158,10 +159,38 @@ class MFAVerificationFragment : Fragment() {
         }
     }
 
-    private fun resendChallengeV2() {
+    private fun resendMFAChallengeV2(state: MFAVerificationRequiredStateV2) {
+        CoroutineScope(Dispatchers.Main).launch {
+            when (val result = state.resendChallenge()) {
+                is NativeAuthResultV2.MFAVerificationRequired -> {
+                    updateVerificationState(
+                        state = result.nextState,
+                        newSentTo = result.sentTo,
+                        newChannel = result.channel
+                    )
+                    Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
+                }
+                is NativeAuthResultV2.Complete -> {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sign_in_successful_message),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                }
+                is NativeAuthErrorV2 -> {
+                    displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
+                }
+                else -> {
+                    displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                }
+            }
+        }
+    }
+
+    private fun resendStrongAuthChallengeV2() {
         val selection = selectionState
         val call: (suspend () -> NativeAuthResultV2)? = when (selection) {
-            is MFARequiredStateV2 -> { { selection.selectAuthMethod(authMethod) } }
             is StrongAuthRegistrationRequiredStateV2 -> { { selection.selectAuthMethod(authMethod) } }
             else -> null
         }
@@ -173,12 +202,12 @@ class MFAVerificationFragment : Fragment() {
 
         CoroutineScope(Dispatchers.Main).launch {
             when (val result = call()) {
-                is NativeAuthResultV2.MFAVerificationRequired -> {
-                    currentState = result.nextState
-                    Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
-                }
                 is NativeAuthResultV2.StrongAuthVerificationRequired -> {
-                    currentState = result.nextState
+                    updateVerificationState(
+                        state = result.nextState,
+                        newSentTo = result.sentTo,
+                        newChannel = result.channel
+                    )
                     Toast.makeText(requireContext(), getString(R.string.resend_challenge_message), Toast.LENGTH_LONG).show()
                 }
                 is NativeAuthErrorV2 -> {
@@ -189,6 +218,13 @@ class MFAVerificationFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun updateVerificationState(state: Parcelable, newSentTo: String, newChannel: String) {
+        currentState = state
+        sentTo = newSentTo
+        channel = newChannel
+        initializeLabels()
     }
 
     private fun clearChallengeText() {
