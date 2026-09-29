@@ -2,6 +2,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
 import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
@@ -193,7 +195,14 @@ class PasswordResetFragment : Fragment() {
                 displaySignedInState(result.resultValue)
             }
             is NativeAuthResultV2.CodeRequired -> {
-                navigateToResetPasswordCodeFragmentV2(result.nextState)
+                navigateToResetPasswordCodeFragmentV2(
+                    nextState = result.nextState,
+                    sentTo = result.sentTo,
+                    channel = result.channel
+                )
+            }
+            is NativeAuthResultV2.ResetPasswordMethodRequired -> {
+                navigateToPickAuthMethod(result.nextState, result.authMethods)
             }
             is ResetPasswordErrorV2 -> {
                 handleResetPasswordErrorV2(result)
@@ -265,11 +274,33 @@ class PasswordResetFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToResetPasswordCodeFragmentV2(nextState: CodeRequiredStateV2) {
+    private fun navigateToResetPasswordCodeFragmentV2(
+        nextState: CodeRequiredStateV2,
+        sentTo: String,
+        channel: String
+    ) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
+        bundle.putString(Constants.SENT_TO, sentTo)
+        bundle.putString(Constants.CHANNEL, channel)
         val fragment = PasswordResetCodeFragment()
         fragment.arguments = bundle
+
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setReorderingAllowed(true)
+            .addToBackStack(fragment::class.java.name)
+            .replace(R.id.scenario_fragment, fragment)
+            .commit()
+    }
+
+    private fun navigateToPickAuthMethod(state: Parcelable, authMethods: List<AuthMethod>) {
+        val fragment = PickAuthMethodFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable(Constants.STATE, state)
+                putSerializable(Constants.AUTH_METHOD_LIST, ArrayList(authMethods))
+            }
+        }
 
         requireActivity().supportFragmentManager
             .beginTransaction()

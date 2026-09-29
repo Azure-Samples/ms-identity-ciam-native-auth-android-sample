@@ -20,6 +20,7 @@ import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
+import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +51,8 @@ class PickAuthMethodFragment : Fragment() {
                 is RegisterStrongAuthState,
                 is StrongAuthRegistrationRequiredStateV2 ->
                     R.string.pick_auth_method_registration_text_value
+                is ResetPasswordMethodRequiredStateV2 ->
+                    R.string.pick_password_reset_method_text_value
                 else -> R.string.pick_auth_method_text_value
             }
         )
@@ -87,9 +90,49 @@ class PickAuthMethodFragment : Fragment() {
         when (val state = currentState) {
             is MFARequiredState -> requestMfaChallengeV1(state, authMethod)
             is MFARequiredStateV2 -> requestChallengeV2({ state.selectAuthMethod(authMethod) }, state, authMethod)
+            is ResetPasswordMethodRequiredStateV2 ->
+                requestResetPasswordChallengeV2(state, authMethod)
             is RegisterStrongAuthState -> navigateToVerificationContact(state, authMethod)
             is StrongAuthRegistrationRequiredStateV2 -> requestChallengeV2({ state.selectAuthMethod(authMethod) }, state, authMethod)
             else -> displayDialog(getString(R.string.unexpected_sdk_result_title), state.toString())
+        }
+    }
+
+    private fun requestResetPasswordChallengeV2(
+        state: ResetPasswordMethodRequiredStateV2,
+        authMethod: AuthMethod
+    ) {
+        CoroutineScope(Dispatchers.Main).launch {
+            when (val result =
+                AuthClient.getAuthManager().selectResetPasswordMethod(state, authMethod)) {
+                is NativeAuthResultV2.CodeRequired -> {
+                    val fragment = PasswordResetCodeFragment().apply {
+                        arguments = Bundle().apply {
+                            putParcelable(Constants.STATE, result.nextState)
+                            putString(Constants.SENT_TO, result.sentTo)
+                            putString(Constants.CHANNEL, result.channel)
+                        }
+                    }
+                    requireActivity().supportFragmentManager
+                        .beginTransaction()
+                        .setReorderingAllowed(true)
+                        .addToBackStack(fragment::class.java.name)
+                        .replace(R.id.scenario_fragment, fragment)
+                        .commit()
+                }
+                is NativeAuthErrorV2 -> {
+                    displayDialog(
+                        result.error ?: getString(R.string.unexpected_sdk_error_title),
+                        result.errorMessage
+                    )
+                }
+                else -> {
+                    displayDialog(
+                        getString(R.string.unexpected_sdk_result_title),
+                        result.toString()
+                    )
+                }
+            }
         }
     }
 

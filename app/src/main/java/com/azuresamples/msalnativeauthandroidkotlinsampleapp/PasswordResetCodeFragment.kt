@@ -38,6 +38,10 @@ class PasswordResetCodeFragment : Fragment() {
         val bundle = this.arguments
         if (Configuration.useNativeAuthV2) {
             authManager = AuthClient.getAuthManager()
+            updateCodeHint(
+                channel = bundle?.getString(Constants.CHANNEL),
+                sentTo = bundle?.getString(Constants.SENT_TO)
+            )
         } else {
             currentState = (bundle?.getParcelable(Constants.STATE) as? ResetPasswordCodeRequiredState)!!
         }
@@ -136,6 +140,7 @@ class PasswordResetCodeFragment : Fragment() {
             if (Configuration.useNativeAuthV2) {
                 when (val result = authManager.resendCode()) {
                     is NativeAuthResultV2.CodeRequired -> {
+                        updateCodeHint(result.channel, result.sentTo)
                         Toast.makeText(requireContext(), getString(R.string.resend_code_message), Toast.LENGTH_LONG).show()
                     }
                     is NativeAuthErrorV2 -> {
@@ -167,6 +172,16 @@ class PasswordResetCodeFragment : Fragment() {
 
     private fun clearCode() {
         binding.codeText.text?.clear()
+    }
+
+    private fun updateCodeHint(channel: String?, sentTo: String?) {
+        if (!channel.isNullOrBlank() && !sentTo.isNullOrBlank()) {
+            binding.hintText.text = getString(
+                R.string.verification_code_hint_text_value,
+                channel,
+                sentTo
+            )
+        }
     }
 
     private fun handleError(error: SubmitCodeError) {

@@ -16,6 +16,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequ
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPasswordStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
@@ -71,9 +72,15 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     suspend fun selectAuthMethod(method: AuthMethod, verificationContact: String? = null): NativeAuthResultV2? =
         when (val state = currentState) {
             is MFARequiredStateV2 -> track(state.selectAuthMethod(method, verificationContact))
+            is ResetPasswordMethodRequiredStateV2 -> track(state.selectAuthMethod(method))
             is StrongAuthRegistrationRequiredStateV2 -> track(state.selectAuthMethod(method, verificationContact))
             else -> null
         }
+
+    suspend fun selectResetPasswordMethod(
+        state: ResetPasswordMethodRequiredStateV2,
+        method: AuthMethod
+    ): NativeAuthResultV2 = track(state.selectAuthMethod(method))
 
     suspend fun submitChallenge(challenge: String): NativeAuthResultV2? =
         when (val state = currentState) {
@@ -90,6 +97,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.AttributesRequired -> result.nextState
             is NativeAuthResultV2.AttributesInvalid -> result.nextState
             is NativeAuthResultV2.MFARequired -> result.nextState
+            is NativeAuthResultV2.ResetPasswordMethodRequired -> result.nextState
             is NativeAuthResultV2.MFAVerificationRequired -> result.nextState
             is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> result.nextState
