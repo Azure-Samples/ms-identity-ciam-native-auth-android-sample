@@ -29,10 +29,9 @@ object AuthClient : Application() {
     @JvmStatic
     fun initialize(context: Context, clientId: String? = null, authorityUrl: String? = null) {
         Logger.getInstance().setExternalLogger { tag, logLevel, message, containsPII ->
-            Log.e(
-                "MSAL",
-                "$tag $logLevel $message"
-            )
+            if (!containsPII) {
+                Log.e("MSAL", "$tag $logLevel $message")
+            }
         }
 
         // If clientId and authorityUrl are provided, create the auth client with the provided values. Otherwise, create the auth client with the default config file.
@@ -51,7 +50,7 @@ object AuthClient : Application() {
         } else {
             authClient = PublicClientApplication.createNativeAuthPublicClientApplication(
                 context,
-                R.raw.auth_config_native_auth
+                R.raw.native_auth_sample_app_config
             )
         }
         authManager = AuthManager(authClient)

@@ -37,6 +37,15 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/attribute_fields" />
 
+        <TextView
+            android:id="@+id/flow_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/dimens_15dp"
+            android:accessibilityLiveRegion="polite"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/submit_attributes" />
+
         <Button
             android:id="@+id/cancel_attributes"
             style="@style/ActionButtonStyle"
@@ -46,7 +55,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/submit_attributes" />
+            app:layout_constraintTop_toBottomOf="@id/flow_status" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

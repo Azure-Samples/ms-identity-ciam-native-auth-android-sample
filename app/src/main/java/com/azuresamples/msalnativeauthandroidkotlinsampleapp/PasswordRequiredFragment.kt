@@ -7,12 +7,12 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
+import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentPasswordBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-class SignInCodeFragment : Fragment() {
-    private var _binding: FragmentCodeBinding? = null
+class PasswordRequiredFragment : Fragment() {
+    private var _binding: FragmentPasswordBinding? = null
     private val binding get() = _binding!!
     private lateinit var viewModel: NativeAuthViewModel
 
@@ -21,14 +21,12 @@ class SignInCodeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentCodeBinding.inflate(inflater, container, false)
+        _binding = FragmentPasswordBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(requireActivity())[NativeAuthViewModel::class.java]
-        binding.verifyCode.setOnClickListener {
-            viewModel.submitCode(binding.codeText.text.toString())
-        }
-        binding.resendCodeText.setOnClickListener {
-            binding.codeText.text?.clear()
-            viewModel.resendCode()
+        binding.hintText.setText(R.string.password_required_hint_text_value)
+        binding.create.setOnClickListener {
+            viewModel.submitPassword(readPassword())
+            binding.passwordText.text?.clear()
         }
         binding.cancelFlow.setOnClickListener { viewModel.cancelFlow() }
         observeState()
@@ -38,18 +36,16 @@ class SignInCodeFragment : Fragment() {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { state ->
-                binding.verifyCode.isEnabled = !state.busy
-                binding.resendCodeText.isEnabled = !state.busy
+                binding.create.isEnabled = !state.busy
                 binding.flowStatus.text = state.status
-                if (!state.channel.isNullOrBlank() && !state.sentTo.isNullOrBlank()) {
-                    binding.hintText.text = getString(
-                        R.string.verification_code_hint_text_value,
-                        state.channel,
-                        state.sentTo
-                    )
-                }
             }
         }
+    }
+
+    private fun readPassword(): CharArray {
+        val password = CharArray(binding.passwordText.length())
+        binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
+        return password
     }
 
     override fun onDestroyView() {

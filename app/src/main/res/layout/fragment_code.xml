@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/hint_text"
@@ -60,10 +60,28 @@
         android:id="@+id/verify_code"
         android:text="@string/verify_code"
         android:layout_marginTop="@dimen/dimens_30dp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/resend_code_text"
         style="@style/ActionButtonStyle" />
+
+    <TextView
+        android:id="@+id/flow_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/dimens_15dp"
+        android:accessibilityLiveRegion="polite"
+        app:layout_constraintTop_toBottomOf="@id/verify_code"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/cancel_flow"
+        style="@style/ActionButtonStyle"
+        android:layout_marginTop="@dimen/dimens_15dp"
+        android:text="@string/cancel_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/flow_status"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

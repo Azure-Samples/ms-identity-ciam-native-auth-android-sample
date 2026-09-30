@@ -1,23 +1,14 @@
 <resources>
     <string name="app_title">Native Authentication Sample</string>
     <string name="app_name">Native Authentication Sample</string>
-
-    <!-- Title -->
-    <string name="title_email_password_sisu">"Email &amp; Password"</string>
-    <string name="title_email_oob_sisu">"Email &amp; OTP"</string>
-    <string name="title_email_attribute_oob_sisu">"Custom Attributes"</string>
-    <string name="title_email_oob_sspr">"Password Reset"</string>
-    <string name="title_more">"More"</string>
-    <string name="title_web_fallback">"Web Fallback"</string>
-    <string name="title_idp_web_flow">"Identity Provider Web"</string>
-    <string name="title_access_web_api">"Access Protected Web APIs"</string>
-    <string name="title_mfa">"Multi-factor authentication"</string>
+    <string name="home_title">Sample App</string>
 
     <!-- General -->
     <string name="sign_in">"Sign In"</string>
     <string name="sign_up">"Sign Up"</string>
     <string name="sign_out">"Sign Out"</string>
     <string name="forget_password">"Forget Password"</string>
+    <string name="reset_password">"Reset Password"</string>
     <string name="submit_password">"Submit"</string>
     <string name="create">"Create New User"</string>
     <string name="verify_email">"Send"</string>
@@ -27,9 +18,16 @@
     <string name="resend_challenge_text">"Resend Challenge"</string>
     <string name="api_get">"API - Perform GET"</string>
     <string name="result">Result</string>
+    <string name="sign_in_with_browser">"Sign in with Browser"</string>
+    <string name="sign_in_with_social">"Sign in with social"</string>
+    <string name="google">"Google"</string>
+    <string name="facebook">"Facebook"</string>
+    <string name="linkedin">"LinkedIn"</string>
+    <string name="browser_sign_in_cancelled">"Browser sign-in was cancelled."</string>
 
     <string name="hint_text_value">"Please fill in the required information:"</string>
-    <string name="hint_password_text_value">"Please submit a new password."</string>
+    <string name="password_required_hint_text_value">"Please enter your password."</string>
+    <string name="new_password_required_hint_text_value">"Please submit a new password."</string>
     <string name="oob_hint_text_value">"Please enter the verification code that you received."</string>
     <string name="verification_code_hint_text_value">"Please enter the verification code sent by %1$s to %2$s."</string>
     <string name="attributes_hint_text_value">"Additional attributes are required, please enter them below."</string>
@@ -40,8 +38,6 @@
     <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
     <string name="pick_auth_method_text_value">"Select a method for multi-factor authentication."</string>
     <string name="pick_password_reset_method_text_value">"Select a verification method for password reset."</string>
-    <string name="select_idp">"Please select an Identity Provider (domain_hint)"</string>
-
     <string name="sign_in_successful_message">"Sign in successful"</string>
     <string name="sign_up_successful_message">"Sign up successful. Signing in."</string>
     <string name="sign_in_switch_to_otp_message">"Account requires code for sign in"</string>
@@ -51,6 +47,17 @@
     <string name="resend_challenge_message">"New challenge sent"</string>
     <string name="yes_message">"Yes"</string>
     <string name="cancel_message">"Cancel"</string>
+    <string name="use_native_auth_v2">"Use Native Auth V2 (preview)"</string>
+    <string name="password_optional">"Password (leave empty to use email one-time passcode)"</string>
+    <string name="optional_signup_attributes">"Optional sign-up attributes"</string>
+    <string name="signed_out">"Signed out"</string>
+    <string name="signed_in_as">"Signed in as %1$s"</string>
+    <string name="call_protected_api">"Call Protected API"</string>
+    <string name="access_token_loading">"Access token: Retrieving..."</string>
+    <string name="access_token_unavailable">"Access token: Unavailable"</string>
+    <string name="access_token_masked">"Access token: %1$s...%2$s (tap to copy)"</string>
+    <string name="access_token_clip_label">"Access token"</string>
+    <string name="access_token_copied">"Access token copied"</string>
 
     <!-- Password required pop-up -->
     <string name="password_required_dialog_title">"Password Required"</string>
@@ -64,14 +71,10 @@
 
     <!-- Errors -->
     <string name="msal_exception_title">"MSAL Exception"</string>
-    <string name="unexpected_sdk_result_title">"Unexpected Result"</string>
-    <string name="unexpected_sdk_error_title">"Unexpected Error"</string>
     <string name="network_request_exception_titile">"Network Request Exception"</string>
     <string name="invalid_web_url_title">"Invalid WEB_API_BASE_URL"</string>
     <string name="unknown_error_message">"Unknown error"</string>
     <string name="invalid_attributes_title">"Invalid attributes"</string>
-    <string name="missing_required_attributes_message">"No required attributes were provided by the service."</string>
-    <string name="required_attribute_message">"This attribute is required."</string>
     <string name="invalid_web_url_message">"Please set the WEB_API_BASE_URL constant to the URL of your web API."</string>
 
     <!-- Fields -->
@@ -81,6 +84,8 @@
     <string name="attribute_password">"Password"<font color='@android:color/red'>*</font></string>
     <string name="attribute_country">"Country"</string>
     <string name="attribute_city">"City"</string>
+    <string name="attribute_given_name">"Given Name"</string>
+    <string name="attribute_last_name">"Last Name"</string>
     <string name="attribute_given">"Given name"</string>
     <string name="attribute_surname">"Surname"</string>
     <string name="attribute_otp">"Code"</string>
@@ -90,9 +95,7 @@
 
     <!-- Results -->
     <string name="result_account_text">"Account username: "</string>
-    <string name="result_access_token_text">"Access token: "</string>
-    <string name="result_access_token_of_scopes_text">"Access token of scopes:\n"</string>
-    <string name="result_id_token_text">"ID token: "</string>
+    <string name="result_access_token_of_scopes_text">"Scopes requested:\n"</string>
     <string name="result_text">"Result: "</string>
     <string name="response_api">"API response is: "</string>
 

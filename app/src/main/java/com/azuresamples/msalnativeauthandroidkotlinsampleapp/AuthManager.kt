@@ -17,7 +17,6 @@ import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseState
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
-import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPasswordStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 
@@ -30,67 +29,117 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     var currentState: NativeAuthBaseStateV2? = null
         private set
 
-    suspend fun signIn(email: String, password: CharArray? = null): NativeAuthResultV2 {
+    suspend fun signIn(
+        email: String,
+        password: CharArray? = null,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2 {
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
-        return track(application.signInV2(parameters))
+        parameters.scopes =
+            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
+        return trackIfCurrent(application.signInV2(parameters), isCurrent)
     }
 
-    suspend fun signUp(email: String, password: CharArray? = null): NativeAuthResultV2 {
+    suspend fun signUp(
+        email: String,
+        password: CharArray? = null,
+        attributes: UserAttributes? = null,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2 {
         val parameters = NativeAuthSignUpParameters(username = email)
         parameters.password = password
-        return track(application.signUpV2(parameters))
+        parameters.attributes = attributes
+        return trackIfCurrent(application.signUpV2(parameters), isCurrent)
     }
 
-    suspend fun resetPassword(email: String): NativeAuthResultV2 {
+    suspend fun resetPassword(
+        email: String,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2 {
         val parameters = NativeAuthResetPasswordParameters(username = email)
-        return track(application.resetPasswordV2(parameters))
+        return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
     }
 
-    suspend fun submitCode(code: String): NativeAuthResultV2? =
-        (currentState as? CodeRequiredStateV2)?.let { track(it.submitCode(code)) }
+    suspend fun submitCode(
+        code: String,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
+        (currentState as? CodeRequiredStateV2)?.let {
+            trackIfCurrent(it.submitCode(code), isCurrent)
+        }
 
-    suspend fun resendCode(): NativeAuthResultV2? =
-        (currentState as? CodeRequiredStateV2)?.let { track(it.resendCode()) }
+    suspend fun resendCode(isCurrent: () -> Boolean = { true }): NativeAuthResultV2? =
+        (currentState as? CodeRequiredStateV2)?.let {
+            trackIfCurrent(it.resendCode(), isCurrent)
+        }
 
-    suspend fun submitPassword(password: CharArray): NativeAuthResultV2? =
-        (currentState as? PasswordRequiredStateV2)?.let { track(it.submitPassword(password)) }
+    suspend fun submitPassword(
+        password: CharArray,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
+        (currentState as? PasswordRequiredStateV2)?.let {
+            trackIfCurrent(it.submitPassword(password), isCurrent)
+        }
 
-    suspend fun submitNewPassword(password: CharArray): NativeAuthResultV2? =
-        (currentState as? NewPasswordRequiredStateV2)?.let { track(it.submitNewPassword(password)) }
+    suspend fun submitNewPassword(
+        password: CharArray,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
+        (currentState as? NewPasswordRequiredStateV2)?.let {
+            trackIfCurrent(it.submitNewPassword(password), isCurrent)
+        }
 
-    suspend fun signInAfterPasswordReset(): NativeAuthResultV2? =
-        (currentState as? SignInAfterResetPasswordStateV2)?.let { track(it.signIn()) }
-
-    suspend fun submitAttributes(attributes: UserAttributes): NativeAuthResultV2? =
+    suspend fun submitAttributes(
+        attributes: UserAttributes,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
         when (val state = currentState) {
-            is AttributesRequiredStateV2 -> track(state.submitAttributes(attributes))
-            is AttributesInvalidStateV2 -> track(state.submitAttributes(attributes))
+            is AttributesRequiredStateV2 ->
+                trackIfCurrent(state.submitAttributes(attributes), isCurrent)
+            is AttributesInvalidStateV2 ->
+                trackIfCurrent(state.submitAttributes(attributes), isCurrent)
             else -> null
         }
 
-    suspend fun selectAuthMethod(method: AuthMethod, verificationContact: String? = null): NativeAuthResultV2? =
+    suspend fun selectAuthMethod(
+        method: AuthMethod,
+        verificationContact: String? = null,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
         when (val state = currentState) {
-            is MFARequiredStateV2 -> track(state.selectAuthMethod(method, verificationContact))
-            is ResetPasswordMethodRequiredStateV2 -> track(state.selectAuthMethod(method))
-            is StrongAuthRegistrationRequiredStateV2 -> track(state.selectAuthMethod(method, verificationContact))
+            is MFARequiredStateV2 ->
+                trackIfCurrent(state.selectAuthMethod(method, verificationContact), isCurrent)
+            is ResetPasswordMethodRequiredStateV2 ->
+                trackIfCurrent(state.selectAuthMethod(method), isCurrent)
+            is StrongAuthRegistrationRequiredStateV2 ->
+                trackIfCurrent(state.selectAuthMethod(method, verificationContact), isCurrent)
             else -> null
         }
 
-    suspend fun selectResetPasswordMethod(
-        state: ResetPasswordMethodRequiredStateV2,
-        method: AuthMethod
-    ): NativeAuthResultV2 = track(state.selectAuthMethod(method))
-
-    suspend fun submitChallenge(challenge: String): NativeAuthResultV2? =
+    suspend fun submitChallenge(
+        challenge: String,
+        isCurrent: () -> Boolean = { true }
+    ): NativeAuthResultV2? =
         when (val state = currentState) {
-            is MFAVerificationRequiredStateV2 -> track(state.submitChallenge(challenge))
-            is StrongAuthVerificationRequiredStateV2 -> track(state.submitChallenge(challenge))
+            is MFAVerificationRequiredStateV2 ->
+                trackIfCurrent(state.submitChallenge(challenge), isCurrent)
+            is StrongAuthVerificationRequiredStateV2 ->
+                trackIfCurrent(state.submitChallenge(challenge), isCurrent)
             else -> null
         }
+
+    suspend fun resendChallenge(isCurrent: () -> Boolean = { true }): NativeAuthResultV2? =
+        (currentState as? MFAVerificationRequiredStateV2)?.let {
+            trackIfCurrent(it.resendChallenge(), isCurrent)
+        }
+
+    fun clearState() {
+        currentState = null
+    }
 
     private fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
-        currentState = when (result) {
+        val nextState = when (result) {
             is NativeAuthResultV2.CodeRequired -> result.nextState
             is NativeAuthResultV2.PasswordRequired -> result.nextState
             is NativeAuthResultV2.NewPasswordRequired -> result.nextState
@@ -99,11 +148,24 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.MFARequired -> result.nextState
             is NativeAuthResultV2.ResetPasswordMethodRequired -> result.nextState
             is NativeAuthResultV2.MFAVerificationRequired -> result.nextState
+            is NativeAuthResultV2.SignInAfterSignUpRequired -> result.nextState
             is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthVerificationRequired -> result.nextState
             else -> null
         }
+        if (nextState != null) {
+            currentState = nextState
+        } else if (result !is NativeAuthErrorV2) {
+            currentState = null
+        }
         return result
+    }
+
+    private fun trackIfCurrent(
+        result: NativeAuthResultV2,
+        isCurrent: () -> Boolean
+    ): NativeAuthResultV2 {
+        return if (isCurrent()) track(result) else result
     }
 }
