@@ -8,23 +8,6 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="AppTheme.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-
-    <style name="TitleTextStyle" parent="TextAppearance.AppCompat.Body2">
-        <item name="android:textStyle">bold</item>
-        <item name="android:textSize">20sp</item>
-    </style>
-
-    <style name="OptionItemStyle" parent="Widget.AppCompat.Button.Borderless">
-        <item name="android:gravity">left|center_vertical</item>
-        <item name="android:drawableRight">@drawable/ic_baseline_keyboard_arrow_right_24</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:paddingRight">@dimen/dimens_30dp</item>
-    </style>
-
     <style name="TextViewStyle" parent="Widget.AppCompat.TextView">
         <item name="android:layout_marginLeft">@dimen/dimens_15dp</item>
     </style>
@@ -46,9 +29,5 @@
         <item name="android:layout_width">@dimen/dimens_200dp</item>
         <item name="android:textAllCaps">false</item>
     </style>
-
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>

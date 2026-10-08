@@ -1,6 +1,5 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
-import android.app.Application
 import android.content.Context
 import android.util.Log
 import com.microsoft.identity.client.Logger
@@ -8,25 +7,22 @@ import com.microsoft.identity.client.PublicClientApplication
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationParameters
 
-object AuthClient : Application() {
+object AuthClient {
     private lateinit var authClient: INativeAuthPublicClientApplication
     private lateinit var authManager: AuthManager
 
     const val EXTRA_CLIENT_ID = "native_auth_client_id"
     const val EXTRA_AUTHORITY_URL = "native_auth_authority_url"
 
-    @JvmStatic
     fun getAuthClient(): INativeAuthPublicClientApplication {
         return authClient
     }
 
-    @JvmStatic
     fun getAuthManager(): AuthManager {
         return authManager
     }
 
     // Initialize the auth client with the provided clientId and authorityUrl, or with the default config file if they are not provided.
-    @JvmStatic
     fun initialize(context: Context, clientId: String? = null, authorityUrl: String? = null) {
         Logger.getInstance().setExternalLogger { tag, logLevel, message, containsPII ->
             if (!containsPII) {
