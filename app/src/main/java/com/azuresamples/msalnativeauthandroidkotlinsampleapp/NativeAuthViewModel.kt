@@ -3,6 +3,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.microsoft.identity.client.exception.MsalClientException
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
