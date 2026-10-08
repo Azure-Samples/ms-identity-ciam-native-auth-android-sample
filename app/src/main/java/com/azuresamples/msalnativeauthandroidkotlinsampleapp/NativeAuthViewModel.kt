@@ -1012,7 +1012,7 @@ class NativeAuthViewModel(
         }
     }
 
-    private suspend fun handleV1SignUpResult(result: Any, generation: Long) {
+    internal suspend fun handleV1SignUpResult(result: Any, generation: Long) {
         if (!isCurrentFlow(generation)) {
             return
         }
@@ -1402,7 +1402,11 @@ class NativeAuthViewModel(
 
     private fun errorMessage(error: Any): String {
         val nativeAuthError = error as? NativeAuthError
-        return nativeAuthError?.errorMessage
+        val clientExceptionMessage =
+            (nativeAuthError?.exception as? MsalClientException)?.message
+                ?.takeIf { it.isNotBlank() }
+        return clientExceptionMessage
+            ?: nativeAuthError?.errorMessage
             ?: nativeAuthError?.error
             ?: nativeAuthError?.exception?.message
             ?: nativeAuthError?.errorCodes?.joinToString()
