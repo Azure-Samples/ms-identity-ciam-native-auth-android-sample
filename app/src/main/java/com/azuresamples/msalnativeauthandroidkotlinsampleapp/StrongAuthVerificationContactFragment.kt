@@ -2,10 +2,12 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentVerificationContactBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
@@ -13,12 +15,11 @@ import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthC
 import com.microsoft.identity.nativeauth.statemachine.results.RegisterStrongAuthChallengeResult
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthVerificationRequiredState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import kotlinx.coroutines.launch
 
 class StrongAuthVerificationContactFragment : Fragment() {
-    private lateinit var currentState: RegisterStrongAuthState
+    private lateinit var currentState: Parcelable
     private lateinit var authMethod: AuthMethod
     private var _binding: FragmentVerificationContactBinding? = null
     private val binding get() = _binding!!
@@ -27,8 +28,8 @@ class StrongAuthVerificationContactFragment : Fragment() {
         _binding = FragmentVerificationContactBinding.inflate(inflater, container, false)
 
         val bundle = this.arguments
-        currentState = (bundle?.getParcelable(Constants.STATE) as? RegisterStrongAuthState)!!
-        authMethod = bundle.getParcelable(Constants.AUTH_METHOD)!!
+        currentState = requireNotNull(bundle?.getParcelable(Constants.STATE))
+        authMethod = requireNotNull(bundle?.getParcelable(Constants.AUTH_METHOD))
 
         if (authMethod.challengeChannel.uppercase() == "SMS") {
             binding.hintText.text = getString(R.string.strong_auth_sms_hint_text_value)
@@ -54,13 +55,26 @@ class StrongAuthVerificationContactFragment : Fragment() {
     }
 
     private fun verifyContact() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val state = currentState
+            if (state is StrongAuthRegistrationRequiredStateV2) {
+                // V2 enrollment requires the explicit contact, never the method's login hint.
+                binding.verifyCode.isEnabled = false
+                try {
+                    routeNativeAuthResultV2(
+                        state.selectAuthMethod(authMethod, binding.emailText.text.toString())
+                    )
+                } finally {
+                    _binding?.verifyCode?.isEnabled = true
+                }
+                return@launch
+            }
             var optionalEmail = binding.emailText.text.toString()
             if (optionalEmail.isBlank()) {
                 optionalEmail = authMethod.loginHint.orEmpty()
             }
             val params = NativeAuthChallengeAuthMethodParameters(authMethod, optionalEmail)
-            val actionResult = currentState.challengeAuthMethod(params)
+            val actionResult = (state as RegisterStrongAuthState).challengeAuthMethod(params)
 
             when (actionResult) {
                 is RegisterStrongAuthChallengeResult.VerificationRequired -> {
@@ -109,6 +123,11 @@ class StrongAuthVerificationContactFragment : Fragment() {
             .addToBackStack(fragment::class.java.name)
             .replace(R.id.scenario_fragment, fragment)
             .commit()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
 }

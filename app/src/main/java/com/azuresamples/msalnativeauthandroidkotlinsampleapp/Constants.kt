@@ -5,9 +5,9 @@ interface Constants {
         const val STATE = "state"
         const val SENT_TO = "sentTo"
         const val CHANNEL = "channel"
+        const val CODE_LENGTH = "code_length"
         const val AUTH_METHOD = "auth_method"
         const val AUTH_METHOD_LIST = "auth_method_list"
-        const val SELECTION_STATE = "selection_state"
         const val REQUIRED_ATTRIBUTES = "required_attributes"
     }
 }

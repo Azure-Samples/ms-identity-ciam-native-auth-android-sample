@@ -31,18 +31,21 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         private set
 
     suspend fun signIn(email: String, password: CharArray? = null): NativeAuthResultV2 {
+        currentState = null
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
         return track(application.signInV2(parameters))
     }
 
     suspend fun signUp(email: String, password: CharArray? = null): NativeAuthResultV2 {
+        currentState = null
         val parameters = NativeAuthSignUpParameters(username = email)
         parameters.password = password
         return track(application.signUpV2(parameters))
     }
 
     suspend fun resetPassword(email: String): NativeAuthResultV2 {
+        currentState = null
         val parameters = NativeAuthResetPasswordParameters(username = email)
         return track(application.resetPasswordV2(parameters))
     }
@@ -89,7 +92,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             else -> null
         }
 
-    private fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
+    internal fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
         currentState = when (result) {
             is NativeAuthResultV2.CodeRequired -> result.nextState
             is NativeAuthResultV2.PasswordRequired -> result.nextState
@@ -102,6 +105,8 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> result.nextState
             is NativeAuthResultV2.StrongAuthVerificationRequired -> result.nextState
+            is NativeAuthResultV2.SignInAfterSignUpRequired -> result.nextState
+            is NativeAuthErrorV2 -> currentState
             else -> null
         }
         return result

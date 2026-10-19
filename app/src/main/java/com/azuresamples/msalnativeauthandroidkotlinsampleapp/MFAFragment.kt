@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
@@ -94,15 +95,18 @@ class MFAFragment : Fragment() {
     }
 
     private fun signIn() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val email = binding.emailText.text.toString()
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
             if (Configuration.useNativeAuthV2) {
-                val result = authManager.signIn(email, password)
-                binding.passwordText.text?.clear()
-                password.fill('\u0000')
+                val result = try {
+                    authManager.signIn(email, password)
+                } finally {
+                    binding.passwordText.text?.clear()
+                    password.fill('\u0000')
+                }
                 handleSignInResultV2(result)
                 return@launch
             }
@@ -158,7 +162,7 @@ class MFAFragment : Fragment() {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                routeNativeAuthResultV2(result)
             }
         }
     }

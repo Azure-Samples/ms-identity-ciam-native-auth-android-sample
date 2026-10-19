@@ -34,6 +34,8 @@
     <string name="verification_code_hint_text_value">"Please enter the verification code sent by %1$s to %2$s."</string>
     <string name="attributes_hint_text_value">"Additional attributes are required, please enter them below."</string>
     <string name="mfa_challenge_hint_text_value">"Enter the verification code sent by %1$s to %2$s."</string>
+    <string name="verification_code_length_hint">Expected code length: %1$d</string>
+    <string name="retry_message">Retry</string>
     <string name="strong_auth_challenge_hint_text_value">"Please enter the verification code that was send to your %1$s %2$s. This step is needed to register a new strong authentication method."</string>
     <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
     <string name="strong_auth_sms_hint_text_value">"For Multi-factor authentication using SMS please enter your phone number. The format needs to be \"+&lt;country code&gt; &lt;number&gt;\", for example \"+1 000111222\""</string>

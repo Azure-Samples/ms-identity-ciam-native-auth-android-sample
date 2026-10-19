@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,8 +23,6 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class PickAuthMethodFragment : Fragment() {
@@ -89,11 +88,11 @@ class PickAuthMethodFragment : Fragment() {
     private fun onMethodSelected(authMethod: AuthMethod) {
         when (val state = currentState) {
             is MFARequiredState -> requestMfaChallengeV1(state, authMethod)
-            is MFARequiredStateV2 -> requestChallengeV2({ state.selectAuthMethod(authMethod) }, state, authMethod)
+            is MFARequiredStateV2 -> requestChallengeV2({ state.selectAuthMethod(authMethod) }, authMethod)
             is ResetPasswordMethodRequiredStateV2 ->
                 requestResetPasswordChallengeV2(state, authMethod)
             is RegisterStrongAuthState -> navigateToVerificationContact(state, authMethod)
-            is StrongAuthRegistrationRequiredStateV2 -> requestChallengeV2({ state.selectAuthMethod(authMethod) }, state, authMethod)
+            is StrongAuthRegistrationRequiredStateV2 -> navigateToVerificationContact(state, authMethod)
             else -> displayDialog(getString(R.string.unexpected_sdk_result_title), state.toString())
         }
     }
@@ -102,7 +101,7 @@ class PickAuthMethodFragment : Fragment() {
         state: ResetPasswordMethodRequiredStateV2,
         authMethod: AuthMethod
     ) {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             when (val result =
                 AuthClient.getAuthManager().selectResetPasswordMethod(state, authMethod)) {
                 is NativeAuthResultV2.CodeRequired -> {
@@ -127,22 +126,18 @@ class PickAuthMethodFragment : Fragment() {
                     )
                 }
                 else -> {
-                    displayDialog(
-                        getString(R.string.unexpected_sdk_result_title),
-                        result.toString()
-                    )
+                    routeNativeAuthResultV2(result)
                 }
             }
         }
     }
 
     private fun requestMfaChallengeV1(state: MFARequiredState, authMethod: AuthMethod) {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             when (val actionResult = state.requestChallenge(authMethod)) {
                 is MFARequiredResult.VerificationRequired -> {
                     navigateToMFAVerification(
                         nextState = actionResult.nextState,
-                        selectionState = state,
                         sentTo = actionResult.sentTo,
                         channel = actionResult.channel,
                         authMethod = authMethod
@@ -160,34 +155,33 @@ class PickAuthMethodFragment : Fragment() {
 
     private inline fun requestChallengeV2(
         crossinline call: suspend () -> NativeAuthResultV2,
-        selectionState: Parcelable,
         authMethod: AuthMethod
     ) {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             when (val result = call()) {
                 is NativeAuthResultV2.MFAVerificationRequired -> {
                     navigateToMFAVerification(
                         nextState = result.nextState,
-                        selectionState = selectionState,
                         sentTo = result.sentTo,
                         channel = result.channel,
-                        authMethod = authMethod
+                        authMethod = authMethod,
+                        codeLength = result.codeLength
                     )
                 }
                 is NativeAuthResultV2.StrongAuthVerificationRequired -> {
                     navigateToMFAVerification(
                         nextState = result.nextState,
-                        selectionState = selectionState,
                         sentTo = result.sentTo,
                         channel = result.channel,
-                        authMethod = authMethod
+                        authMethod = authMethod,
+                        codeLength = result.codeLength
                     )
                 }
                 is NativeAuthErrorV2 -> {
                     displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
                 }
                 else -> {
-                    displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                    routeNativeAuthResultV2(result)
                 }
             }
         }
@@ -195,16 +189,16 @@ class PickAuthMethodFragment : Fragment() {
 
     private fun navigateToMFAVerification(
         nextState: Parcelable,
-        selectionState: Parcelable,
         sentTo: String,
         channel: String,
-        authMethod: AuthMethod
+        authMethod: AuthMethod,
+        codeLength: Int = 0
     ) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
-        bundle.putParcelable(Constants.SELECTION_STATE, selectionState)
         bundle.putString(Constants.SENT_TO, sentTo)
         bundle.putString(Constants.CHANNEL, channel)
+        bundle.putInt(Constants.CODE_LENGTH, codeLength)
         bundle.putParcelable(Constants.AUTH_METHOD, authMethod)
 
         val fragment = MFAVerificationFragment()
@@ -218,7 +212,7 @@ class PickAuthMethodFragment : Fragment() {
             .commit()
     }
 
-    private fun navigateToVerificationContact(nextState: RegisterStrongAuthState, authMethod: AuthMethod) {
+    private fun navigateToVerificationContact(nextState: Parcelable, authMethod: AuthMethod) {
         val bundle = Bundle()
         bundle.putParcelable(Constants.STATE, nextState)
         bundle.putParcelable(Constants.AUTH_METHOD, authMethod)

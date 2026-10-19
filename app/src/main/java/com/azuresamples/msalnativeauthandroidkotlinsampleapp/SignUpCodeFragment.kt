@@ -3,14 +3,12 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Parcelable
-import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentCodeBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInContinuationParameters
@@ -18,18 +16,14 @@ import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
-import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpAttributesRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class SignUpCodeFragment : Fragment() {
@@ -67,7 +61,7 @@ class SignUpCodeFragment : Fragment() {
     }
 
     private fun verifyCode() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val oobCode = binding.codeText.text.toString()
 
             when (val state = currentState) {
@@ -136,7 +130,7 @@ class SignUpCodeFragment : Fragment() {
     private fun resendCode() {
         clearCode()
 
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             when (val state = currentState) {
                 is SignUpCodeRequiredState -> resendCodeV1(state)
                 is CodeRequiredStateV2 -> resendCodeV2(state)
@@ -170,10 +164,7 @@ class SignUpCodeFragment : Fragment() {
                 handleErrorV2(result)
             }
             else -> {
-                displayDialog(
-                    getString(R.string.unexpected_sdk_result_title),
-                    result.toString()
-                )
+                routeNativeAuthResultV2(result)
             }
         }
     }
@@ -210,20 +201,13 @@ class SignUpCodeFragment : Fragment() {
     private suspend fun handleResultV2(result: NativeAuthResultV2) {
         when (result) {
             is NativeAuthResultV2.Complete -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_in_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.CodeRequired -> {
                 updateCurrentState(result.nextState)
             }
             is NativeAuthResultV2.PasswordRequired -> {
-                promptForPassword { password ->
-                    submitPasswordV2(result.nextState, password)
-                }
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.AttributesRequired -> {
                 navigateToAttributesV2(
@@ -232,12 +216,7 @@ class SignUpCodeFragment : Fragment() {
                 )
             }
             is NativeAuthResultV2.SignInAfterSignUpRequired -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_up_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                handleResultV2(result.nextState.signIn())
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.MFARequired -> {
                 displayMFARequiredDialog(result.nextState, result.authMethods)
@@ -245,17 +224,11 @@ class SignUpCodeFragment : Fragment() {
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> {
                 displayStrongAuthRequiredDialog(result.nextState, result.authMethods)
             }
-            is SubmitCodeErrorV2 -> {
+            is NativeAuthErrorV2 -> {
                 handleSubmitCodeErrorV2(result)
             }
-            is NativeAuthErrorV2 -> {
-                handleErrorV2(result)
-            }
             else -> {
-                displayDialog(
-                    getString(R.string.unexpected_sdk_result_title),
-                    result.toString()
-                )
+                routeNativeAuthResultV2(result)
             }
         }
     }
@@ -265,18 +238,7 @@ class SignUpCodeFragment : Fragment() {
             attributeNames.single().equals("flatusername", ignoreCase = true)
     }
 
-    private fun submitPasswordV2(state: PasswordRequiredStateV2, password: CharArray) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val result = try {
-                state.submitPassword(password)
-            } finally {
-                password.fill('\u0000')
-            }
-            handleResultV2(result)
-        }
-    }
-
-    private fun handleSubmitCodeErrorV2(error: SubmitCodeErrorV2) {
+    private fun handleSubmitCodeErrorV2(error: NativeAuthErrorV2) {
         when {
             error.isInvalidCode() || error.isBrowserRequired() -> {
                 displayDialog(error.error, error.errorMessage)
@@ -292,36 +254,6 @@ class SignUpCodeFragment : Fragment() {
             error.error ?: getString(R.string.unexpected_sdk_error_title),
             error.exception?.message ?: error.errorMessage
         )
-    }
-
-    private fun promptForPassword(onPasswordEntered: (CharArray) -> Unit) {
-        val context = requireContext()
-        val passwordInput = EditText(context).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            hint = getString(R.string.password_required_hint)
-        }
-        val container = FrameLayout(context).apply {
-            val padding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding / 2, padding, 0)
-            addView(passwordInput)
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle(getString(R.string.password_required_dialog_title))
-            .setMessage(getString(R.string.password_required_dialog_message))
-            .setView(container)
-            .setCancelable(false)
-            .setPositiveButton(getString(R.string.submit_password)) { _, _ ->
-                val length = passwordInput.text.length
-                val password = CharArray(length)
-                passwordInput.text.getChars(0, length, password, 0)
-                passwordInput.text.clear()
-                onPasswordEntered(password)
-            }
-            .setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
-                dialog.cancel()
-            }
-            .show()
     }
 
     private fun displayMFARequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {

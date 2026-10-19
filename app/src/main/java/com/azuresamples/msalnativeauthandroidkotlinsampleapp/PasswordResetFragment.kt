@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.AuthMethod
@@ -17,7 +18,6 @@ import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccountError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
-import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.ResetPasswordStartResult
@@ -91,7 +91,7 @@ class PasswordResetFragment : Fragment() {
     }
 
     private fun forgetPassword() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val email = binding.emailText.text.toString()
 
             if (Configuration.useNativeAuthV2) {
@@ -204,34 +204,19 @@ class PasswordResetFragment : Fragment() {
             is NativeAuthResultV2.ResetPasswordMethodRequired -> {
                 navigateToPickAuthMethod(result.nextState, result.authMethods)
             }
-            is ResetPasswordErrorV2 -> {
+            is NativeAuthErrorV2 -> {
                 handleResetPasswordErrorV2(result)
             }
-            is NativeAuthErrorV2 -> {
-                handleGenericErrorV2(result)
-            }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                routeNativeAuthResultV2(result)
             }
         }
     }
 
-    private fun handleResetPasswordErrorV2(error: ResetPasswordErrorV2) {
+    private fun handleResetPasswordErrorV2(error: NativeAuthErrorV2) {
         when {
             error.isBrowserRequired() || error.isUserNotFound() || error.isInvalidUsername() -> {
                 displayDialog(error.error, error.errorMessage)
-            }
-            else -> {
-                // Unexpected error
-                displayDialog(getString(R.string.unexpected_sdk_error_title), error.exception?.message ?: error.errorMessage)
-            }
-        }
-    }
-
-    private fun handleGenericErrorV2(error: NativeAuthErrorV2) {
-        when {
-            error.isNotImplemented() || error.isBrowserRequired() -> {
-                displayDialog(error.error ?: getString(R.string.unexpected_sdk_error_title), error.errorMessage)
             }
             else -> {
                 // Unexpected error

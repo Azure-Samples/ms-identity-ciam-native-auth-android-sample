@@ -7,24 +7,18 @@ import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentSignUpAttributesV2Binding
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitAttributesErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
-import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class SignUpAttributesFragmentV2 : Fragment() {
@@ -102,7 +96,7 @@ class SignUpAttributesFragmentV2 : Fragment() {
             builder.customAttribute(name, input.text.toString())
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val result = when (val state = currentState) {
                 is AttributesRequiredStateV2 -> state.submitAttributes(builder.build())
                 is AttributesInvalidStateV2 -> state.submitAttributes(builder.build())
@@ -121,12 +115,7 @@ class SignUpAttributesFragmentV2 : Fragment() {
     private suspend fun handleResult(result: NativeAuthResultV2) {
         when (result) {
             is NativeAuthResultV2.Complete -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_in_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.AttributesRequired -> {
                 updateStateAndAttributes(
@@ -143,32 +132,19 @@ class SignUpAttributesFragmentV2 : Fragment() {
                 )
             }
             is NativeAuthResultV2.SignInAfterSignUpRequired -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.sign_up_successful_message),
-                    Toast.LENGTH_SHORT
-                ).show()
-                handleResult(result.nextState.signIn())
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.PasswordRequired -> {
-                promptForPassword { password ->
-                    submitPassword(result.nextState, password)
-                }
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.CodeRequired -> {
-                navigateToSignInCode(result.nextState)
+                routeNativeAuthResultV2(result)
             }
             is NativeAuthResultV2.MFARequired -> {
                 displayMFARequiredDialog(result.nextState, result.authMethods)
             }
             is NativeAuthResultV2.StrongAuthRegistrationRequired -> {
                 displayStrongAuthRequiredDialog(result.nextState, result.authMethods)
-            }
-            is SubmitAttributesErrorV2 -> {
-                displayDialog(
-                    result.error ?: getString(R.string.unexpected_sdk_error_title),
-                    result.exception?.message ?: result.errorMessage
-                )
             }
             is NativeAuthErrorV2 -> {
                 displayDialog(
@@ -177,10 +153,7 @@ class SignUpAttributesFragmentV2 : Fragment() {
                 )
             }
             else -> {
-                displayDialog(
-                    getString(R.string.unexpected_sdk_result_title),
-                    result.toString()
-                )
+                routeNativeAuthResultV2(result)
             }
         }
     }
@@ -193,46 +166,6 @@ class SignUpAttributesFragmentV2 : Fragment() {
             ArrayList(attributeNames)
         )
         renderAttributes(attributeNames)
-    }
-
-    private fun submitPassword(state: PasswordRequiredStateV2, password: CharArray) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val result = try {
-                state.submitPassword(password)
-            } finally {
-                password.fill('\u0000')
-            }
-            handleResult(result)
-        }
-    }
-
-    private fun promptForPassword(onPasswordEntered: (CharArray) -> Unit) {
-        val context = requireContext()
-        val passwordInput = EditText(context).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            hint = getString(R.string.password_required_hint)
-        }
-        val container = FrameLayout(context).apply {
-            val padding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding / 2, padding, 0)
-            addView(passwordInput)
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle(getString(R.string.password_required_dialog_title))
-            .setMessage(getString(R.string.password_required_dialog_message))
-            .setView(container)
-            .setCancelable(false)
-            .setPositiveButton(getString(R.string.submit_password)) { _, _ ->
-                val password = CharArray(passwordInput.length())
-                passwordInput.text.getChars(0, passwordInput.length(), password, 0)
-                passwordInput.text.clear()
-                onPasswordEntered(password)
-            }
-            .setNegativeButton(getString(R.string.cancel_message)) { dialog, _ ->
-                dialog.cancel()
-            }
-            .show()
     }
 
     private fun displayMFARequiredDialog(state: Parcelable, authMethods: List<AuthMethod>) {
@@ -270,15 +203,6 @@ class SignUpAttributesFragmentV2 : Fragment() {
             arguments = Bundle().apply {
                 putParcelable(Constants.STATE, state)
                 putSerializable(Constants.AUTH_METHOD_LIST, ArrayList(authMethods))
-            }
-        }
-        replaceCompletedStep(fragment)
-    }
-
-    private fun navigateToSignInCode(state: Parcelable) {
-        val fragment = SignInCodeFragment().apply {
-            arguments = Bundle().apply {
-                putParcelable(Constants.STATE, state)
             }
         }
         replaceCompletedStep(fragment)

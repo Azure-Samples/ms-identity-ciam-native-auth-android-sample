@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
@@ -102,7 +103,7 @@ class EmailSignInSignUpFragment : Fragment() {
     }
 
     private fun signIn() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val email = binding.emailText.text.toString()
 
             if (Configuration.useNativeAuthV2) {
@@ -142,7 +143,7 @@ class EmailSignInSignUpFragment : Fragment() {
     }
 
     private fun signUp() {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val email = binding.emailText.text.toString()
 
             if (Configuration.useNativeAuthV2) {
@@ -202,8 +203,6 @@ class EmailSignInSignUpFragment : Fragment() {
                 }
             }
             is NativeAuthResultV2.PasswordRequired -> {
-                // Account requires a password even though sign-in was started with email + OTP.
-                // Collect it via a pop-up and submit it on the retained state.
                 promptForPassword { password ->
                     submitPasswordV2(password)
                 }
@@ -224,18 +223,19 @@ class EmailSignInSignUpFragment : Fragment() {
                 displayDialog(result.error ?: getString(R.string.unexpected_sdk_error_title), result.errorMessage)
             }
             else -> {
-                displayDialog(getString(R.string.unexpected_sdk_result_title), result.toString())
+                routeNativeAuthResultV2(result)
             }
         }
     }
 
     private fun submitPasswordV2(password: CharArray) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val result = authManager.submitPassword(password)
-            password.fill('\u0000')
-            if (result != null) {
-                handleResultV2(result)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = try {
+                authManager.submitPassword(password)
+            } finally {
+                password.fill('\u0000')
             }
+            if (result != null) handleResultV2(result)
         }
     }
 
