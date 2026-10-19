@@ -35,7 +35,13 @@ class StrongAuthVerificationContactFragment : Fragment() {
             binding.hintText.text = getString(R.string.strong_auth_sms_hint_text_value)
             binding.contactTypeHint.text = getString(R.string.attribute_phone_number)
         } else {
-            binding.hintText.text = getString(R.string.strong_auth_email_hint_text_value)
+            binding.hintText.text = getString(
+                if (currentState is StrongAuthRegistrationRequiredStateV2) {
+                    R.string.strong_auth_email_required_hint_text_value
+                } else {
+                    R.string.strong_auth_email_hint_text_value
+                }
+            )
             binding.contactTypeHint.text = getString(R.string.attribute_email)
         }
 
