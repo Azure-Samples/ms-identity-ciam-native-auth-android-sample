@@ -18,30 +18,19 @@ import com.microsoft.identity.nativeauth.statemachine.errors.BrowserRequiredErro
 import com.microsoft.identity.nativeauth.statemachine.errors.Error as NativeAuthError
 import com.microsoft.identity.nativeauth.statemachine.errors.GetAccessTokenError
 import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeError
-import com.microsoft.identity.nativeauth.statemachine.errors.MFARequestChallengeErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeError
-import com.microsoft.identity.nativeauth.statemachine.errors.MFASubmitChallengeErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
-import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthSubmitChallengeError
-import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthSubmitChallengeErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordError
-import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
-import com.microsoft.identity.nativeauth.statemachine.errors.SignUpErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpSubmitAttributesError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpSubmitPasswordError
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitAttributesErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeErrorV2
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitNewPasswordErrorV2
-import com.microsoft.identity.nativeauth.statemachine.errors.SubmitPasswordErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccessTokenResult
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
@@ -827,7 +816,8 @@ class NativeAuthViewModel(
 
     internal suspend fun handleV2Result(
         result: NativeAuthResultV2,
-        generation: Long = flowGeneration
+        generation: Long = flowGeneration,
+        recoverable: Boolean = false
     ) {
         if (!isCurrentFlow(generation)) {
             return
@@ -865,12 +855,16 @@ class NativeAuthViewModel(
                     generation = generation
                 )
             }
-            is NativeAuthResultV2.AttributesInvalid ->
+            is NativeAuthResultV2.AttributesInvalid -> {
                 continueV2(
                     NativeAuthDestination.ATTRIBUTES,
                     requiredAttributes = result.invalidAttributes,
                     generation = generation
                 )
+                result.error?.let {
+                    handleV2Error(it, generation, recoverable = true)
+                }
+            }
             is NativeAuthResultV2.MFARequired -> {
                 continueV2(
                     NativeAuthDestination.PICK_AUTH_METHOD,
@@ -914,18 +908,7 @@ class NativeAuthViewModel(
                 handleV2Result(result.nextState.signIn(), generation)
             is NativeAuthResultV2.SignInAfterResetPasswordRequired ->
                 handleV2Result(result.nextState.signIn(), generation)
-            is SignInErrorV2,
-            is SignUpErrorV2,
-            is ResetPasswordErrorV2,
-            is SubmitCodeErrorV2,
-            is SubmitPasswordErrorV2,
-            is SubmitNewPasswordErrorV2,
-            is SubmitAttributesErrorV2,
-            is MFARequestChallengeErrorV2,
-            is MFASubmitChallengeErrorV2,
-            is RegisterStrongAuthChallengeErrorV2,
-            is RegisterStrongAuthSubmitChallengeErrorV2,
-            is NativeAuthErrorV2 -> handleV2Error(result as NativeAuthErrorV2, generation)
+            is NativeAuthErrorV2 -> handleV2Error(result, generation, recoverable)
             else -> failFlow(result.toString(), generation)
         }
     }
@@ -937,33 +920,7 @@ class NativeAuthViewModel(
         if (result == null) {
             invalidContinuation(generation)
         } else {
-            handleV2Result(result, generation)
-        }
-    }
-
-    private suspend fun handleV2Error(error: NativeAuthErrorV2, generation: Long) {
-        if (!isCurrentFlow(generation)) {
-            return
-        }
-        if (error.isBrowserRequired()) {
-            startBrowserFallback(errorMessage(error))
-            return
-        }
-
-        when (error) {
-            is SubmitCodeErrorV2,
-            is SubmitPasswordErrorV2,
-            is SubmitNewPasswordErrorV2,
-            is SubmitAttributesErrorV2,
-            is MFARequestChallengeErrorV2,
-            is MFASubmitChallengeErrorV2,
-            is RegisterStrongAuthChallengeErrorV2,
-            is RegisterStrongAuthSubmitChallengeErrorV2 ->
-                keepFlow(errorMessage(error), generation)
-            is SignInErrorV2,
-            is SignUpErrorV2,
-            is ResetPasswordErrorV2 -> failFlow(errorMessage(error), generation)
-            else -> failFlow(errorMessage(error), generation)
+            handleV2Result(result, generation, recoverable = true)
         }
     }
 
@@ -1101,6 +1058,33 @@ class NativeAuthViewModel(
             }
             is MFARequestChallengeError -> handleRecoverableV1Error(result, generation)
             else -> invalidContinuation(generation)
+        }
+    }
+
+    private suspend fun handleV2Error(
+        error: NativeAuthErrorV2,
+        generation: Long,
+        recoverable: Boolean = false
+    ) {
+        if (!isCurrentFlow(generation)) {
+            return
+        }
+        val message = errorMessage(error)
+        if (error.isBrowserRequired()) {
+            startBrowserFallback(message)
+            return
+        }
+
+        // V2 error types no longer identify the operation. Retry only correctable input
+        // failures from a continuation; entry-point and terminal errors require a restart.
+        val canRetry = recoverable && (error.isInvalidCode() || error.isInvalidCredentials() ||
+            error.isInvalidPassword() || error.isInvalidAttributes() ||
+            error.isInvalidChallenge() || error.isInvalidInput() ||
+            error.isAuthMethodBlocked() || error.isVerificationContactBlocked())
+        if (canRetry) {
+            keepFlow(message, generation)
+        } else {
+            failFlow(message, generation)
         }
     }
 

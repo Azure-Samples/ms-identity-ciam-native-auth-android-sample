@@ -75,6 +75,7 @@ class AuthManagerTest {
             channel = "email"
         )
         val error = NativeAuthErrorV2(
+            errorType = "invalid_code",
             errorMessage = "Invalid code",
             correlationId = "correlation-id",
             scenario = NativeAuthFlowScenarioV2.RESET_PASSWORD
@@ -139,14 +140,12 @@ class AuthManagerTest {
     private fun <T : NativeAuthBaseStateV2> createState(stateClass: Class<T>): T {
         val constructor = stateClass.getDeclaredConstructor(
             String::class.java,
-            String::class.java,
             NativeAuthFlowScenarioV2::class.java,
             NativeAuthPublicClientApplicationConfiguration::class.java,
             NativeAuthV2ContinuationState::class.java
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            "continuation-token",
             "correlation-id",
             NativeAuthFlowScenarioV2.RESET_PASSWORD,
             NativeAuthPublicClientApplicationConfiguration(),
