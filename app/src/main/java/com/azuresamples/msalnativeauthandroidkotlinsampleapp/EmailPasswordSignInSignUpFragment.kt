@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailPasswordBinding
 import com.microsoft.identity.client.PublicClientApplication
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthRequestInterceptor
@@ -125,9 +126,10 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
             val password = CharArray(binding.passwordText.length())
             binding.passwordText.text?.getChars(0, binding.passwordText.length(), password, 0)
 
+            val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
             if (Configuration.useNativeAuthV2) {
                 val result = try {
-                    authManager.signIn(email, password.takeIf { it.isNotEmpty() })
+                    authManager.signIn(email, password.takeIf { it.isNotEmpty() }, claimsRequest)
                 } finally {
                     binding.passwordText.text?.clear()
                     password.fill('\u0000')
@@ -138,6 +140,7 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
 
             val parameters = NativeAuthSignInParameters(username = email)
             parameters.password = password
+            parameters.claimsRequest = claimsRequest
             val actionResult: SignInResult = authClient.signIn(parameters)
 
             binding.passwordText.text?.clear()
@@ -178,7 +181,8 @@ class EmailPasswordSignInSignUpFragment : Fragment(), NativeAuthRequestIntercept
 
             if (Configuration.useNativeAuthV2) {
                 val result = try {
-                    authManager.signUp(email, password)
+                    val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
+                    authManager.signUp(email, password, claimsRequest)
                 } finally {
                     binding.passwordText.text?.clear()
                     password.fill('\u0000')

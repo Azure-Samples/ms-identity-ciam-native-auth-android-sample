@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSisuBinding
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
@@ -105,13 +106,15 @@ class EmailSignInSignUpFragment : Fragment() {
     private fun signIn() {
         viewLifecycleOwner.lifecycleScope.launch {
             val email = binding.emailText.text.toString()
+            val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
 
             if (Configuration.useNativeAuthV2) {
-                handleResultV2(authManager.signIn(email))
+                handleResultV2(authManager.signIn(email, claimsRequest = claimsRequest))
                 return@launch
             }
 
             val parameters = NativeAuthSignInParameters(username = email)
+            parameters.claimsRequest = claimsRequest
             val actionResult = authClient.signIn(parameters)
 
             when (actionResult) {
@@ -147,7 +150,8 @@ class EmailSignInSignUpFragment : Fragment() {
             val email = binding.emailText.text.toString()
 
             if (Configuration.useNativeAuthV2) {
-                handleResultV2(authManager.signUp(email))
+                val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
+                handleResultV2(authManager.signUp(email, claimsRequest = claimsRequest))
                 return@launch
             }
 

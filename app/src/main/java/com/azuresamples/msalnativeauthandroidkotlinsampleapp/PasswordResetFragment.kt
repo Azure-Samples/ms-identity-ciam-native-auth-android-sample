@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.azuresamples.msalnativeauthandroidkotlinsampleapp.databinding.FragmentEmailSsprBinding
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.parameters.NativeAuthGetAccessTokenParameters
@@ -95,7 +96,8 @@ class PasswordResetFragment : Fragment() {
             val email = binding.emailText.text.toString()
 
             if (Configuration.useNativeAuthV2) {
-                handleResultV2(authManager.resetPassword(email))
+                val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
+                handleResultV2(authManager.resetPassword(email, claimsRequest))
                 return@launch
             }
 

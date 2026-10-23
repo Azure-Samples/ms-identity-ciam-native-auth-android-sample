@@ -1,5 +1,6 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
@@ -30,23 +31,37 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     var currentState: NativeAuthBaseStateV2? = null
         private set
 
-    suspend fun signIn(email: String, password: CharArray? = null): NativeAuthResultV2 {
+    suspend fun signIn(
+        email: String,
+        password: CharArray? = null,
+        claimsRequest: ClaimsRequest? = null
+    ): NativeAuthResultV2 {
         currentState = null
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
+        parameters.claimsRequest = claimsRequest
         return track(application.signInV2(parameters))
     }
 
-    suspend fun signUp(email: String, password: CharArray? = null): NativeAuthResultV2 {
+    suspend fun signUp(
+        email: String,
+        password: CharArray? = null,
+        claimsRequest: ClaimsRequest? = null
+    ): NativeAuthResultV2 {
         currentState = null
         val parameters = NativeAuthSignUpParameters(username = email)
         parameters.password = password
+        parameters.claimsRequest = claimsRequest
         return track(application.signUpV2(parameters))
     }
 
-    suspend fun resetPassword(email: String): NativeAuthResultV2 {
+    suspend fun resetPassword(
+        email: String,
+        claimsRequest: ClaimsRequest? = null
+    ): NativeAuthResultV2 {
         currentState = null
         val parameters = NativeAuthResetPasswordParameters(username = email)
+        parameters.claimsRequest = claimsRequest
         return track(application.resetPasswordV2(parameters))
     }
 

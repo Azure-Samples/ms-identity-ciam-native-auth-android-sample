@@ -1,7 +1,11 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
+import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
@@ -25,6 +29,106 @@ import org.junit.Test
 import java.lang.reflect.Proxy
 
 class AuthManagerTest {
+    private val authenticationContextClaim = "{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c4\"}}}"
+
+    @Test
+    fun signInForwardsAuthenticationContextClaims() = runBlocking {
+        var capturedParameters: NativeAuthSignInParameters? = null
+        val application = applicationCapturingSignIn { capturedParameters = it }
+        val claims = ClaimsRequest.getClaimsRequestFromJsonString(
+            "{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c4\"}}}"
+        )
+
+        AuthManager(application).signIn(
+            "user@example.com",
+            "password".toCharArray(),
+            claimsRequest = claims
+        )
+
+        assertSame(claims, capturedParameters?.claimsRequest)
+    }
+
+    @Test
+    fun emailOtpSignInForwardsClaimsWithoutPassword() = runBlocking {
+        var capturedParameters: NativeAuthSignInParameters? = null
+        val application = applicationCapturingSignIn { capturedParameters = it }
+        val claims = ClaimsRequest.getClaimsRequestFromJsonString(authenticationContextClaim)
+
+        AuthManager(application).signIn("user@example.com", claimsRequest = claims)
+
+        assertSame(claims, capturedParameters!!.claimsRequest)
+        assertNull(capturedParameters!!.password)
+    }
+
+    @Test
+    fun emailOtpSignUpForwardsClaimsWithoutPassword() = runBlocking {
+        var capturedParameters: NativeAuthSignUpParameters? = null
+        val application = applicationCapturingSignUp { capturedParameters = it }
+        val claims = ClaimsRequest.getClaimsRequestFromJsonString(authenticationContextClaim)
+
+        AuthManager(application).signUp("user@example.com", claimsRequest = claims)
+
+        assertSame(claims, capturedParameters!!.claimsRequest)
+        assertNull(capturedParameters!!.password)
+    }
+
+    @Test
+    fun signInWithoutClaimsDoesNotRequestAuthenticationContext() = runBlocking {
+        var capturedParameters: NativeAuthSignInParameters? = null
+        val application = applicationCapturingSignIn { capturedParameters = it }
+
+        AuthManager(application).signIn("user@example.com")
+
+        assertNull(capturedParameters!!.claimsRequest)
+    }
+
+    @Test
+    fun signUpForwardsAuthenticationContextClaims() = runBlocking {
+        var capturedParameters: NativeAuthSignUpParameters? = null
+        val application = applicationCapturingSignUp { capturedParameters = it }
+        val claims = ClaimsRequest.getClaimsRequestFromJsonString(
+            "{\"access_token\":{\"acrs\":{\"essential\":true,\"value\":\"c4\"}}}"
+        )
+
+        AuthManager(application).signUp(
+            "user@example.com",
+            "password".toCharArray(),
+            claimsRequest = claims
+        )
+
+        assertSame(claims, capturedParameters?.claimsRequest)
+    }
+
+    @Test
+    fun signUpWithoutClaimsDoesNotRequestAuthenticationContext() = runBlocking {
+        var capturedParameters: NativeAuthSignUpParameters? = null
+        val application = applicationCapturingSignUp { capturedParameters = it }
+
+        AuthManager(application).signUp("user@example.com")
+
+        assertNull(capturedParameters!!.claimsRequest)
+    }
+
+    @Test
+    fun resetPasswordForwardsAuthenticationContextClaims() = runBlocking {
+        var capturedParameters: NativeAuthResetPasswordParameters? = null
+        val application = applicationCapturingResetPassword { capturedParameters = it }
+        val claims = ClaimsRequest.getClaimsRequestFromJsonString(authenticationContextClaim)
+
+        AuthManager(application).resetPassword("user@example.com", claimsRequest = claims)
+
+        assertSame(claims, capturedParameters!!.claimsRequest)
+    }
+
+    @Test
+    fun resetPasswordWithoutClaimsDoesNotRequestAuthenticationContext() = runBlocking {
+        var capturedParameters: NativeAuthResetPasswordParameters? = null
+        val application = applicationCapturingResetPassword { capturedParameters = it }
+
+        AuthManager(application).resetPassword("user@example.com")
+
+        assertNull(capturedParameters!!.claimsRequest)
+    }
 
     @Test
     fun recoverableErrorRetainsCurrentCodeState() {
@@ -148,6 +252,57 @@ class AuthManagerTest {
         authManager.resetPassword("user@example.com")
 
         assertSame(nextState, authManager.currentState)
+    }
+
+    private fun applicationCapturingSignIn(
+        capture: (NativeAuthSignInParameters) -> Unit
+    ): INativeAuthPublicClientApplication {
+        return Proxy.newProxyInstance(
+            INativeAuthPublicClientApplication::class.java.classLoader,
+            arrayOf(INativeAuthPublicClientApplication::class.java)
+        ) { _, method, args ->
+            when (method.name) {
+                "signInV2" -> {
+                    capture(args[0] as NativeAuthSignInParameters)
+                    error()
+                }
+                else -> throw UnsupportedOperationException(method.name)
+            }
+        } as INativeAuthPublicClientApplication
+    }
+
+    private fun applicationCapturingSignUp(
+        capture: (NativeAuthSignUpParameters) -> Unit
+    ): INativeAuthPublicClientApplication {
+        return Proxy.newProxyInstance(
+            INativeAuthPublicClientApplication::class.java.classLoader,
+            arrayOf(INativeAuthPublicClientApplication::class.java)
+        ) { _, method, args ->
+            when (method.name) {
+                "signUpV2" -> {
+                    capture(args[0] as NativeAuthSignUpParameters)
+                    error()
+                }
+                else -> throw UnsupportedOperationException(method.name)
+            }
+        } as INativeAuthPublicClientApplication
+    }
+
+    private fun applicationCapturingResetPassword(
+        capture: (NativeAuthResetPasswordParameters) -> Unit
+    ): INativeAuthPublicClientApplication {
+        return Proxy.newProxyInstance(
+            INativeAuthPublicClientApplication::class.java.classLoader,
+            arrayOf(INativeAuthPublicClientApplication::class.java)
+        ) { _, method, args ->
+            when (method.name) {
+                "resetPasswordV2" -> {
+                    capture(args[0] as NativeAuthResetPasswordParameters)
+                    error()
+                }
+                else -> throw UnsupportedOperationException(method.name)
+            }
+        } as INativeAuthPublicClientApplication
     }
 
     private fun applicationReturning(result: NativeAuthResultV2): INativeAuthPublicClientApplication {
