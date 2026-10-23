@@ -10,9 +10,12 @@ import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPasswordStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.lang.reflect.Proxy
 import java.util.ArrayDeque
@@ -106,6 +109,59 @@ class AuthManagerTest {
         assertNull(authManager.currentState)
     }
 
+    @Test
+    fun strongAuthVerificationTracksFreshStateAndDispatchesResend() = runBlocking {
+        val initialState = createStrongAuthVerificationState()
+        val refreshedState = createStrongAuthVerificationState()
+        val authManager = AuthManager(
+            applicationReturningSequence(
+                strongAuthResult(initialState),
+                strongAuthResult(refreshedState)
+            )
+        )
+
+        authManager.resetPassword("user@example.com")
+        assertSame(initialState, authManager.currentState)
+        authManager.resetPassword("user@example.com")
+        assertSame(refreshedState, authManager.currentState)
+
+        val error = authManager.resendChallenge()
+
+        assertTrue(error is NativeAuthErrorV2)
+        assertEquals(
+            "The continuation state is unavailable. Restart the flow.",
+            (error as NativeAuthErrorV2).errorMessage
+        )
+        assertSame(refreshedState, authManager.currentState)
+    }
+
+    private fun strongAuthResult(state: StrongAuthVerificationRequiredStateV2) =
+        NativeAuthResultV2.StrongAuthVerificationRequired(
+            nextState = state,
+            scenario = NativeAuthFlowScenarioV2.RESET_PASSWORD,
+            codeLength = 6,
+            sentTo = "user@example.com",
+            channel = "email"
+        )
+
+    private fun createStrongAuthVerificationState(): StrongAuthVerificationRequiredStateV2 {
+        val constructor = StrongAuthVerificationRequiredStateV2::class.java.getDeclaredConstructor(
+            String::class.java,
+            NativeAuthFlowScenarioV2::class.java,
+            NativeAuthPublicClientApplicationConfiguration::class.java,
+            NativeAuthV2ContinuationState::class.java,
+            String::class.java
+        )
+        constructor.isAccessible = true
+        return constructor.newInstance(
+            "correlation-id",
+            NativeAuthFlowScenarioV2.RESET_PASSWORD,
+            NativeAuthPublicClientApplicationConfiguration(),
+            null,
+            "email"
+        )
+    }
+
     private fun applicationReturning(
         result: NativeAuthResultV2,
         methodName: String = "resetPasswordV2"
@@ -139,14 +195,12 @@ class AuthManagerTest {
     private fun <T : NativeAuthBaseStateV2> createState(stateClass: Class<T>): T {
         val constructor = stateClass.getDeclaredConstructor(
             String::class.java,
-            String::class.java,
             NativeAuthFlowScenarioV2::class.java,
             NativeAuthPublicClientApplicationConfiguration::class.java,
             NativeAuthV2ContinuationState::class.java
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            "continuation-token",
             "correlation-id",
             NativeAuthFlowScenarioV2.RESET_PASSWORD,
             NativeAuthPublicClientApplicationConfiguration(),

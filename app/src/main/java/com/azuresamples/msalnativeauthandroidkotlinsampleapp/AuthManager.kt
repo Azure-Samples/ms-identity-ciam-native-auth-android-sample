@@ -50,6 +50,8 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         val parameters = NativeAuthSignUpParameters(username = email)
         parameters.password = password
         parameters.attributes = attributes
+        parameters.scopes =
+            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.signUpV2(parameters), isCurrent)
     }
 
@@ -58,6 +60,8 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthResetPasswordParameters(username = email)
+        parameters.scopes =
+            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
     }
 
@@ -130,8 +134,12 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         }
 
     suspend fun resendChallenge(isCurrent: () -> Boolean = { true }): NativeAuthResultV2? =
-        (currentState as? MFAVerificationRequiredStateV2)?.let {
-            trackIfCurrent(it.resendChallenge(), isCurrent)
+        when (val state = currentState) {
+            is MFAVerificationRequiredStateV2 ->
+                trackIfCurrent(state.resendChallenge(), isCurrent)
+            is StrongAuthVerificationRequiredStateV2 ->
+                trackIfCurrent(state.resendChallenge(), isCurrent)
+            else -> null
         }
 
     fun clearState() {

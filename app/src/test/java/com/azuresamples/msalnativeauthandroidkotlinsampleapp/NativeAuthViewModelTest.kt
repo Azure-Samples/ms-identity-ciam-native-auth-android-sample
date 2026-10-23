@@ -5,7 +5,7 @@ import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
-import com.microsoft.identity.nativeauth.statemachine.errors.SignInErrorV2
+import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
@@ -16,6 +16,8 @@ import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -91,7 +93,7 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun onlyMfaVerificationEnablesChallengeResend() = runBlocking {
+    fun mfaAndStrongAuthVerificationEnableChallengeResend() = runBlocking {
         val viewModel = createViewModel()
         viewModel.beginFlow(NativeAuthApi.V2)
 
@@ -117,7 +119,7 @@ class NativeAuthViewModelTest {
             )
         )
 
-        assertFalse(viewModel.uiState.value.canResendChallenge)
+        assertTrue(viewModel.uiState.value.canResendChallenge)
     }
 
     @Test
@@ -226,6 +228,163 @@ class NativeAuthViewModelTest {
     }
 
     @Test
+    fun correctableV2ErrorsRetainTheirContinuationScreen() = runBlocking {
+        val scenario = NativeAuthFlowScenarioV2.SIGN_IN
+        val cases = listOf(
+            NativeAuthResultV2.CodeRequired(
+                createCodeState(), scenario, 6, "user@example.com", "email"
+            ) to NativeAuthErrorV2(
+                error = "invalidGrant",
+                subError = "invalidOneTimeCode",
+                errorMessage = "Invalid code",
+                correlationId = "correlation-id",
+                scenario = scenario
+            ),
+            NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java), scenario
+            ) to NativeAuthErrorV2(
+                error = "invalidGrant",
+                subError = "invalidUserNameOrPassword",
+                errorMessage = "Invalid credentials",
+                correlationId = "correlation-id",
+                scenario = scenario
+            ),
+            NativeAuthResultV2.NewPasswordRequired(
+                createState(NewPasswordRequiredStateV2::class.java),
+                NativeAuthFlowScenarioV2.RESET_PASSWORD
+            ) to NativeAuthErrorV2(
+                error = "invalidRequest",
+                subError = "passwordTooWeak",
+                errorMessage = "Choose a stronger password",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.RESET_PASSWORD
+            ),
+            NativeAuthResultV2.StrongAuthVerificationRequired(
+                createStrongAuthVerificationState(), scenario, 6, "user@example.com", "email"
+            ) to NativeAuthErrorV2(
+                error = "invalidGrant",
+                subError = "invalidOneTimeCode",
+                errorMessage = "Invalid activation code",
+                correlationId = "correlation-id",
+                scenario = scenario
+            )
+        )
+
+        for ((result, error) in cases) {
+            val viewModel = createViewModel()
+            viewModel.beginFlow(NativeAuthApi.V2)
+            viewModel.handleV2Result(result)
+            val destination = viewModel.uiState.value.destination
+
+            viewModel.handleV2Result(error)
+
+            assertTrue(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertEquals(destination, viewModel.uiState.value.destination)
+            assertEquals(error.errorMessage, viewModel.uiState.value.status)
+        }
+    }
+
+    @Test
+    fun invalidAttributesShowSharedDiagnosticsAndRetainFields() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V2)
+
+        viewModel.handleV2Result(
+            NativeAuthResultV2.AttributesInvalid(
+                nextState = createState(AttributesInvalidStateV2::class.java),
+                scenario = NativeAuthFlowScenarioV2.SIGN_UP,
+                invalidAttributes = listOf("city"),
+                error = NativeAuthErrorV2(
+                    error = "invalidRequest",
+                    subError = "attributeValidationError",
+                    errorMessage = "City is required",
+                    correlationId = "correlation-id",
+                    scenario = NativeAuthFlowScenarioV2.SIGN_UP
+                )
+            )
+        )
+
+        assertTrue(viewModel.uiState.value.flowActive)
+        assertEquals(NativeAuthDestination.ATTRIBUTES, viewModel.uiState.value.destination)
+        assertEquals(listOf("city"), viewModel.uiState.value.requiredAttributes)
+        assertEquals("City is required", viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun entryPointInputErrorsReturnHome() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V2)
+
+        viewModel.handleV2Result(
+            NativeAuthErrorV2(
+                errorType = "invalid_input",
+                errorMessage = "Enter a valid username",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.SIGN_IN
+            )
+        )
+
+        assertFalse(viewModel.uiState.value.flowActive)
+        assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+        assertEquals("Enter a valid username", viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun terminalAndUnknownErrorsEndV2Continuations() = runBlocking {
+        for (errorType in listOf("invalid_state", "not_implemented", "future_error")) {
+            val viewModel = createViewModel()
+            viewModel.beginFlow(NativeAuthApi.V2)
+            viewModel.handleV2Result(
+                NativeAuthResultV2.CodeRequired(
+                    createCodeState(), NativeAuthFlowScenarioV2.SIGN_IN,
+                    6, "user@example.com", "email"
+                )
+            )
+
+            viewModel.handleV2Result(
+                NativeAuthErrorV2(
+                    errorType = errorType,
+                    errorMessage = "Restart the flow",
+                    correlationId = "correlation-id",
+                    scenario = NativeAuthFlowScenarioV2.SIGN_IN
+                )
+            )
+
+            assertFalse(viewModel.uiState.value.flowActive)
+            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+            assertEquals("Restart the flow", viewModel.uiState.value.status)
+        }
+    }
+
+    @Test
+    fun strongAuthResendResultRefreshesContactAndCanDisableResendOnNextStep() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V2)
+        for (sentTo in listOf("old@example.com", "new@example.com", "")) {
+            viewModel.handleV2Result(
+                NativeAuthResultV2.StrongAuthVerificationRequired(
+                    createStrongAuthVerificationState(), NativeAuthFlowScenarioV2.SIGN_UP,
+                    6, sentTo, "email"
+                )
+            )
+
+            assertEquals(sentTo, viewModel.uiState.value.sentTo)
+            assertEquals(NativeAuthDestination.MFA_VERIFICATION, viewModel.uiState.value.destination)
+            assertTrue(viewModel.uiState.value.canResendChallenge)
+        }
+
+        viewModel.handleV2Result(
+            NativeAuthResultV2.NewPasswordRequired(
+                createState(NewPasswordRequiredStateV2::class.java),
+                NativeAuthFlowScenarioV2.RESET_PASSWORD
+            )
+        )
+
+        assertFalse(viewModel.uiState.value.canResendChallenge)
+    }
+
+    @Test
     fun browserRequiredV2ErrorReturnsHomeAndRequestsInteractiveSignIn() = runBlocking {
         val viewModel = createViewModel()
         val request = async(start = CoroutineStart.UNDISPATCHED) {
@@ -234,7 +393,7 @@ class NativeAuthViewModelTest {
         val generation = requireNotNull(viewModel.beginFlow(NativeAuthApi.V2))
 
         viewModel.handleV2Result(
-            SignInErrorV2(
+            NativeAuthErrorV2(
                 errorType = "browser_required",
                 errorMessage = "Continue in a browser.",
                 correlationId = "correlation-id",
@@ -315,14 +474,12 @@ class NativeAuthViewModelTest {
     private fun <T : NativeAuthBaseStateV2> createState(stateClass: Class<T>): T {
         val constructor = stateClass.getDeclaredConstructor(
             String::class.java,
-            String::class.java,
             NativeAuthFlowScenarioV2::class.java,
             NativeAuthPublicClientApplicationConfiguration::class.java,
             NativeAuthV2ContinuationState::class.java
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            "continuation-token",
             "correlation-id",
             NativeAuthFlowScenarioV2.SIGN_UP,
             NativeAuthPublicClientApplicationConfiguration(),
@@ -333,16 +490,18 @@ class NativeAuthViewModelTest {
     private fun createStrongAuthVerificationState(): StrongAuthVerificationRequiredStateV2 {
         val constructor = StrongAuthVerificationRequiredStateV2::class.java.getDeclaredConstructor(
             String::class.java,
-            String::class.java,
             NativeAuthFlowScenarioV2::class.java,
-            NativeAuthPublicClientApplicationConfiguration::class.java
+            NativeAuthPublicClientApplicationConfiguration::class.java,
+            NativeAuthV2ContinuationState::class.java,
+            String::class.java
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            "continuation-token",
             "correlation-id",
             NativeAuthFlowScenarioV2.SIGN_IN,
-            NativeAuthPublicClientApplicationConfiguration()
+            NativeAuthPublicClientApplicationConfiguration(),
+            null,
+            "email"
         )
     }
 }
