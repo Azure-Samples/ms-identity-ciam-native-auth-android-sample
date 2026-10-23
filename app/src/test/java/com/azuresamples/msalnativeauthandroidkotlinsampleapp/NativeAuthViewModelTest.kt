@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -93,7 +94,7 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun mfaAndStrongAuthVerificationEnableChallengeResend() = runBlocking {
+    fun mfaVerificationEnablesResendButJitActivationDoesNot() = runBlocking {
         val viewModel = createViewModel()
         viewModel.beginFlow(NativeAuthApi.V2)
 
@@ -119,7 +120,56 @@ class NativeAuthViewModelTest {
             )
         )
 
-        assertTrue(viewModel.uiState.value.canResendChallenge)
+        assertFalse(viewModel.uiState.value.canResendChallenge)
+    }
+
+    @Test
+    fun activationSuccessorsReplaceTheRetainedContinuation() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
+        viewModel.beginFlow(NativeAuthApi.V2)
+        val activation = createStrongAuthVerificationState()
+        viewModel.handleV2Result(
+            NativeAuthResultV2.StrongAuthVerificationRequired(
+                activation, NativeAuthFlowScenarioV2.SIGN_UP, 6, "user@example.com", "email"
+            )
+        )
+        assertSame(activation, manager.currentState)
+
+        val successors = listOf(
+            createState(AttributesInvalidStateV2::class.java).let {
+                Triple(
+                    NativeAuthResultV2.AttributesInvalid(
+                        it, NativeAuthFlowScenarioV2.SIGN_UP, listOf("city")
+                    ),
+                    it,
+                    NativeAuthDestination.ATTRIBUTES
+                )
+            },
+            createState(NewPasswordRequiredStateV2::class.java).let {
+                Triple(
+                    NativeAuthResultV2.NewPasswordRequired(
+                        it, NativeAuthFlowScenarioV2.RESET_PASSWORD
+                    ),
+                    it,
+                    NativeAuthDestination.NEW_PASSWORD
+                )
+            },
+            createState(MFAVerificationRequiredStateV2::class.java).let {
+                Triple(
+                    NativeAuthResultV2.MFAVerificationRequired(
+                        it, NativeAuthFlowScenarioV2.SIGN_IN, 6, "user@example.com", "email"
+                    ),
+                    it,
+                    NativeAuthDestination.MFA_VERIFICATION
+                )
+            }
+        )
+        for ((result, nextState, destination) in successors) {
+            viewModel.handleV2Result(result)
+            assertSame(nextState, manager.currentState)
+            assertEquals(destination, viewModel.uiState.value.destination)
+        }
     }
 
     @Test
@@ -183,7 +233,8 @@ class NativeAuthViewModelTest {
 
     @Test
     fun staleV2ResultCannotOverwriteNewV1FlowAfterCancel() = runBlocking {
-        val viewModel = createViewModel()
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
         val staleGeneration = requireNotNull(viewModel.beginFlow(NativeAuthApi.V2))
         viewModel.cancelFlow()
         viewModel.beginFlow(NativeAuthApi.V1)
@@ -202,6 +253,7 @@ class NativeAuthViewModelTest {
         assertTrue(viewModel.uiState.value.flowActive)
         assertEquals(NativeAuthApi.V1, viewModel.uiState.value.activeApi)
         assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+        assertNull(manager.currentState)
     }
 
     @Test
@@ -358,7 +410,7 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun strongAuthResendResultRefreshesContactAndCanDisableResendOnNextStep() = runBlocking {
+    fun strongAuthVerificationRefreshesContactWithoutEnablingResend() = runBlocking {
         val viewModel = createViewModel()
         viewModel.beginFlow(NativeAuthApi.V2)
         for (sentTo in listOf("old@example.com", "new@example.com", "")) {
@@ -371,7 +423,7 @@ class NativeAuthViewModelTest {
 
             assertEquals(sentTo, viewModel.uiState.value.sentTo)
             assertEquals(NativeAuthDestination.MFA_VERIFICATION, viewModel.uiState.value.destination)
-            assertTrue(viewModel.uiState.value.canResendChallenge)
+            assertFalse(viewModel.uiState.value.canResendChallenge)
         }
 
         viewModel.handleV2Result(
@@ -450,22 +502,26 @@ class NativeAuthViewModelTest {
         initialMfaRequester: suspend (AwaitingMFAState, AuthMethod) -> MFARequiredResult =
             { state, method -> state.requestChallenge(method) },
         repeatedMfaRequester: suspend (MFARequiredState, AuthMethod) -> MFARequiredResult =
-            { state, method -> state.requestChallenge(method) }
+            { state, method -> state.requestChallenge(method) },
+        authManager: AuthManager? = null
     ): NativeAuthViewModel {
-        val application = Proxy.newProxyInstance(
-            INativeAuthPublicClientApplication::class.java.classLoader,
-            arrayOf(INativeAuthPublicClientApplication::class.java)
-        ) { _, method, _ ->
-            throw UnsupportedOperationException(method.name)
-        } as INativeAuthPublicClientApplication
+        val application = applicationWithoutCalls()
         return NativeAuthViewModel(
             application,
-            AuthManager(application),
+            authManager ?: AuthManager(application),
             autoRestoreAccount = false,
             initialV1MfaRequester = initialMfaRequester,
             repeatedV1MfaRequester = repeatedMfaRequester
         )
     }
+
+    private fun applicationWithoutCalls(): INativeAuthPublicClientApplication =
+        Proxy.newProxyInstance(
+            INativeAuthPublicClientApplication::class.java.classLoader,
+            arrayOf(INativeAuthPublicClientApplication::class.java)
+        ) { _, method, _ ->
+            throw UnsupportedOperationException(method.name)
+        } as INativeAuthPublicClientApplication
 
     private fun createCodeState(): CodeRequiredStateV2 {
         return createState(CodeRequiredStateV2::class.java)

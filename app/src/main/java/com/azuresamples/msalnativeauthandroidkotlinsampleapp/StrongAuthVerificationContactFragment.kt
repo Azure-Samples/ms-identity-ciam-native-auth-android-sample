@@ -24,12 +24,21 @@ class StrongAuthVerificationContactFragment : NativeAuthFlowDialogFragment() {
             binding.hintText.text = getString(R.string.strong_auth_sms_hint_text_value)
             binding.contactTypeHint.text = getString(R.string.attribute_phone_number)
         } else {
-            binding.hintText.text = getString(R.string.strong_auth_email_hint_text_value)
+            binding.hintText.text = getString(
+                if (viewModel.uiState.value.activeApi == NativeAuthApi.V2) {
+                    R.string.strong_auth_email_required_hint_text_value
+                } else {
+                    R.string.strong_auth_email_hint_text_value
+                }
+            )
             binding.contactTypeHint.text = getString(R.string.attribute_email)
         }
         binding.verifyCode.setOnClickListener {
-            val contact = binding.emailText.text.toString().ifBlank {
-                authMethod?.loginHint.orEmpty()
+            val enteredContact = binding.emailText.text.toString()
+            val contact = if (viewModel.uiState.value.activeApi == NativeAuthApi.V2) {
+                enteredContact
+            } else {
+                enteredContact.ifBlank { authMethod?.loginHint.orEmpty() }
             }
             viewModel.submitVerificationContact(contact)
         }

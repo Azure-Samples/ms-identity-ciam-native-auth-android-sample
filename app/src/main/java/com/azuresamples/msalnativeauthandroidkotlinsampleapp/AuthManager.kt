@@ -1,5 +1,6 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
@@ -32,10 +33,12 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     suspend fun signIn(
         email: String,
         password: CharArray? = null,
+        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
+        parameters.claimsRequest = claimsRequest
         parameters.scopes =
             listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.signInV2(parameters), isCurrent)
@@ -45,11 +48,13 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         email: String,
         password: CharArray? = null,
         attributes: UserAttributes? = null,
+        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthSignUpParameters(username = email)
         parameters.password = password
         parameters.attributes = attributes
+        parameters.claimsRequest = claimsRequest
         parameters.scopes =
             listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.signUpV2(parameters), isCurrent)
@@ -57,9 +62,11 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
 
     suspend fun resetPassword(
         email: String,
+        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthResetPasswordParameters(username = email)
+        parameters.claimsRequest = claimsRequest
         parameters.scopes =
             listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
@@ -137,8 +144,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         when (val state = currentState) {
             is MFAVerificationRequiredStateV2 ->
                 trackIfCurrent(state.resendChallenge(), isCurrent)
-            is StrongAuthVerificationRequiredStateV2 ->
-                trackIfCurrent(state.resendChallenge(), isCurrent)
             else -> null
         }
 
@@ -146,7 +151,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         currentState = null
     }
 
-    private fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
+    internal fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
         val nextState = when (result) {
             is NativeAuthResultV2.CodeRequired -> result.nextState
             is NativeAuthResultV2.PasswordRequired -> result.nextState

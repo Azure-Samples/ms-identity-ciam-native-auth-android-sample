@@ -27,6 +27,7 @@
     <string name="attributes_hint_text_value">"Additional attributes are required, please enter them below."</string>
     <string name="mfa_challenge_hint_text_value">"Enter the verification code sent by %1$s to %2$s."</string>
     <string name="strong_auth_email_hint_text_value">"For Multi-factor authentication, you can enter a separate email address (optional). If you don't provide one, we will use your primary email address."</string>
+    <string name="strong_auth_email_required_hint_text_value">"Enter the email address you want to register for multi-factor authentication. An email address is required."</string>
     <string name="strong_auth_sms_hint_text_value">"For Multi-factor authentication using SMS please enter your phone number. The format needs to be \"+&lt;country code&gt; &lt;number&gt;\", for example \"+1 000111222\""</string>
     <string name="pick_auth_method_registration_text_value">"Please select a method you want to register for multi-factor authentication."</string>
     <string name="pick_auth_method_text_value">"Select a method for multi-factor authentication."</string>
