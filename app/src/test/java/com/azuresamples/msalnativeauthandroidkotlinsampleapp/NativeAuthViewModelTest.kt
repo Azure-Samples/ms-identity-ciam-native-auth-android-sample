@@ -94,7 +94,7 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun mfaVerificationEnablesResendButJitActivationDoesNot() = runBlocking {
+    fun mfaAndJitVerificationEnableResend() = runBlocking {
         val viewModel = createViewModel()
         viewModel.beginFlow(NativeAuthApi.V2)
 
@@ -120,7 +120,7 @@ class NativeAuthViewModelTest {
             )
         )
 
-        assertFalse(viewModel.uiState.value.canResendChallenge)
+        assertTrue(viewModel.uiState.value.canResendChallenge)
     }
 
     @Test
@@ -410,20 +410,23 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun strongAuthVerificationRefreshesContactWithoutEnablingResend() = runBlocking {
-        val viewModel = createViewModel()
+    fun strongAuthVerificationRefreshesContactAndStateWithResendEnabled() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
         viewModel.beginFlow(NativeAuthApi.V2)
         for (sentTo in listOf("old@example.com", "new@example.com", "")) {
+            val nextState = createStrongAuthVerificationState()
             viewModel.handleV2Result(
                 NativeAuthResultV2.StrongAuthVerificationRequired(
-                    createStrongAuthVerificationState(), NativeAuthFlowScenarioV2.SIGN_UP,
+                    nextState, NativeAuthFlowScenarioV2.SIGN_UP,
                     6, sentTo, "email"
                 )
             )
 
+            assertSame(nextState, manager.currentState)
             assertEquals(sentTo, viewModel.uiState.value.sentTo)
             assertEquals(NativeAuthDestination.MFA_VERIFICATION, viewModel.uiState.value.destination)
-            assertFalse(viewModel.uiState.value.canResendChallenge)
+            assertTrue(viewModel.uiState.value.canResendChallenge)
         }
 
         viewModel.handleV2Result(

@@ -144,6 +144,8 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         when (val state = currentState) {
             is MFAVerificationRequiredStateV2 ->
                 trackIfCurrent(state.resendChallenge(), isCurrent)
+            is StrongAuthVerificationRequiredStateV2 ->
+                trackIfCurrent(state.resendChallenge(), isCurrent)
             else -> null
         }
 

@@ -906,7 +906,7 @@ class NativeAuthViewModel(
                     NativeAuthDestination.MFA_VERIFICATION,
                     sentTo = result.sentTo,
                     channel = result.channel,
-                    canResendChallenge = false,
+                    canResendChallenge = true,
                     generation = generation
                 )
             }

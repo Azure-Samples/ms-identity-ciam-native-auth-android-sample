@@ -18,6 +18,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificat
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 import java.lang.reflect.Proxy
@@ -191,7 +192,7 @@ class AuthManagerTest {
     }
 
     @Test
-    fun strongAuthVerificationTracksFreshStateWithoutUnsupportedResend() = runBlocking {
+    fun strongAuthResendReturnsSdkErrorAndPreservesCurrentState() = runBlocking {
         val initialState = createStrongAuthVerificationState()
         val refreshedState = createStrongAuthVerificationState()
         val authManager = AuthManager(
@@ -206,7 +207,9 @@ class AuthManagerTest {
         authManager.resetPassword("user@example.com")
         assertSame(refreshedState, authManager.currentState)
 
-        assertNull(authManager.resendChallenge())
+        val result = authManager.resendChallenge() as? NativeAuthErrorV2
+
+        assertNotNull(result)
         assertSame(refreshedState, authManager.currentState)
     }
 
