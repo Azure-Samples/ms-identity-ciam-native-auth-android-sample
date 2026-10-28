@@ -11,13 +11,15 @@ import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPasswordStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -27,7 +29,7 @@ import java.util.ArrayDeque
 class AuthManagerTest {
 
     @Test
-    fun signInForwardsClaimsWithOrWithoutPassword() = runBlocking {
+    fun signInForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
         for (password in listOf(null, "password".toCharArray())) {
             var parameters: NativeAuthSignInParameters? = null
             val claims = authenticationContextClaims()
@@ -39,15 +41,12 @@ class AuthManagerTest {
 
             assertSame(claims, parameters!!.claimsRequest)
             assertSame(password, parameters!!.password)
-            assertEquals(
-                listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope"),
-                parameters!!.scopes
-            )
+            assertNull(parameters!!.scopes)
         }
     }
 
     @Test
-    fun signUpForwardsClaimsWithOrWithoutPassword() = runBlocking {
+    fun signUpForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
         for (password in listOf(null, "password".toCharArray())) {
             var parameters: NativeAuthSignUpParameters? = null
             val claims = authenticationContextClaims()
@@ -59,15 +58,12 @@ class AuthManagerTest {
 
             assertSame(claims, parameters!!.claimsRequest)
             assertSame(password, parameters!!.password)
-            assertEquals(
-                listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope"),
-                parameters!!.scopes
-            )
+            assertNull(parameters!!.scopes)
         }
     }
 
     @Test
-    fun resetPasswordForwardsClaims() = runBlocking {
+    fun resetPasswordForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
         var parameters: NativeAuthResetPasswordParameters? = null
         val claims = authenticationContextClaims()
         val manager = AuthManager(applicationReturning(
@@ -77,10 +73,7 @@ class AuthManagerTest {
         manager.resetPassword("user@example.com", claimsRequest = claims)
 
         assertSame(claims, parameters!!.claimsRequest)
-        assertEquals(
-            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope"),
-            parameters!!.scopes
-        )
+        assertNull(parameters!!.scopes)
     }
 
     @Test
@@ -192,6 +185,40 @@ class AuthManagerTest {
     }
 
     @Test
+    fun existingAccountCodeContinuationSupportsSubmitAndResend() = runBlocking {
+        val state = createState(ExistingAccountCodeRequiredStateV2::class.java)
+        val manager = AuthManager(applicationReturning(
+            NativeAuthResultV2.ExistingAccountCodeRequired(
+                state, 6, "user@example.com", "email"
+            ),
+            "signUpV2"
+        ))
+
+        manager.signUp("user@example.com")
+
+        assertSame(state, manager.currentState)
+        assertNotNull(manager.submitCode("123456") as? NativeAuthErrorV2)
+        assertSame(state, manager.currentState)
+        assertNotNull(manager.resendCode() as? NativeAuthErrorV2)
+        assertSame(state, manager.currentState)
+    }
+
+    @Test
+    fun existingAccountPasswordContinuationSupportsSubmit() = runBlocking {
+        val state = createState(ExistingAccountPasswordRequiredStateV2::class.java)
+        val manager = AuthManager(applicationReturning(
+            NativeAuthResultV2.ExistingAccountPasswordRequired(state),
+            "signUpV2"
+        ))
+
+        manager.signUp("user@example.com")
+
+        assertSame(state, manager.currentState)
+        assertNotNull(manager.submitPassword("password".toCharArray()) as? NativeAuthErrorV2)
+        assertSame(state, manager.currentState)
+    }
+
+    @Test
     fun strongAuthResendReturnsSdkErrorAndPreservesCurrentState() = runBlocking {
         val initialState = createStrongAuthVerificationState()
         val refreshedState = createStrongAuthVerificationState()
@@ -285,7 +312,22 @@ class AuthManagerTest {
         } as INativeAuthPublicClientApplication
     }
 
-    private fun <T : NativeAuthBaseStateV2> createState(stateClass: Class<T>): T {
+    private fun <T : NativeAuthBaseStateV2> createState(
+        stateClass: Class<T>,
+        scenario: NativeAuthFlowScenarioV2 = NativeAuthFlowScenarioV2.RESET_PASSWORD
+    ): T {
+        val signInState = when (stateClass) {
+            ExistingAccountCodeRequiredStateV2::class.java ->
+                createState(CodeRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_IN)
+            ExistingAccountPasswordRequiredStateV2::class.java ->
+                createState(PasswordRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_IN)
+            else -> null
+        }
+        if (signInState != null) {
+            val constructor = stateClass.getDeclaredConstructor(signInState.javaClass)
+            constructor.isAccessible = true
+            return constructor.newInstance(signInState)
+        }
         val constructor = stateClass.getDeclaredConstructor(
             String::class.java,
             NativeAuthFlowScenarioV2::class.java,
@@ -295,7 +337,7 @@ class AuthManagerTest {
         constructor.isAccessible = true
         return constructor.newInstance(
             "correlation-id",
-            NativeAuthFlowScenarioV2.RESET_PASSWORD,
+            scenario,
             NativeAuthPublicClientApplicationConfiguration(),
             null
         )

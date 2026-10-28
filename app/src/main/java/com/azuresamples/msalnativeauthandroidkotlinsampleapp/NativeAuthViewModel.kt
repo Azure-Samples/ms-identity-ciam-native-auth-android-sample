@@ -852,6 +852,20 @@ class NativeAuthViewModel(
             }
             is NativeAuthResultV2.PasswordRequired ->
                 continueV2(NativeAuthDestination.PASSWORD, generation = generation)
+            is NativeAuthResultV2.ExistingAccountCodeRequired ->
+                continueV2(
+                    NativeAuthDestination.SIGN_IN_CODE,
+                    sentTo = result.sentTo,
+                    channel = result.channel,
+                    status = "An account already exists. Enter the code to sign in.",
+                    generation = generation
+                )
+            is NativeAuthResultV2.ExistingAccountPasswordRequired ->
+                continueV2(
+                    NativeAuthDestination.PASSWORD,
+                    status = "An account already exists. Enter your current password to sign in.",
+                    generation = generation
+                )
             is NativeAuthResultV2.NewPasswordRequired ->
                 continueV2(NativeAuthDestination.NEW_PASSWORD, generation = generation)
             is NativeAuthResultV2.AttributesRequired -> {

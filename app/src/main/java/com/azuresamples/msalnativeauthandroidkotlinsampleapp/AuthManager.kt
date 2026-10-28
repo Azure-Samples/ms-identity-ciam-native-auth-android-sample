@@ -12,6 +12,8 @@ import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
@@ -39,8 +41,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         val parameters = NativeAuthSignInParameters(username = email)
         parameters.password = password
         parameters.claimsRequest = claimsRequest
-        parameters.scopes =
-            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.signInV2(parameters), isCurrent)
     }
 
@@ -55,8 +55,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         parameters.password = password
         parameters.attributes = attributes
         parameters.claimsRequest = claimsRequest
-        parameters.scopes =
-            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.signUpV2(parameters), isCurrent)
     }
 
@@ -67,8 +65,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     ): NativeAuthResultV2 {
         val parameters = NativeAuthResetPasswordParameters(username = email)
         parameters.claimsRequest = claimsRequest
-        parameters.scopes =
-            listOf("api://96e12db6-dcb2-47f2-b6fc-2e3c8d27e903/Custom.Scope")
         return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
     }
 
@@ -76,21 +72,33 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         code: String,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2? =
-        (currentState as? CodeRequiredStateV2)?.let {
-            trackIfCurrent(it.submitCode(code), isCurrent)
+        when (val state = currentState) {
+            is CodeRequiredStateV2 ->
+                trackIfCurrent(state.submitCode(code), isCurrent)
+            is ExistingAccountCodeRequiredStateV2 ->
+                trackIfCurrent(state.submitCode(code), isCurrent)
+            else -> null
         }
 
     suspend fun resendCode(isCurrent: () -> Boolean = { true }): NativeAuthResultV2? =
-        (currentState as? CodeRequiredStateV2)?.let {
-            trackIfCurrent(it.resendCode(), isCurrent)
+        when (val state = currentState) {
+            is CodeRequiredStateV2 ->
+                trackIfCurrent(state.resendCode(), isCurrent)
+            is ExistingAccountCodeRequiredStateV2 ->
+                trackIfCurrent(state.resendCode(), isCurrent)
+            else -> null
         }
 
     suspend fun submitPassword(
         password: CharArray,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2? =
-        (currentState as? PasswordRequiredStateV2)?.let {
-            trackIfCurrent(it.submitPassword(password), isCurrent)
+        when (val state = currentState) {
+            is PasswordRequiredStateV2 ->
+                trackIfCurrent(state.submitPassword(password), isCurrent)
+            is ExistingAccountPasswordRequiredStateV2 ->
+                trackIfCurrent(state.submitPassword(password), isCurrent)
+            else -> null
         }
 
     suspend fun submitNewPassword(
@@ -156,7 +164,9 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
     internal fun track(result: NativeAuthResultV2): NativeAuthResultV2 {
         val nextState = when (result) {
             is NativeAuthResultV2.CodeRequired -> result.nextState
+            is NativeAuthResultV2.ExistingAccountCodeRequired -> result.nextState
             is NativeAuthResultV2.PasswordRequired -> result.nextState
+            is NativeAuthResultV2.ExistingAccountPasswordRequired -> result.nextState
             is NativeAuthResultV2.NewPasswordRequired -> result.nextState
             is NativeAuthResultV2.AttributesRequired -> result.nextState
             is NativeAuthResultV2.AttributesInvalid -> result.nextState

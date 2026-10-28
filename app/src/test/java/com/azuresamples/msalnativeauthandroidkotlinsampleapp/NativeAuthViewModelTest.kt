@@ -13,6 +13,8 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AwaitingMFAState
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
@@ -91,6 +93,50 @@ class NativeAuthViewModelTest {
         )
         assertEquals("user@example.com", viewModel.uiState.value.sentTo)
         assertTrue(viewModel.uiState.value.flowActive)
+    }
+
+    @Test
+    fun existingAccountCodeRoutesToSignInWithRefreshedState() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
+        viewModel.beginFlow(NativeAuthApi.V2)
+
+        for (sentTo in listOf("old@example.com", "new@example.com")) {
+            val state = createState(ExistingAccountCodeRequiredStateV2::class.java)
+            viewModel.handleV2Result(
+                NativeAuthResultV2.ExistingAccountCodeRequired(state, 6, sentTo, "email")
+            )
+
+            assertEquals(NativeAuthDestination.SIGN_IN_CODE, viewModel.uiState.value.destination)
+            assertEquals(sentTo, viewModel.uiState.value.sentTo)
+            assertEquals("email", viewModel.uiState.value.channel)
+            assertEquals(
+                "An account already exists. Enter the code to sign in.",
+                viewModel.uiState.value.status
+            )
+            assertTrue(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertSame(state, manager.currentState)
+        }
+    }
+
+    @Test
+    fun existingAccountPasswordRoutesToCurrentPassword() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
+        viewModel.beginFlow(NativeAuthApi.V2)
+        val state = createState(ExistingAccountPasswordRequiredStateV2::class.java)
+
+        viewModel.handleV2Result(NativeAuthResultV2.ExistingAccountPasswordRequired(state))
+
+        assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+        assertEquals(
+            "An account already exists. Enter your current password to sign in.",
+            viewModel.uiState.value.status
+        )
+        assertTrue(viewModel.uiState.value.flowActive)
+        assertFalse(viewModel.uiState.value.busy)
+        assertSame(state, manager.currentState)
     }
 
     @Test
@@ -257,6 +303,33 @@ class NativeAuthViewModelTest {
     }
 
     @Test
+    fun staleExistingAccountResultsCannotOverwriteNewFlow() = runBlocking {
+        val results = listOf(
+            NativeAuthResultV2.ExistingAccountCodeRequired(
+                createState(ExistingAccountCodeRequiredStateV2::class.java),
+                6, "user@example.com", "email"
+            ),
+            NativeAuthResultV2.ExistingAccountPasswordRequired(
+                createState(ExistingAccountPasswordRequiredStateV2::class.java)
+            )
+        )
+        for (result in results) {
+            val manager = AuthManager(applicationWithoutCalls())
+            val viewModel = createViewModel(authManager = manager)
+            val staleGeneration = requireNotNull(viewModel.beginFlow(NativeAuthApi.V2))
+            viewModel.cancelFlow()
+            viewModel.beginFlow(NativeAuthApi.V1)
+
+            viewModel.handleV2Result(result, staleGeneration)
+
+            assertTrue(viewModel.uiState.value.flowActive)
+            assertEquals(NativeAuthApi.V1, viewModel.uiState.value.activeApi)
+            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+            assertNull(manager.currentState)
+        }
+    }
+
+    @Test
     fun invalidAttributesRenderOnlyAsInputFields() = runBlocking {
         val viewModel = createViewModel()
         val generation = requireNotNull(viewModel.beginFlow(NativeAuthApi.V2))
@@ -301,6 +374,25 @@ class NativeAuthViewModelTest {
                 correlationId = "correlation-id",
                 scenario = scenario
             ),
+            NativeAuthResultV2.ExistingAccountCodeRequired(
+                createState(ExistingAccountCodeRequiredStateV2::class.java),
+                6, "user@example.com", "email"
+            ) to NativeAuthErrorV2(
+                error = "invalidGrant",
+                subError = "invalidOneTimeCode",
+                errorMessage = "Invalid sign-in code",
+                correlationId = "correlation-id",
+                scenario = scenario
+            ),
+            NativeAuthResultV2.ExistingAccountPasswordRequired(
+                createState(ExistingAccountPasswordRequiredStateV2::class.java)
+            ) to NativeAuthErrorV2(
+                error = "invalidGrant",
+                subError = "invalidUserNameOrPassword",
+                errorMessage = "Invalid current password",
+                correlationId = "correlation-id",
+                scenario = scenario
+            ),
             NativeAuthResultV2.NewPasswordRequired(
                 createState(NewPasswordRequiredStateV2::class.java),
                 NativeAuthFlowScenarioV2.RESET_PASSWORD
@@ -323,10 +415,12 @@ class NativeAuthViewModelTest {
         )
 
         for ((result, error) in cases) {
-            val viewModel = createViewModel()
+            val manager = AuthManager(applicationWithoutCalls())
+            val viewModel = createViewModel(authManager = manager)
             viewModel.beginFlow(NativeAuthApi.V2)
             viewModel.handleV2Result(result)
             val destination = viewModel.uiState.value.destination
+            val state = manager.currentState
 
             viewModel.handleV2Result(error)
 
@@ -334,6 +428,7 @@ class NativeAuthViewModelTest {
             assertFalse(viewModel.uiState.value.busy)
             assertEquals(destination, viewModel.uiState.value.destination)
             assertEquals(error.errorMessage, viewModel.uiState.value.status)
+            assertSame(state, manager.currentState)
         }
     }
 
@@ -530,7 +625,22 @@ class NativeAuthViewModelTest {
         return createState(CodeRequiredStateV2::class.java)
     }
 
-    private fun <T : NativeAuthBaseStateV2> createState(stateClass: Class<T>): T {
+    private fun <T : NativeAuthBaseStateV2> createState(
+        stateClass: Class<T>,
+        scenario: NativeAuthFlowScenarioV2 = NativeAuthFlowScenarioV2.SIGN_UP
+    ): T {
+        val signInState = when (stateClass) {
+            ExistingAccountCodeRequiredStateV2::class.java ->
+                createState(CodeRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_IN)
+            ExistingAccountPasswordRequiredStateV2::class.java ->
+                createState(PasswordRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_IN)
+            else -> null
+        }
+        if (signInState != null) {
+            val constructor = stateClass.getDeclaredConstructor(signInState.javaClass)
+            constructor.isAccessible = true
+            return constructor.newInstance(signInState)
+        }
         val constructor = stateClass.getDeclaredConstructor(
             String::class.java,
             NativeAuthFlowScenarioV2::class.java,
@@ -540,7 +650,7 @@ class NativeAuthViewModelTest {
         constructor.isAccessible = true
         return constructor.newInstance(
             "correlation-id",
-            NativeAuthFlowScenarioV2.SIGN_UP,
+            scenario,
             NativeAuthPublicClientApplicationConfiguration(),
             null
         )
