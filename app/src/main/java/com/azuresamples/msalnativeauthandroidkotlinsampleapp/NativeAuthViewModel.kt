@@ -3,6 +3,7 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.client.exception.MsalClientException
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
@@ -194,9 +195,10 @@ class NativeAuthViewModel(
         }
         launchFlowOperation(generation) {
             try {
+                val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
                     handleV2Result(
-                        authManager.signIn(email, password) {
+                        authManager.signIn(email, password, claimsRequest) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -204,6 +206,7 @@ class NativeAuthViewModel(
                 } else {
                     val parameters = NativeAuthSignInParameters(username = email)
                     parameters.password = password
+                    parameters.claimsRequest = claimsRequest
                     handleV1SignInResult(authClient.signIn(parameters), generation)
                 }
             } catch (exception: Exception) {
@@ -229,8 +232,9 @@ class NativeAuthViewModel(
             try {
                 val attributes = buildOptionalAttributes(givenName, lastName)
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
+                    val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                     handleV2Result(
-                        authManager.signUp(email, password, attributes) {
+                        authManager.signUp(email, password, attributes, claimsRequest) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -257,8 +261,9 @@ class NativeAuthViewModel(
         launchFlowOperation(generation) {
             try {
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
+                    val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                     handleV2Result(
-                        authManager.resetPassword(email) {
+                        authManager.resetPassword(email, claimsRequest) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -824,6 +829,7 @@ class NativeAuthViewModel(
         if (!isCurrentFlow(generation)) {
             return
         }
+        authManager.track(result)
         when (result) {
             is NativeAuthResultV2.Complete -> finishFlow(
                 result.resultValue,
@@ -846,6 +852,20 @@ class NativeAuthViewModel(
             }
             is NativeAuthResultV2.PasswordRequired ->
                 continueV2(NativeAuthDestination.PASSWORD, generation = generation)
+            is NativeAuthResultV2.ExistingAccountCodeRequired ->
+                continueV2(
+                    NativeAuthDestination.SIGN_IN_CODE,
+                    sentTo = result.sentTo,
+                    channel = result.channel,
+                    status = "An account already exists. Enter the code to sign in.",
+                    generation = generation
+                )
+            is NativeAuthResultV2.ExistingAccountPasswordRequired ->
+                continueV2(
+                    NativeAuthDestination.PASSWORD,
+                    status = "An account already exists. Enter your current password to sign in.",
+                    generation = generation
+                )
             is NativeAuthResultV2.NewPasswordRequired ->
                 continueV2(NativeAuthDestination.NEW_PASSWORD, generation = generation)
             is NativeAuthResultV2.AttributesRequired -> {

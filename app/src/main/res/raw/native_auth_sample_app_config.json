@@ -1,9 +1,9 @@
 {
-  "client_id": "430146fc-27b5-4c63-a677-2e5f2fa9aa00",
+  "client_id": "456cf138-cb77-48e6-8a82-74f869d77e74",
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://spasamples.ciamlogin.com/1eb974cd-0dc5-40a6-9f68-94b19f5535c5/"
+      "authority_url": "https://msidlabciam6.ciamlogin.com/fe362aec-5d43-45d1-b730-9755e60dc3b9/"
     }
   ],
   "dc": "ESTS-PUB-SEASLR1-FD000-TEST1-100",
