@@ -4,9 +4,10 @@ import com.microsoft.identity.common.java.nativeauth.providers.responses.v2.Nati
 import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
-import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
+import com.microsoft.identity.nativeauth.UserAttributes
+import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParametersV2
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParametersV2
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
@@ -19,6 +20,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterResetPas
 import com.microsoft.identity.nativeauth.statemachine.states.SignInAfterSignUpStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
@@ -46,32 +48,34 @@ class AuthManagerTest {
     }
 
     @Test
-    fun signUpForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
-        for (password in listOf(null, "password".toCharArray())) {
-            var parameters: NativeAuthSignUpParameters? = null
+    fun signUpUsesV2ParametersAndForwardsAttributesAndClaimsWithoutAddingCustomScopes() = runBlocking {
+        for (attributes in listOf(null, UserAttributes.Builder().givenName("Test").build())) {
+            var parameters: NativeAuthSignUpParametersV2? = null
             val claims = authenticationContextClaims()
             val manager = AuthManager(applicationReturning(
                 error(), "signUpV2"
-            ) { parameters = it as NativeAuthSignUpParameters })
+            ) { parameters = it as NativeAuthSignUpParametersV2 })
 
-            manager.signUp("user@example.com", password, claimsRequest = claims)
+            manager.signUp("user@example.com", attributes, claimsRequest = claims)
 
+            assertEquals("user@example.com", parameters!!.username)
             assertSame(claims, parameters!!.claimsRequest)
-            assertSame(password, parameters!!.password)
+            assertSame(attributes, parameters!!.attributes)
             assertNull(parameters!!.scopes)
         }
     }
 
     @Test
-    fun resetPasswordForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
-        var parameters: NativeAuthResetPasswordParameters? = null
+    fun resetPasswordUsesV2ParametersAndForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
+        var parameters: NativeAuthResetPasswordParametersV2? = null
         val claims = authenticationContextClaims()
         val manager = AuthManager(applicationReturning(
             error(), "resetPasswordV2"
-        ) { parameters = it as NativeAuthResetPasswordParameters })
+        ) { parameters = it as NativeAuthResetPasswordParametersV2 })
 
         manager.resetPassword("user@example.com", claimsRequest = claims)
 
+        assertEquals("user@example.com", parameters!!.username)
         assertSame(claims, parameters!!.claimsRequest)
         assertNull(parameters!!.scopes)
     }
@@ -84,15 +88,15 @@ class AuthManagerTest {
         }).signIn("user@example.com")
         assertNull(signIn!!.claimsRequest)
 
-        var signUp: NativeAuthSignUpParameters? = null
+        var signUp: NativeAuthSignUpParametersV2? = null
         AuthManager(applicationReturning(error(), "signUpV2") {
-            signUp = it as NativeAuthSignUpParameters
+            signUp = it as NativeAuthSignUpParametersV2
         }).signUp("user@example.com")
         assertNull(signUp!!.claimsRequest)
 
-        var reset: NativeAuthResetPasswordParameters? = null
+        var reset: NativeAuthResetPasswordParametersV2? = null
         AuthManager(applicationReturning(error()) {
-            reset = it as NativeAuthResetPasswordParameters
+            reset = it as NativeAuthResetPasswordParametersV2
         }).resetPassword("user@example.com")
         assertNull(reset!!.claimsRequest)
     }

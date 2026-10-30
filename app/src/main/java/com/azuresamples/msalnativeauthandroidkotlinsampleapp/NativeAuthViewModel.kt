@@ -234,7 +234,7 @@ class NativeAuthViewModel(
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
                     val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                     handleV2Result(
-                        authManager.signUp(email, password, attributes, claimsRequest) {
+                        authManager.signUp(email, attributes, claimsRequest) {
                             isCurrentFlow(generation)
                         },
                         generation

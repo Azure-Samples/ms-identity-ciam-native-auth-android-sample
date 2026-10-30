@@ -4,9 +4,9 @@ import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
-import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParametersV2
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParametersV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
@@ -46,13 +46,11 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
 
     suspend fun signUp(
         email: String,
-        password: CharArray? = null,
         attributes: UserAttributes? = null,
         claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
-        val parameters = NativeAuthSignUpParameters(username = email)
-        parameters.password = password
+        val parameters = NativeAuthSignUpParametersV2(username = email)
         parameters.attributes = attributes
         parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.signUpV2(parameters), isCurrent)
@@ -63,7 +61,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
-        val parameters = NativeAuthResetPasswordParameters(username = email)
+        val parameters = NativeAuthResetPasswordParametersV2(username = email)
         parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
     }
