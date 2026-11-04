@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.client.exception.MsalClientException
+import com.microsoft.identity.common.logging.Logger
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
@@ -980,8 +981,40 @@ class NativeAuthViewModel(
         if (!isCurrentFlow(generation)) {
             return
         }
+        val errorKind = when {
+            error.isNotImplemented() -> "notImplemented"
+            error.isUserNotFound() -> "userNotFound"
+            error.isInvalidCode() -> "invalidCode"
+            error.isInvalidPassword() -> "invalidPassword"
+            error.isInvalidUsername() -> "invalidUsername"
+            error.isInvalidChallenge() -> "invalidChallenge"
+            error.isInvalidInput() -> "invalidInput"
+            error.isBrowserRequired() -> "browserRequired"
+            error.isMissingRequiredAttributes() -> "missingRequiredAttributes"
+            error.isInvalidAttributes() -> "invalidAttributes"
+            error.isAuthNotSupported() -> "authNotSupported"
+            error.isPasswordResetFailed() -> "passwordResetFailed"
+            error.isGeneralError() -> "generalError"
+            else -> "unknown"
+        }
+        val description = errorMessage(error)
+        val message = "$errorKind: $description"
+        Logger.error(
+            "NativeAuthViewModel",
+            error.correlationId,
+            "Native Auth V2 flow error [${error.scenario}]: $errorKind. " +
+                "Error: ${error.error ?: "N/A"}. Suberror: ${error.subError ?: "N/A"}. " +
+                "Error codes: ${error.errorCodes.orEmpty()}.",
+            null
+        )
+        Logger.errorPII(
+            "NativeAuthViewModel",
+            error.correlationId,
+            "Native Auth V2 flow error [${error.scenario}]: $message",
+            null
+        )
         if (error.isBrowserRequired()) {
-            startBrowserFallback(errorMessage(error))
+            startBrowserFallback(message)
             return
         }
 
@@ -1005,9 +1038,9 @@ class NativeAuthViewModel(
             NativeAuthDestination.HOME -> false
         }
         if (canCorrectInput) {
-            keepFlow(errorMessage(error), generation)
+            keepFlow(message, generation)
         } else {
-            failFlow(errorMessage(error), generation)
+            failFlow(message, generation)
         }
     }
 

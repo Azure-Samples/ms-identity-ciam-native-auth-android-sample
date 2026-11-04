@@ -185,7 +185,7 @@ class NativeAuthViewModelTest {
             assertTrue(viewModel.uiState.value.flowActive)
             assertFalse(viewModel.uiState.value.busy)
             assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
-            assertEquals("Try another password", viewModel.uiState.value.status)
+            assertEquals("invalidPassword: Try another password", viewModel.uiState.value.status)
             assertSame(requestedState, manager.currentState)
 
             viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(requestedState, scenario))
@@ -656,7 +656,14 @@ class NativeAuthViewModelTest {
             assertTrue(viewModel.uiState.value.flowActive)
             assertFalse(viewModel.uiState.value.busy)
             assertEquals(destination, viewModel.uiState.value.destination)
-            assertEquals(error.errorMessage, viewModel.uiState.value.status)
+            val expectedKind = when (destination) {
+                NativeAuthDestination.SIGN_IN_CODE -> "invalidCode"
+                NativeAuthDestination.PASSWORD,
+                NativeAuthDestination.NEW_PASSWORD -> "invalidPassword"
+                NativeAuthDestination.MFA_VERIFICATION -> "invalidChallenge"
+                else -> throw AssertionError("Unexpected destination: $destination")
+            }
+            assertEquals("$expectedKind: ${error.errorMessage}", viewModel.uiState.value.status)
             assertSame(state, manager.currentState)
         }
     }
@@ -693,7 +700,7 @@ class NativeAuthViewModelTest {
         assertTrue(viewModel.uiState.value.flowActive)
         assertEquals(NativeAuthDestination.ATTRIBUTES, viewModel.uiState.value.destination)
         assertEquals(listOf("city"), viewModel.uiState.value.requiredAttributes)
-        assertEquals("City is required", viewModel.uiState.value.status)
+        assertEquals("missingRequiredAttributes: City is required", viewModel.uiState.value.status)
         assertSame(state, manager.currentState)
     }
 
@@ -719,8 +726,67 @@ class NativeAuthViewModelTest {
 
             assertFalse(viewModel.uiState.value.flowActive)
             assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
-            assertEquals("Service rejected the operation: $subError", viewModel.uiState.value.status)
+            assertEquals(
+                "generalError: Service rejected the operation: $subError",
+                viewModel.uiState.value.status
+            )
             assertNull(manager.currentState)
+        }
+    }
+
+    @Test
+    fun v2StatusIncludesSdkClassificationAndOriginalDescription() = runBlocking {
+        fun error(
+            type: String? = null,
+            serviceError: String? = null,
+            subError: String? = null,
+            details: Any? = null
+        ) = NativeAuthErrorV2(
+            errorType = type,
+            error = serviceError,
+            subError = subError,
+            attributeValidationDetails = details,
+            errorMessage = "Original server description",
+            correlationId = "correlation-id",
+            scenario = NativeAuthFlowScenarioV2.SIGN_IN
+        )
+        val cases = listOf(
+            "notImplemented" to error(type = "not_implemented"),
+            "userNotFound" to error(serviceError = "invalidRequest", subError = "userNotFound"),
+            "invalidCode" to error(serviceError = "invalidGrant", subError = "invalidOneTimeCode"),
+            "invalidPassword" to error(type = "invalid_password"),
+            "invalidPassword" to error(
+                serviceError = "invalidRequest", subError = "attributeValidationError",
+                details = listOf(mapOf("attributeIds" to listOf("password")))
+            ),
+            "invalidUsername" to error(type = "invalid_username"),
+            "invalidChallenge" to error(
+                type = "invalid_challenge",
+                serviceError = "invalidGrant",
+                subError = "invalidOneTimeCode"
+            ),
+            "invalidInput" to error(type = "invalid_input"),
+            "browserRequired" to error(
+                serviceError = "invalid_grant", subError = "web_redirect_required"
+            ),
+            "missingRequiredAttributes" to error(
+                details = listOf(mapOf("code" to "attributeRequired", "attributeIds" to listOf("city")))
+            ),
+            "invalidAttributes" to error(type = "invalid_attributes"),
+            "authNotSupported" to error(type = "auth_not_supported"),
+            "passwordResetFailed" to error(type = "password_reset_failed"),
+            "generalError" to error(type = "future_error")
+        )
+
+        for ((expectedKind, error) in cases) {
+            val viewModel = createViewModel()
+            viewModel.beginFlow(NativeAuthApi.V2)
+
+            viewModel.handleV2Result(error)
+
+            val expectedStatus = "$expectedKind: Original server description" +
+                if (expectedKind == "browserRequired") " Continuing in the browser." else ""
+            assertEquals(expectedStatus, viewModel.uiState.value.status)
         }
     }
 
@@ -740,7 +806,7 @@ class NativeAuthViewModelTest {
 
         assertFalse(viewModel.uiState.value.flowActive)
         assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
-        assertEquals("Enter a valid username", viewModel.uiState.value.status)
+        assertEquals("invalidInput: Enter a valid username", viewModel.uiState.value.status)
     }
 
     @Test
@@ -766,7 +832,8 @@ class NativeAuthViewModelTest {
 
             assertFalse(viewModel.uiState.value.flowActive)
             assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
-            assertEquals("Restart the flow", viewModel.uiState.value.status)
+            val expectedKind = if (errorType == "not_implemented") "notImplemented" else "generalError"
+            assertEquals("$expectedKind: Restart the flow", viewModel.uiState.value.status)
         }
     }
 
@@ -821,6 +888,10 @@ class NativeAuthViewModelTest {
         assertFalse(viewModel.uiState.value.flowActive)
         assertTrue(viewModel.uiState.value.busy)
         assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+        assertEquals(
+            "browserRequired: Continue in a browser. Continuing in the browser.",
+            viewModel.uiState.value.status
+        )
         assertEquals(BrowserSignInRequest(null, "browser"), request.await())
     }
 
@@ -870,7 +941,7 @@ class NativeAuthViewModelTest {
 
             assertFalse(viewModel.uiState.value.flowActive)
             assertFalse(viewModel.uiState.value.busy)
-            assertEquals("Service error", viewModel.uiState.value.status)
+            assertEquals("generalError: Service error", viewModel.uiState.value.status)
         }
     }
 
