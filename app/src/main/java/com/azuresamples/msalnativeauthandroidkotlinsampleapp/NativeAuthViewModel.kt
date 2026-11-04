@@ -47,12 +47,13 @@ import com.microsoft.identity.nativeauth.statemachine.results.SignOutResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResendCodeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignUpResult
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
+import com.microsoft.identity.nativeauth.statemachine.states.AuthMethodSelectionRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AwaitingMFAState
 import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
+import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
 import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthVerificationRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordCodeRequiredState
-import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordPasswordRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInContinuationState
@@ -128,7 +129,10 @@ class NativeAuthViewModel(
         { state, method -> state.requestChallenge(method) },
     private val repeatedV1MfaRequester:
         suspend (MFARequiredState, AuthMethod) -> MFARequiredResult =
-        { state, method -> state.requestChallenge(method) }
+        { state, method -> state.requestChallenge(method) },
+    private val initialV2PasswordSubmitter:
+        suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
+        { state, password -> state.submitPassword(password) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NativeAuthUiState())
@@ -148,6 +152,7 @@ class NativeAuthViewModel(
 
     private var v1State: Parcelable? = null
     private var v1SelectionState: Parcelable? = null
+    private var pendingV2Password: CharArray? = null
     private var flowGeneration = 0L
     private var accessToken: String? = null
 
@@ -188,7 +193,7 @@ class NativeAuthViewModel(
     }
 
     fun startSignIn(email: String, password: CharArray?) {
-        val generation = beginFlow()
+        val generation = beginFlow(password = password)
         if (generation == null) {
             password?.fill('\u0000')
             return
@@ -198,7 +203,7 @@ class NativeAuthViewModel(
                 val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
                     handleV2Result(
-                        authManager.signIn(email, password, claimsRequest) {
+                        authManager.signIn(email, claimsRequest) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -223,7 +228,7 @@ class NativeAuthViewModel(
         givenName: String,
         lastName: String
     ) {
-        val generation = beginFlow()
+        val generation = beginFlow(password = password)
         if (generation == null) {
             password?.fill('\u0000')
             return
@@ -760,7 +765,7 @@ class NativeAuthViewModel(
             v1State is RegisterStrongAuthState ||
                 authManager.currentState is StrongAuthRegistrationRequiredStateV2 ->
                 R.string.pick_auth_method_registration_text_value
-            authManager.currentState is ResetPasswordMethodRequiredStateV2 ->
+            authManager.currentState is AuthMethodSelectionRequiredStateV2 ->
                 R.string.pick_password_reset_method_text_value
             else -> R.string.pick_auth_method_text_value
         }
@@ -795,7 +800,10 @@ class NativeAuthViewModel(
         refreshAccount()
     }
 
-    internal fun beginFlow(api: NativeAuthApi? = null): Long? {
+    internal fun beginFlow(
+        api: NativeAuthApi? = null,
+        password: CharArray? = null
+    ): Long? {
         if (_uiState.value.flowActive) {
             return null
         }
@@ -807,6 +815,9 @@ class NativeAuthViewModel(
         flowGeneration++
         val generation = flowGeneration
         clearContinuation()
+        if (selectedApi == NativeAuthApi.V2) {
+            pendingV2Password = password?.takeIf { it.isNotEmpty() }?.copyOf()
+        }
         _uiState.value = _uiState.value.copy(
             flowActive = true,
             busy = true,
@@ -837,6 +848,9 @@ class NativeAuthViewModel(
                 generation
             )
             is NativeAuthResultV2.CodeRequired -> {
+                if (result.scenario == NativeAuthFlowScenarioV2.SIGN_IN) {
+                    clearPendingV2Password()
+                }
                 val destination = when (result.scenario) {
                     NativeAuthFlowScenarioV2.SIGN_UP -> NativeAuthDestination.SIGN_UP_CODE
                     NativeAuthFlowScenarioV2.RESET_PASSWORD ->
@@ -850,9 +864,24 @@ class NativeAuthViewModel(
                     generation = generation
                 )
             }
-            is NativeAuthResultV2.PasswordRequired ->
+            is NativeAuthResultV2.PasswordRequired -> {
+                val password = pendingV2Password
+                pendingV2Password = null
                 continueV2(NativeAuthDestination.PASSWORD, generation = generation)
-            is NativeAuthResultV2.ExistingAccountCodeRequired ->
+                if (password != null) {
+                    _uiState.value = _uiState.value.copy(busy = true)
+                    try {
+                        handleV2Result(
+                            initialV2PasswordSubmitter(result.nextState, password),
+                            generation
+                        )
+                    } finally {
+                        password.fill('\u0000')
+                    }
+                }
+            }
+            is NativeAuthResultV2.ExistingAccountCodeRequired -> {
+                clearPendingV2Password()
                 continueV2(
                     NativeAuthDestination.SIGN_IN_CODE,
                     sentTo = result.sentTo,
@@ -860,12 +889,15 @@ class NativeAuthViewModel(
                     status = "An account already exists. Enter the code to sign in.",
                     generation = generation
                 )
-            is NativeAuthResultV2.ExistingAccountPasswordRequired ->
+            }
+            is NativeAuthResultV2.ExistingAccountPasswordRequired -> {
+                clearPendingV2Password()
                 continueV2(
                     NativeAuthDestination.PASSWORD,
                     status = "An account already exists. Enter your current password to sign in.",
                     generation = generation
                 )
+            }
             is NativeAuthResultV2.NewPasswordRequired ->
                 continueV2(NativeAuthDestination.NEW_PASSWORD, generation = generation)
             is NativeAuthResultV2.AttributesRequired -> {
@@ -877,14 +909,6 @@ class NativeAuthViewModel(
                     generation = generation
                 )
             }
-            is NativeAuthResultV2.AttributesInvalid -> {
-                continueV2(
-                    NativeAuthDestination.ATTRIBUTES,
-                    requiredAttributes = result.invalidAttributes,
-                    generation = generation
-                )
-                result.error?.let { handleV2Error(it, generation) }
-            }
             is NativeAuthResultV2.MFARequired -> {
                 continueV2(
                     NativeAuthDestination.PICK_AUTH_METHOD,
@@ -892,12 +916,20 @@ class NativeAuthViewModel(
                     generation = generation
                 )
             }
-            is NativeAuthResultV2.ResetPasswordMethodRequired -> {
-                continueV2(
-                    NativeAuthDestination.PICK_AUTH_METHOD,
-                    authMethods = result.authMethods,
-                    generation = generation
-                )
+            is NativeAuthResultV2.AuthMethodSelectionRequired -> {
+                if (result.scenario == NativeAuthFlowScenarioV2.RESET_PASSWORD) {
+                    continueV2(
+                        NativeAuthDestination.PICK_AUTH_METHOD,
+                        authMethods = result.authMethods,
+                        generation = generation
+                    )
+                } else {
+                    failFlow(
+                        "The SDK requested authentication-method selection, which this sample " +
+                            "does not support for sign-in.",
+                        generation
+                    )
+                }
             }
             is NativeAuthResultV2.MFAVerificationRequired -> {
                 continueV2(
@@ -959,17 +991,15 @@ class NativeAuthViewModel(
             NativeAuthDestination.RESET_PASSWORD_CODE ->
                 error.isInvalidCode() || error.isInvalidInput()
             NativeAuthDestination.PASSWORD ->
-                error.isInvalidCredentials() || error.isInvalidInput()
+                error.isInvalidPassword() || error.isInvalidInput()
             NativeAuthDestination.NEW_PASSWORD ->
                 error.isInvalidPassword() || error.isInvalidInput()
             NativeAuthDestination.ATTRIBUTES ->
                 error.isInvalidAttributes() || error.isInvalidPassword() ||
-                    error.isUserAlreadyExists() || error.isInvalidInput()
-            NativeAuthDestination.PICK_AUTH_METHOD ->
-                error.isAuthMethodBlocked() || error.isInvalidInput()
-            NativeAuthDestination.STRONG_AUTH_CONTACT ->
-                error.isVerificationContactBlocked() || error.isAuthMethodBlocked() ||
                     error.isInvalidInput()
+            NativeAuthDestination.PICK_AUTH_METHOD,
+            NativeAuthDestination.STRONG_AUTH_CONTACT ->
+                error.isInvalidInput()
             NativeAuthDestination.MFA_VERIFICATION ->
                 error.isInvalidChallenge() || error.isInvalidInput()
             NativeAuthDestination.HOME -> false
@@ -1380,7 +1410,18 @@ class NativeAuthViewModel(
     private fun clearContinuation() {
         v1State = null
         v1SelectionState = null
+        clearPendingV2Password()
         authManager.clearState()
+    }
+
+    private fun clearPendingV2Password() {
+        pendingV2Password?.fill('\u0000')
+        pendingV2Password = null
+    }
+
+    override fun onCleared() {
+        clearContinuation()
+        super.onCleared()
     }
 
     private fun launchFlowOperation(

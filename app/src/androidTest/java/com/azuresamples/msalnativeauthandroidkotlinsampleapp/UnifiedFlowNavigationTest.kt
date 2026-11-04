@@ -4,15 +4,19 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
+import androidx.test.espresso.matcher.ViewMatchers.Visibility
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -24,6 +28,35 @@ class UnifiedFlowNavigationTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             onView(withId(R.id.home_screen)).check(matches(isDisplayed()))
             onView(withId(R.id.use_v2_checkbox)).check(matches(isChecked()))
+            onView(withId(R.id.password_input_layout))
+                .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+        }
+    }
+
+    @Test
+    fun initialPasswordRemainsAvailableWhenSwitchingBetweenApis() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                ViewModelProvider(activity)[NativeAuthViewModel::class.java]
+                    .setUseNativeAuthV2(false)
+            }
+            onView(withId(R.id.password_input_layout))
+                .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+
+            scenario.onActivity { activity ->
+                activity.findViewById<android.widget.EditText>(R.id.password_text)
+                    .setText("password")
+                ViewModelProvider(activity)[NativeAuthViewModel::class.java]
+                    .setUseNativeAuthV2(true)
+            }
+            onView(withId(R.id.password_label))
+                .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+            onView(withId(R.id.password_input_layout))
+                .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+            scenario.onActivity { activity ->
+                assertEquals("password",
+                    activity.findViewById<android.widget.EditText>(R.id.password_text).text.toString())
+            }
         }
     }
 

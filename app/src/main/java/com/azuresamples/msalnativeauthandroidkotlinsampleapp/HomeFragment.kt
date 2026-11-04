@@ -55,8 +55,7 @@ class HomeFragment : Fragment() {
         binding.signUp.setOnClickListener {
             viewModel.startSignUp(
                 binding.emailText.text.toString(),
-                if (viewModel.uiState.value.useNativeAuthV2) null
-                else readPassword().takeIf { it.isNotEmpty() },
+                readPassword().takeIf { it.isNotEmpty() },
                 binding.givenNameText.text.toString(),
                 binding.lastNameText.text.toString()
             )

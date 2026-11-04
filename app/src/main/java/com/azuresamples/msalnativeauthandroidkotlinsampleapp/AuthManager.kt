@@ -5,12 +5,12 @@ import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParametersV2
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParametersV2
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParametersV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
-import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.AuthMethodSelectionRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountPasswordRequiredStateV2
@@ -19,7 +19,6 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFAVerificationRequ
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
-import com.microsoft.identity.nativeauth.statemachine.states.ResetPasswordMethodRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 
@@ -34,12 +33,10 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
 
     suspend fun signIn(
         email: String,
-        password: CharArray? = null,
         claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
-        val parameters = NativeAuthSignInParameters(username = email)
-        parameters.password = password
+        val parameters = NativeAuthSignInParametersV2(username = email)
         parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.signInV2(parameters), isCurrent)
     }
@@ -114,8 +111,6 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         when (val state = currentState) {
             is AttributesRequiredStateV2 ->
                 trackIfCurrent(state.submitAttributes(attributes), isCurrent)
-            is AttributesInvalidStateV2 ->
-                trackIfCurrent(state.submitAttributes(attributes), isCurrent)
             else -> null
         }
 
@@ -127,7 +122,7 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
         when (val state = currentState) {
             is MFARequiredStateV2 ->
                 trackIfCurrent(state.selectAuthMethod(method, verificationContact), isCurrent)
-            is ResetPasswordMethodRequiredStateV2 ->
+            is AuthMethodSelectionRequiredStateV2 ->
                 trackIfCurrent(state.selectAuthMethod(method), isCurrent)
             is StrongAuthRegistrationRequiredStateV2 ->
                 trackIfCurrent(state.selectAuthMethod(method, verificationContact), isCurrent)
@@ -167,9 +162,8 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
             is NativeAuthResultV2.ExistingAccountPasswordRequired -> result.nextState
             is NativeAuthResultV2.NewPasswordRequired -> result.nextState
             is NativeAuthResultV2.AttributesRequired -> result.nextState
-            is NativeAuthResultV2.AttributesInvalid -> result.nextState
             is NativeAuthResultV2.MFARequired -> result.nextState
-            is NativeAuthResultV2.ResetPasswordMethodRequired -> result.nextState
+            is NativeAuthResultV2.AuthMethodSelectionRequired -> result.nextState
             is NativeAuthResultV2.MFAVerificationRequired -> result.nextState
             is NativeAuthResultV2.SignInAfterSignUpRequired -> result.nextState
             is NativeAuthResultV2.SignInAfterResetPasswordRequired -> result.nextState

@@ -2,15 +2,18 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import com.microsoft.identity.common.java.nativeauth.providers.responses.v2.NativeAuthV2ContinuationState
 import com.microsoft.identity.client.claims.ClaimsRequest
+import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.UserAttributes
 import com.microsoft.identity.nativeauth.parameters.NativeAuthResetPasswordParametersV2
-import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthSignInParametersV2
 import com.microsoft.identity.nativeauth.parameters.NativeAuthSignUpParametersV2
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
+import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.AuthMethodSelectionRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountPasswordRequiredStateV2
@@ -31,20 +34,18 @@ import java.util.ArrayDeque
 class AuthManagerTest {
 
     @Test
-    fun signInForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
-        for (password in listOf(null, "password".toCharArray())) {
-            var parameters: NativeAuthSignInParameters? = null
-            val claims = authenticationContextClaims()
-            val manager = AuthManager(applicationReturning(
-                error(), "signInV2"
-            ) { parameters = it as NativeAuthSignInParameters })
+    fun signInUsesPasswordFreeV2ParametersAndForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
+        var parameters: NativeAuthSignInParametersV2? = null
+        val claims = authenticationContextClaims()
+        val manager = AuthManager(applicationReturning(
+            error(), "signInV2"
+        ) { parameters = it as NativeAuthSignInParametersV2 })
 
-            manager.signIn("user@example.com", password, claimsRequest = claims)
+        manager.signIn("user@example.com", claimsRequest = claims)
 
-            assertSame(claims, parameters!!.claimsRequest)
-            assertSame(password, parameters!!.password)
-            assertNull(parameters!!.scopes)
-        }
+        assertEquals("user@example.com", parameters!!.username)
+        assertSame(claims, parameters!!.claimsRequest)
+        assertNull(parameters!!.scopes)
     }
 
     @Test
@@ -82,9 +83,9 @@ class AuthManagerTest {
 
     @Test
     fun entryPointsDoNotAddClaimsWhenNoneAreProvided() = runBlocking {
-        var signIn: NativeAuthSignInParameters? = null
+        var signIn: NativeAuthSignInParametersV2? = null
         AuthManager(applicationReturning(error(), "signInV2") {
-            signIn = it as NativeAuthSignInParameters
+            signIn = it as NativeAuthSignInParametersV2
         }).signIn("user@example.com")
         assertNull(signIn!!.claimsRequest)
 
@@ -219,6 +220,87 @@ class AuthManagerTest {
 
         assertSame(state, manager.currentState)
         assertNotNull(manager.submitPassword("password".toCharArray()) as? NativeAuthErrorV2)
+        assertSame(state, manager.currentState)
+    }
+
+    @Test
+    fun signInAndSignUpTrackPasswordRequiredAndAllowDeferredSubmission() = runBlocking {
+        for (scenario in listOf(NativeAuthFlowScenarioV2.SIGN_IN, NativeAuthFlowScenarioV2.SIGN_UP)) {
+            val state = createState(PasswordRequiredStateV2::class.java, scenario)
+            val method = if (scenario == NativeAuthFlowScenarioV2.SIGN_IN) "signInV2" else "signUpV2"
+            val manager = AuthManager(applicationReturning(
+                NativeAuthResultV2.PasswordRequired(state, scenario), method
+            ))
+
+            if (scenario == NativeAuthFlowScenarioV2.SIGN_IN) {
+                manager.signIn("user@example.com")
+            } else {
+                manager.signUp("user@example.com")
+            }
+
+            assertSame(state, manager.currentState)
+            assertNotNull(manager.submitPassword("password".toCharArray()) as? NativeAuthErrorV2)
+            assertSame(state, manager.currentState)
+        }
+    }
+
+    @Test
+    fun methodSelectionIsTrackedAndContinuedForEachEntryPoint() = runBlocking {
+        val method = AuthMethod("email", "oob", "user@example.com", "email")
+        for ((entryPoint, scenario) in listOf(
+            "signInV2" to NativeAuthFlowScenarioV2.SIGN_IN,
+            "signUpV2" to NativeAuthFlowScenarioV2.SIGN_IN,
+            "resetPasswordV2" to NativeAuthFlowScenarioV2.RESET_PASSWORD
+        )) {
+            val constructor = AuthMethodSelectionRequiredStateV2::class.java.getDeclaredConstructor(
+                String::class.java,
+                NativeAuthFlowScenarioV2::class.java,
+                NativeAuthPublicClientApplicationConfiguration::class.java,
+                NativeAuthV2ContinuationState::class.java,
+                List::class.java,
+                Boolean::class.javaPrimitiveType
+            )
+            constructor.isAccessible = true
+            val state = constructor.newInstance(
+                "correlation-id", scenario, NativeAuthPublicClientApplicationConfiguration(),
+                null, listOf(method), entryPoint == "signUpV2"
+            )
+            val manager = AuthManager(applicationReturning(
+                NativeAuthResultV2.AuthMethodSelectionRequired(state), entryPoint
+            ))
+
+            when (entryPoint) {
+                "signInV2" -> manager.signIn("user@example.com")
+                "signUpV2" -> manager.signUp("user@example.com")
+                "resetPasswordV2" -> manager.resetPassword("user@example.com")
+            }
+
+            assertSame(state, manager.currentState)
+            assertNotNull(manager.selectAuthMethod(method) as? NativeAuthErrorV2)
+            assertSame(state, manager.currentState)
+        }
+    }
+
+    @Test
+    fun rejectedAttributesRetainOriginalStateForResubmission() = runBlocking {
+        val state = createState(AttributesRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_UP)
+        val manager = AuthManager(applicationReturning(
+            NativeAuthResultV2.AttributesRequired(state, NativeAuthFlowScenarioV2.SIGN_UP, emptyList()),
+            "signUpV2"
+        ))
+        manager.signUp("user@example.com")
+
+        manager.track(NativeAuthErrorV2(
+            error = "invalidRequest",
+            subError = "attributeValidationError",
+            errorMessage = "City is required",
+            correlationId = "correlation-id",
+            scenario = NativeAuthFlowScenarioV2.SIGN_UP
+        ))
+
+        assertSame(state, manager.currentState)
+        assertNotNull(manager.submitAttributes(UserAttributes.Builder().city("London").build())
+            as? NativeAuthErrorV2)
         assertSame(state, manager.currentState)
     }
 

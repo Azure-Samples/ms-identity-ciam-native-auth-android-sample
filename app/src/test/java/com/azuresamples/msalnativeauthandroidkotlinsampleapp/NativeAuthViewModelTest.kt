@@ -4,13 +4,15 @@ import com.microsoft.identity.common.java.nativeauth.providers.responses.v2.Nati
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
+import com.microsoft.identity.nativeauth.RequiredUserAttribute
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
-import com.microsoft.identity.nativeauth.statemachine.states.AttributesInvalidStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.AuthMethodSelectionRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AwaitingMFAState
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.ExistingAccountCodeRequiredStateV2
@@ -22,6 +24,7 @@ import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequired
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -140,6 +143,201 @@ class NativeAuthViewModelTest {
     }
 
     @Test
+    fun initialPasswordIsSubmittedOnceThroughRequestedV2StateAndErased() = runBlocking {
+        for (scenario in listOf(NativeAuthFlowScenarioV2.SIGN_IN, NativeAuthFlowScenarioV2.SIGN_UP)) {
+            val requestedState = createState(PasswordRequiredStateV2::class.java, scenario)
+            var submittedPassword: CharArray? = null
+            var submissions = 0
+            val manager = AuthManager(applicationWithoutCalls())
+            val viewModel = createViewModel(
+                authManager = manager,
+                initialPasswordSubmitter = { state, password ->
+                    assertSame(requestedState, state)
+                    assertEquals("initial-password", String(password))
+                    submittedPassword = password
+                    submissions++
+                    NativeAuthErrorV2(
+                        errorType = "invalid_password",
+                        errorMessage = "Try another password",
+                        correlationId = "correlation-id",
+                        scenario = scenario
+                    )
+                }
+            )
+            val input = "initial-password".toCharArray()
+            viewModel.beginFlow(NativeAuthApi.V2, password = input)
+            input.fill('\u0000')
+            if (scenario == NativeAuthFlowScenarioV2.SIGN_UP) {
+                viewModel.handleV2Result(NativeAuthResultV2.CodeRequired(
+                    createCodeState(), scenario, 6, "user@example.com", "email"
+                ))
+                viewModel.handleV2Result(NativeAuthResultV2.AttributesRequired(
+                    createState(AttributesRequiredStateV2::class.java), scenario,
+                    listOf(RequiredUserAttribute("city", "string", true, null))
+                ))
+                assertEquals(0, submissions)
+            }
+
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(requestedState, scenario))
+
+            assertEquals(1, submissions)
+            assertTrue(submittedPassword!!.all { it == '\u0000' })
+            assertTrue(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+            assertEquals("Try another password", viewModel.uiState.value.status)
+            assertSame(requestedState, manager.currentState)
+
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(requestedState, scenario))
+
+            assertEquals(1, submissions)
+        }
+    }
+
+    @Test
+    fun omittedInitialPasswordStillPromptsWhenRequested() = runBlocking {
+        for (password in listOf(null, charArrayOf())) {
+            val viewModel = createViewModel(initialPasswordSubmitter = { _, _ ->
+                throw AssertionError("An omitted password must not be submitted")
+            })
+            viewModel.beginFlow(NativeAuthApi.V2, password = password)
+
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+            ))
+
+            assertTrue(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+        }
+    }
+
+    @Test
+    fun existingAccountDiscoveryDiscardsInitialSignUpPassword() = runBlocking {
+        val viewModel = createViewModel(initialPasswordSubmitter = { _, _ ->
+            throw AssertionError("A sign-up password must not be used for an existing account")
+        })
+        viewModel.beginFlow(NativeAuthApi.V2, password = "new-password".toCharArray())
+
+        viewModel.handleV2Result(NativeAuthResultV2.ExistingAccountPasswordRequired(
+            createState(ExistingAccountPasswordRequiredStateV2::class.java)
+        ))
+
+        assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+        assertEquals(
+            "An account already exists. Enter your current password to sign in.",
+            viewModel.uiState.value.status
+        )
+        viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+            createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+        assertTrue(viewModel.uiState.value.flowActive)
+    }
+
+    @Test
+    fun cancelledFlowCannotReuseItsInitialPassword() = runBlocking {
+        val viewModel = createViewModel(initialPasswordSubmitter = { _, _ ->
+            throw AssertionError("A cancelled flow's password must not be submitted")
+        })
+        val staleGeneration = requireNotNull(viewModel.beginFlow(
+            NativeAuthApi.V2, password = "password".toCharArray()
+        ))
+        viewModel.cancelFlow()
+        viewModel.beginFlow(NativeAuthApi.V2)
+        val result = NativeAuthResultV2.PasswordRequired(
+            createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+        )
+
+        viewModel.handleV2Result(result, staleGeneration)
+        viewModel.handleV2Result(result)
+
+        assertTrue(viewModel.uiState.value.flowActive)
+        assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+    }
+
+    @Test
+    fun lateInitialPasswordSubmissionCannotOverwriteNewFlowAndErasesBuffer() = runBlocking {
+        val response = CompletableDeferred<NativeAuthResultV2>()
+        var submittedPassword: CharArray? = null
+        val viewModel = createViewModel(initialPasswordSubmitter = { _, password ->
+            submittedPassword = password
+            response.await()
+        })
+        viewModel.beginFlow(NativeAuthApi.V2, password = "password".toCharArray())
+        val submission = async(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+            ))
+        }
+        assertNotNull(submittedPassword)
+        viewModel.cancelFlow()
+        viewModel.beginFlow(NativeAuthApi.V1)
+
+        response.complete(NativeAuthErrorV2(
+            errorType = "invalid_password",
+            errorMessage = "Old response",
+            correlationId = "correlation-id",
+            scenario = NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+        submission.await()
+
+        assertTrue(submittedPassword!!.all { it == '\u0000' })
+        assertEquals(NativeAuthApi.V1, viewModel.uiState.value.activeApi)
+        assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+        assertEquals("", viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun passwordResetRetainsItsExistingMethodSelection() = runBlocking {
+        val methods = listOf(
+            AuthMethod("email", "oob", "user@example.com", "email"),
+            AuthMethod("sms", "oob", null, "sms")
+        )
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
+        viewModel.beginFlow(NativeAuthApi.V2)
+        val state = createMethodSelectionState(methods, NativeAuthFlowScenarioV2.RESET_PASSWORD)
+
+        viewModel.handleV2Result(NativeAuthResultV2.AuthMethodSelectionRequired(state))
+
+        assertEquals(NativeAuthDestination.PICK_AUTH_METHOD, viewModel.uiState.value.destination)
+        assertEquals(methods, viewModel.uiState.value.authMethods)
+        assertEquals(R.string.pick_password_reset_method_text_value, viewModel.authMethodPrompt())
+        assertTrue(viewModel.uiState.value.flowActive)
+        assertFalse(viewModel.uiState.value.busy)
+        assertSame(state, manager.currentState)
+    }
+
+    @Test
+    fun signInMethodSelectionDoesNotOpenPickerOrSubmitPassword() = runBlocking {
+        for (password in listOf(null, "password".toCharArray())) {
+            val manager = AuthManager(applicationWithoutCalls())
+            val viewModel = createViewModel(
+                authManager = manager,
+                initialPasswordSubmitter = { _, _ ->
+                    throw AssertionError("Only PasswordRequired may submit the entered password")
+                }
+            )
+            viewModel.beginFlow(NativeAuthApi.V2, password = password)
+            val methods = listOf(
+                AuthMethod("email", "oob", "user@example.com", "email"),
+                AuthMethod("password", "password", null, "password")
+            )
+
+            viewModel.handleV2Result(NativeAuthResultV2.AuthMethodSelectionRequired(
+                createMethodSelectionState(methods)
+            ))
+
+            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+            assertFalse(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertTrue(viewModel.uiState.value.authMethods.isEmpty())
+            assertTrue(viewModel.uiState.value.status.contains("does not support for sign-in"))
+            assertNull(manager.currentState)
+        }
+    }
+
+    @Test
     fun mfaAndJitVerificationEnableResend() = runBlocking {
         val viewModel = createViewModel()
         viewModel.beginFlow(NativeAuthApi.V2)
@@ -183,10 +381,11 @@ class NativeAuthViewModelTest {
         assertSame(activation, manager.currentState)
 
         val successors = listOf(
-            createState(AttributesInvalidStateV2::class.java).let {
+            createState(AttributesRequiredStateV2::class.java).let {
                 Triple(
-                    NativeAuthResultV2.AttributesInvalid(
-                        it, NativeAuthFlowScenarioV2.SIGN_UP, listOf("city")
+                    NativeAuthResultV2.AttributesRequired(
+                        it, NativeAuthFlowScenarioV2.SIGN_UP,
+                        listOf(RequiredUserAttribute("city", "string", true, null))
                     ),
                     it,
                     NativeAuthDestination.ATTRIBUTES
@@ -330,15 +529,18 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun invalidAttributesRenderOnlyAsInputFields() = runBlocking {
+    fun requiredAttributesRenderAsInputFields() = runBlocking {
         val viewModel = createViewModel()
         val generation = requireNotNull(viewModel.beginFlow(NativeAuthApi.V2))
 
         viewModel.handleV2Result(
-            NativeAuthResultV2.AttributesInvalid(
-                nextState = createState(AttributesInvalidStateV2::class.java),
+            NativeAuthResultV2.AttributesRequired(
+                nextState = createState(AttributesRequiredStateV2::class.java),
                 scenario = NativeAuthFlowScenarioV2.SIGN_UP,
-                invalidAttributes = listOf("password", "email", "city")
+                requiredAttributes = listOf(
+                    RequiredUserAttribute("city", "string", true, null),
+                    RequiredUserAttribute("country", "string", true, null)
+                )
             ),
             generation
         )
@@ -346,7 +548,7 @@ class NativeAuthViewModelTest {
         assertTrue(viewModel.uiState.value.flowActive)
         assertEquals(NativeAuthDestination.ATTRIBUTES, viewModel.uiState.value.destination)
         assertEquals(
-            listOf("password", "email", "city"),
+            listOf("city", "country"),
             viewModel.uiState.value.requiredAttributes
         )
         assertTrue(viewModel.uiState.value.status.isEmpty())
@@ -368,11 +570,25 @@ class NativeAuthViewModelTest {
             NativeAuthResultV2.PasswordRequired(
                 createState(PasswordRequiredStateV2::class.java), scenario
             ) to NativeAuthErrorV2(
+                errorType = "invalid_password",
                 error = "invalidGrant",
                 subError = "invalidUserNameOrPassword",
                 errorMessage = "Invalid credentials",
                 correlationId = "correlation-id",
                 scenario = scenario
+            ),
+            NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java, NativeAuthFlowScenarioV2.SIGN_UP),
+                NativeAuthFlowScenarioV2.SIGN_UP
+            ) to NativeAuthErrorV2(
+                error = "invalidRequest",
+                subError = "attributeValidationError",
+                errorMessage = "Password does not meet policy",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.SIGN_UP,
+                attributeValidationDetails = listOf(
+                    mapOf("code" to "attributeValidationFailed", "attributeIds" to listOf("password"))
+                )
             ),
             NativeAuthResultV2.ExistingAccountCodeRequired(
                 createState(ExistingAccountCodeRequiredStateV2::class.java),
@@ -387,6 +603,7 @@ class NativeAuthViewModelTest {
             NativeAuthResultV2.ExistingAccountPasswordRequired(
                 createState(ExistingAccountPasswordRequiredStateV2::class.java)
             ) to NativeAuthErrorV2(
+                errorType = "invalid_password",
                 error = "invalidGrant",
                 subError = "invalidUserNameOrPassword",
                 errorMessage = "Invalid current password",
@@ -406,9 +623,21 @@ class NativeAuthViewModelTest {
             NativeAuthResultV2.StrongAuthVerificationRequired(
                 createStrongAuthVerificationState(), scenario, 6, "user@example.com", "email"
             ) to NativeAuthErrorV2(
+                errorType = "invalid_challenge",
                 error = "invalidGrant",
                 subError = "invalidOneTimeCode",
                 errorMessage = "Invalid activation code",
+                correlationId = "correlation-id",
+                scenario = scenario
+            ),
+            NativeAuthResultV2.MFAVerificationRequired(
+                createState(MFAVerificationRequiredStateV2::class.java), scenario,
+                6, "user@example.com", "email"
+            ) to NativeAuthErrorV2(
+                errorType = "invalid_challenge",
+                error = "invalidGrant",
+                subError = "invalidOneTimeCode",
+                errorMessage = "Invalid MFA code",
                 correlationId = "correlation-id",
                 scenario = scenario
             )
@@ -433,21 +662,30 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun invalidAttributesShowSharedDiagnosticsAndRetainFields() = runBlocking {
-        val viewModel = createViewModel()
+    fun invalidAttributesShowSharedDiagnosticsAndRetainFieldsAndState() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
         viewModel.beginFlow(NativeAuthApi.V2)
+        val state = createState(AttributesRequiredStateV2::class.java)
 
         viewModel.handleV2Result(
-            NativeAuthResultV2.AttributesInvalid(
-                nextState = createState(AttributesInvalidStateV2::class.java),
+            NativeAuthResultV2.AttributesRequired(
+                nextState = state,
                 scenario = NativeAuthFlowScenarioV2.SIGN_UP,
-                invalidAttributes = listOf("city"),
-                error = NativeAuthErrorV2(
-                    error = "invalidRequest",
-                    subError = "attributeValidationError",
-                    errorMessage = "City is required",
-                    correlationId = "correlation-id",
-                    scenario = NativeAuthFlowScenarioV2.SIGN_UP
+                requiredAttributes = listOf(
+                    RequiredUserAttribute("city", "string", true, null)
+                )
+            )
+        )
+        viewModel.handleV2Result(
+            NativeAuthErrorV2(
+                error = "invalidRequest",
+                subError = "attributeValidationError",
+                errorMessage = "City is required",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.SIGN_UP,
+                attributeValidationDetails = listOf(
+                    mapOf("code" to "attributeRequired", "attributeIds" to listOf("city"))
                 )
             )
         )
@@ -456,6 +694,34 @@ class NativeAuthViewModelTest {
         assertEquals(NativeAuthDestination.ATTRIBUTES, viewModel.uiState.value.destination)
         assertEquals(listOf("city"), viewModel.uiState.value.requiredAttributes)
         assertEquals("City is required", viewModel.uiState.value.status)
+        assertSame(state, manager.currentState)
+    }
+
+    @Test
+    fun generalAttributeErrorsDoNotOfferUnsupportedRetries() = runBlocking {
+        for (subError in listOf("userAlreadyExists", "authMethodBlocked", "verificationContactBlocked")) {
+            val manager = AuthManager(applicationWithoutCalls())
+            val viewModel = createViewModel(authManager = manager)
+            viewModel.beginFlow(NativeAuthApi.V2)
+            viewModel.handleV2Result(NativeAuthResultV2.AttributesRequired(
+                createState(AttributesRequiredStateV2::class.java),
+                NativeAuthFlowScenarioV2.SIGN_UP,
+                listOf(RequiredUserAttribute("city", "string", true, null))
+            ))
+
+            viewModel.handleV2Result(NativeAuthErrorV2(
+                error = "invalidRequest",
+                subError = subError,
+                errorMessage = "Service rejected the operation: $subError",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.SIGN_UP
+            ))
+
+            assertFalse(viewModel.uiState.value.flowActive)
+            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+            assertEquals("Service rejected the operation: $subError", viewModel.uiState.value.status)
+            assertNull(manager.currentState)
+        }
     }
 
     @Test
@@ -559,6 +825,56 @@ class NativeAuthViewModelTest {
     }
 
     @Test
+    fun exactOAuthRedirectPairRequestsBrowserAndClearsContinuation() = runBlocking {
+        val manager = AuthManager(applicationWithoutCalls())
+        val viewModel = createViewModel(authManager = manager)
+        val request = async(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.browserSignInRequests.first()
+        }
+        viewModel.beginFlow(NativeAuthApi.V2)
+        viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+            createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+
+        viewModel.handleV2Result(NativeAuthErrorV2(
+            error = "invalid_grant",
+            subError = "web_redirect_required",
+            errorMessage = "Continue in a browser.",
+            correlationId = "correlation-id",
+            scenario = NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+
+        assertFalse(viewModel.uiState.value.flowActive)
+        assertTrue(viewModel.uiState.value.busy)
+        assertNull(manager.currentState)
+        assertEquals(BrowserSignInRequest(null, "browser"), request.await())
+    }
+
+    @Test
+    fun nearMatchRedirectErrorsDoNotStartBrowserSignIn() = runBlocking {
+        for ((error, subError) in listOf(
+            "invalidGrant" to "web_redirect_required",
+            "invalid_grant" to "webRedirectRequired",
+            "invalid_request" to "web_redirect_required"
+        )) {
+            val viewModel = createViewModel()
+            viewModel.beginFlow(NativeAuthApi.V2)
+
+            viewModel.handleV2Result(NativeAuthErrorV2(
+                error = error,
+                subError = subError,
+                errorMessage = "Service error",
+                correlationId = "correlation-id",
+                scenario = NativeAuthFlowScenarioV2.SIGN_IN
+            ))
+
+            assertFalse(viewModel.uiState.value.flowActive)
+            assertFalse(viewModel.uiState.value.busy)
+            assertEquals("Service error", viewModel.uiState.value.status)
+        }
+    }
+
+    @Test
     fun socialSignInRequestPreservesProviderDomainHint() = runBlocking {
         val viewModel = createViewModel()
         val request = async(start = CoroutineStart.UNDISPATCHED) {
@@ -601,7 +917,9 @@ class NativeAuthViewModelTest {
             { state, method -> state.requestChallenge(method) },
         repeatedMfaRequester: suspend (MFARequiredState, AuthMethod) -> MFARequiredResult =
             { state, method -> state.requestChallenge(method) },
-        authManager: AuthManager? = null
+        authManager: AuthManager? = null,
+        initialPasswordSubmitter: suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
+            { state, password -> state.submitPassword(password) }
     ): NativeAuthViewModel {
         val application = applicationWithoutCalls()
         return NativeAuthViewModel(
@@ -609,7 +927,8 @@ class NativeAuthViewModelTest {
             authManager ?: AuthManager(application),
             autoRestoreAccount = false,
             initialV1MfaRequester = initialMfaRequester,
-            repeatedV1MfaRequester = repeatedMfaRequester
+            repeatedV1MfaRequester = repeatedMfaRequester,
+            initialV2PasswordSubmitter = initialPasswordSubmitter
         )
     }
 
@@ -623,6 +942,26 @@ class NativeAuthViewModelTest {
 
     private fun createCodeState(): CodeRequiredStateV2 {
         return createState(CodeRequiredStateV2::class.java)
+    }
+
+    private fun createMethodSelectionState(
+        methods: List<AuthMethod>,
+        scenario: NativeAuthFlowScenarioV2 = NativeAuthFlowScenarioV2.SIGN_IN,
+        existingAccount: Boolean = false
+    ): AuthMethodSelectionRequiredStateV2 {
+        val constructor = AuthMethodSelectionRequiredStateV2::class.java.getDeclaredConstructor(
+            String::class.java,
+            NativeAuthFlowScenarioV2::class.java,
+            NativeAuthPublicClientApplicationConfiguration::class.java,
+            NativeAuthV2ContinuationState::class.java,
+            List::class.java,
+            Boolean::class.javaPrimitiveType
+        )
+        constructor.isAccessible = true
+        return constructor.newInstance(
+            "correlation-id", scenario, NativeAuthPublicClientApplicationConfiguration(),
+            null, methods, existingAccount
+        )
     }
 
     private fun <T : NativeAuthBaseStateV2> createState(
