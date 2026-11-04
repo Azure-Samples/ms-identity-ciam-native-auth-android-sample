@@ -26,8 +26,11 @@ import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificat
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -191,6 +194,38 @@ class NativeAuthViewModelTest {
             viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(requestedState, scenario))
 
             assertEquals(1, submissions)
+        }
+    }
+
+    @Test
+    fun successfulInitialPasswordSubmissionSkipsPasswordScreen() = runBlocking {
+        for (scenario in listOf(NativeAuthFlowScenarioV2.SIGN_IN, NativeAuthFlowScenarioV2.SIGN_UP)) {
+            val nextState = createState(AttributesRequiredStateV2::class.java)
+            lateinit var viewModel: NativeAuthViewModel
+            viewModel = createViewModel(initialPasswordSubmitter = { _, password ->
+                assertEquals("password", String(password))
+                assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+                assertTrue(viewModel.uiState.value.busy)
+                NativeAuthResultV2.AttributesRequired(
+                    nextState, NativeAuthFlowScenarioV2.SIGN_UP,
+                    listOf(RequiredUserAttribute("city", "string", true, null))
+                )
+            })
+            viewModel.beginFlow(NativeAuthApi.V2, password = "password".toCharArray())
+            val destinations = mutableListOf<NativeAuthDestination>()
+            val observer = launch(start = CoroutineStart.UNDISPATCHED) {
+                viewModel.navigation.collect { destinations.add(it) }
+            }
+
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java, scenario), scenario
+            ))
+            yield()
+            observer.cancel()
+
+            assertEquals(listOf(NativeAuthDestination.ATTRIBUTES), destinations)
+            assertEquals(NativeAuthDestination.ATTRIBUTES, viewModel.uiState.value.destination)
+            assertFalse(viewModel.uiState.value.busy)
         }
     }
 

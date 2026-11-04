@@ -868,17 +868,22 @@ class NativeAuthViewModel(
             is NativeAuthResultV2.PasswordRequired -> {
                 val password = pendingV2Password
                 pendingV2Password = null
-                continueV2(NativeAuthDestination.PASSWORD, generation = generation)
-                if (password != null) {
+                if (password == null) {
+                    continueV2(NativeAuthDestination.PASSWORD, generation = generation)
+                } else {
                     _uiState.value = _uiState.value.copy(busy = true)
-                    try {
-                        handleV2Result(
-                            initialV2PasswordSubmitter(result.nextState, password),
-                            generation
-                        )
+                    val submissionResult = try {
+                        initialV2PasswordSubmitter(result.nextState, password)
                     } finally {
                         password.fill('\u0000')
                     }
+                    if (submissionResult is NativeAuthErrorV2 &&
+                        !submissionResult.isBrowserRequired() &&
+                        (submissionResult.isInvalidPassword() || submissionResult.isInvalidInput())
+                    ) {
+                        continueV2(NativeAuthDestination.PASSWORD, generation = generation)
+                    }
+                    handleV2Result(submissionResult, generation)
                 }
             }
             is NativeAuthResultV2.ExistingAccountCodeRequired -> {

@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -100,9 +99,6 @@ class HomeFragment : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        binding.emailText.doAfterTextChanged {
-            updateActionAvailability(viewModel.uiState.value)
-        }
     }
 
     private fun observeState() {
@@ -161,10 +157,9 @@ class HomeFragment : Fragment() {
     private fun updateActionAvailability(state: NativeAuthUiState) {
         val signedIn = state.accountState != null
         val canStart = !state.busy && !state.flowActive && !signedIn
-        val hasUsername = binding.emailText.text?.isNotBlank() == true
-        binding.signIn.isEnabled = canStart && hasUsername
-        binding.signUp.isEnabled = canStart && hasUsername
-        binding.resetPassword.isEnabled = canStart && hasUsername
+        binding.signIn.isEnabled = canStart
+        binding.signUp.isEnabled = canStart
+        binding.resetPassword.isEnabled = canStart
         binding.signInWithBrowser.isEnabled = canStart
         binding.signInWithGoogle.isEnabled = canStart
         binding.signInWithFacebook.isEnabled = canStart

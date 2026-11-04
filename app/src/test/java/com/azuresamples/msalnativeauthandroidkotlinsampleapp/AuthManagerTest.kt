@@ -34,6 +34,29 @@ import java.util.ArrayDeque
 class AuthManagerTest {
 
     @Test
+    fun blankUsernamesReachV2EntryPointsUnchanged() = runBlocking {
+        for (username in listOf("", "   ")) {
+            var signIn: NativeAuthSignInParametersV2? = null
+            AuthManager(applicationReturning(error(), "signInV2") {
+                signIn = it as NativeAuthSignInParametersV2
+            }).signIn(username)
+            assertEquals(username, signIn!!.username)
+
+            var signUp: NativeAuthSignUpParametersV2? = null
+            AuthManager(applicationReturning(error(), "signUpV2") {
+                signUp = it as NativeAuthSignUpParametersV2
+            }).signUp(username)
+            assertEquals(username, signUp!!.username)
+
+            var reset: NativeAuthResetPasswordParametersV2? = null
+            AuthManager(applicationReturning(error(), "resetPasswordV2") {
+                reset = it as NativeAuthResetPasswordParametersV2
+            }).resetPassword(username)
+            assertEquals(username, reset!!.username)
+        }
+    }
+
+    @Test
     fun signInUsesPasswordFreeV2ParametersAndForwardsClaimsWithoutAddingCustomScopes() = runBlocking {
         var parameters: NativeAuthSignInParametersV2? = null
         val claims = authenticationContextClaims()

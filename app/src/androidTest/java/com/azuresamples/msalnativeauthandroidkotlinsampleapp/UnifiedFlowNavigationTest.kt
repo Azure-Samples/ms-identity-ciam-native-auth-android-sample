@@ -5,20 +5,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
 import androidx.test.espresso.matcher.ViewMatchers.Visibility
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.hamcrest.Matchers.startsWith
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class UnifiedFlowNavigationTest {
@@ -30,6 +37,25 @@ class UnifiedFlowNavigationTest {
             onView(withId(R.id.use_v2_checkbox)).check(matches(isChecked()))
             onView(withId(R.id.password_input_layout))
                 .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+        }
+    }
+
+    @Test
+    fun emptyUsernamesReachSdkValidationForAllEntryPoints() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            awaitUiState(scenario) { !it.busy && !it.flowActive }
+
+            for (actionId in listOf(R.id.sign_in, R.id.sign_up, R.id.reset_password)) {
+                scenario.onActivity { activity ->
+                    activity.findViewById<android.widget.EditText>(R.id.email_text).text.clear()
+                    val action = activity.findViewById<View>(actionId)
+                    assertTrue("An empty username must not disable the action", action.isEnabled)
+                    action.performClick()
+                }
+                awaitUiState(scenario) { it.status.startsWith("invalidUsername:") && !it.busy }
+                onView(withId(R.id.signed_out_status_text))
+                    .check(matches(withText(startsWith("invalidUsername:"))))
+            }
         }
     }
 
@@ -90,6 +116,21 @@ class UnifiedFlowNavigationTest {
                         gapDp in 0f..30f
                     )
                 }
+            }
+
+            private fun awaitUiState(
+                scenario: ActivityScenario<MainActivity>,
+                predicate: (NativeAuthUiState) -> Boolean
+            ) {
+                val ready = CountDownLatch(1)
+                scenario.onActivity { activity ->
+                    val viewModel = ViewModelProvider(activity)[NativeAuthViewModel::class.java]
+                    activity.lifecycleScope.launch {
+                        viewModel.uiState.first(predicate)
+                        ready.countDown()
+                    }
+                }
+                assertTrue("Timed out waiting for the authentication UI state", ready.await(10, TimeUnit.SECONDS))
             }
         }
     }
