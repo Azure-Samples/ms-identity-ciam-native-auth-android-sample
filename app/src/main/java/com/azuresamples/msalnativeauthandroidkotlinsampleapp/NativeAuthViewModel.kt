@@ -3,7 +3,6 @@ package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.client.exception.MsalClientException
 import com.microsoft.identity.common.logging.Logger
 import com.microsoft.identity.nativeauth.AuthMethod
@@ -201,10 +200,9 @@ class NativeAuthViewModel(
         }
         launchFlowOperation(generation) {
             try {
-                val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
                     handleV2Result(
-                        authManager.signIn(email, claimsRequest) {
+                        authManager.signIn(email) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -212,7 +210,6 @@ class NativeAuthViewModel(
                 } else {
                     val parameters = NativeAuthSignInParameters(username = email)
                     parameters.password = password
-                    parameters.claimsRequest = claimsRequest
                     handleV1SignInResult(authClient.signIn(parameters), generation)
                 }
             } catch (exception: Exception) {
@@ -238,9 +235,8 @@ class NativeAuthViewModel(
             try {
                 val attributes = buildOptionalAttributes(givenName, lastName)
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
-                    val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                     handleV2Result(
-                        authManager.signUp(email, attributes, claimsRequest) {
+                        authManager.signUp(email, attributes) {
                             isCurrentFlow(generation)
                         },
                         generation
@@ -267,9 +263,8 @@ class NativeAuthViewModel(
         launchFlowOperation(generation) {
             try {
                 if (_uiState.value.activeApi == NativeAuthApi.V2) {
-                    val claimsRequest = ClaimsRequest.getClaimsRequestFromJsonString(Configuration.authenticationContextClaim)
                     handleV2Result(
-                        authManager.resetPassword(email, claimsRequest) {
+                        authManager.resetPassword(email) {
                             isCurrentFlow(generation)
                         },
                         generation

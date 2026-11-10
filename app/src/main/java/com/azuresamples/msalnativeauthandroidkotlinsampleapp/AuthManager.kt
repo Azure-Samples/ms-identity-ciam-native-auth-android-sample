@@ -1,6 +1,5 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
-import com.microsoft.identity.client.claims.ClaimsRequest
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.UserAttributes
@@ -33,33 +32,27 @@ class AuthManager(private val application: INativeAuthPublicClientApplication) {
 
     suspend fun signIn(
         email: String,
-        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthSignInParametersV2(username = email)
-        parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.signInV2(parameters), isCurrent)
     }
 
     suspend fun signUp(
         email: String,
         attributes: UserAttributes? = null,
-        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthSignUpParametersV2(username = email)
         parameters.attributes = attributes
-        parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.signUpV2(parameters), isCurrent)
     }
 
     suspend fun resetPassword(
         email: String,
-        claimsRequest: ClaimsRequest? = null,
         isCurrent: () -> Boolean = { true }
     ): NativeAuthResultV2 {
         val parameters = NativeAuthResetPasswordParametersV2(username = email)
-        parameters.claimsRequest = claimsRequest
         return trackIfCurrent(application.resetPasswordV2(parameters), isCurrent)
     }
 
