@@ -3,7 +3,7 @@
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Id_Here"
     }
   ],
   "challenge_types": ["oob", "password"],
