@@ -1,17 +1,21 @@
 package com.azuresamples.msalnativeauthandroidkotlinsampleapp
 
 import com.microsoft.identity.common.java.nativeauth.providers.responses.v2.NativeAuthV2ContinuationState
+import com.microsoft.identity.client.IAccount
 import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.RequiredUserAttribute
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
+import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.AccountState
 import com.microsoft.identity.nativeauth.statemachine.states.AuthMethodSelectionRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AwaitingMFAState
 import com.microsoft.identity.nativeauth.statemachine.states.CodeRequiredStateV2
@@ -22,14 +26,17 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.SignInPasswordRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -39,6 +46,9 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.lang.reflect.Proxy
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.startCoroutine
 
 class NativeAuthViewModelTest {
 
@@ -75,6 +85,102 @@ class NativeAuthViewModelTest {
 
         assertFalse(viewModel.uiState.value.flowActive)
         assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+    }
+
+    @Test
+    fun cancellingInFlightSignInReconcilesLateCachedAccountsForBothApis() = runBlocking {
+        for (api in NativeAuthApi.values()) {
+            val response = CompletableDeferred<Any>()
+            val account = createAccountState()
+            var cachedAccount: AccountState? = null
+            var accountReads = 0
+            val application = applicationWithSignIn(
+                signIn = {
+                    response.await().also { cachedAccount = account }
+                },
+                getAccount = {
+                    accountReads++
+                    cachedAccount?.let { GetAccountResult.AccountFound(it) }
+                        ?: GetAccountResult.NoAccountFound
+                }
+            )
+            val viewModel = createViewModel(application = application)
+            viewModel.setUseNativeAuthV2(api == NativeAuthApi.V2)
+            viewModel.startSignIn("user@example.com", null)
+
+            viewModel.cancelFlow()
+
+            assertFalse(viewModel.uiState.value.flowActive)
+            assertTrue(viewModel.uiState.value.busy)
+            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+            assertNull(viewModel.beginFlow())
+            viewModel.returnHome()
+            assertEquals(0, accountReads)
+            assertTrue(viewModel.uiState.value.busy)
+
+            response.complete(if (api == NativeAuthApi.V2) {
+                NativeAuthResultV2.Complete(account, NativeAuthFlowScenarioV2.SIGN_IN)
+            } else {
+                SignInResult.Complete(account)
+            })
+            withTimeout(5_000) {
+                viewModel.uiState.first {
+                    it.accountState === account && it.accessTokenStatus != AccessTokenStatus.LOADING
+                }
+            }
+
+            assertEquals(1, accountReads)
+            assertSame(account, viewModel.uiState.value.accountState)
+            assertEquals("user@example.com", viewModel.uiState.value.accountName)
+            assertFalse(viewModel.uiState.value.busy)
+            assertFalse(viewModel.uiState.value.flowActive)
+        }
+    }
+
+    @Test
+    fun cancelledOperationWithoutCachedAccountUnlocksHomeAfterItFinishes() = runBlocking {
+        val response = CompletableDeferred<Any>()
+        var accountReads = 0
+        val application = applicationWithSignIn(
+            signIn = { response.await() },
+            getAccount = {
+                accountReads++
+                GetAccountResult.NoAccountFound
+            }
+        )
+        val manager = AuthManager(application)
+        val viewModel = createViewModel(application = application, authManager = manager)
+        viewModel.startSignIn("user@example.com", null)
+        viewModel.cancelFlow()
+
+        response.complete(NativeAuthResultV2.PasswordRequired(
+            createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+
+        assertEquals(1, accountReads)
+        assertNull(manager.currentState)
+        assertNull(viewModel.uiState.value.accountState)
+        assertFalse(viewModel.uiState.value.busy)
+        assertEquals("Authentication flow cancelled.", viewModel.uiState.value.status)
+        assertNotNull(viewModel.beginFlow())
+    }
+
+    @Test
+    fun cancelledOperationReconciliationErrorsAreVisible() = runBlocking {
+        val response = CompletableDeferred<Any>()
+        val application = applicationWithSignIn(
+            signIn = { response.await() },
+            getAccount = { throw IllegalStateException("Unable to read the cached account.") }
+        )
+        val viewModel = createViewModel(application = application)
+        viewModel.startSignIn("user@example.com", null)
+        viewModel.cancelFlow()
+
+        response.completeExceptionally(IllegalStateException("Sign-in failed."))
+
+        assertFalse(viewModel.uiState.value.busy)
+        assertFalse(viewModel.uiState.value.flowActive)
+        assertEquals("Unable to read the cached account.", viewModel.uiState.value.status)
     }
 
     @Test
@@ -344,31 +450,36 @@ class NativeAuthViewModelTest {
     }
 
     @Test
-    fun signInMethodSelectionDoesNotOpenPickerOrSubmitPassword() = runBlocking {
-        for (password in listOf(null, "password".toCharArray())) {
+    fun signInMethodSelectionOpensPickerForNewAndExistingAccountContinuations() = runBlocking {
+        for (existingAccount in listOf(false, true)) {
             val manager = AuthManager(applicationWithoutCalls())
             val viewModel = createViewModel(
                 authManager = manager,
                 initialPasswordSubmitter = { _, _ ->
-                    throw AssertionError("Only PasswordRequired may submit the entered password")
+                    throw AssertionError("Method selection must discard the initial password")
                 }
             )
-            viewModel.beginFlow(NativeAuthApi.V2, password = password)
+            viewModel.beginFlow(NativeAuthApi.V2, password = "password".toCharArray())
             val methods = listOf(
                 AuthMethod("email", "oob", "user@example.com", "email"),
                 AuthMethod("password", "password", null, "password")
             )
 
-            viewModel.handleV2Result(NativeAuthResultV2.AuthMethodSelectionRequired(
-                createMethodSelectionState(methods)
-            ))
+            val selection = createMethodSelectionState(methods, existingAccount = existingAccount)
+            viewModel.handleV2Result(NativeAuthResultV2.AuthMethodSelectionRequired(selection))
 
-            assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
-            assertFalse(viewModel.uiState.value.flowActive)
+            assertEquals(NativeAuthDestination.PICK_AUTH_METHOD, viewModel.uiState.value.destination)
+            assertTrue(viewModel.uiState.value.flowActive)
             assertFalse(viewModel.uiState.value.busy)
-            assertTrue(viewModel.uiState.value.authMethods.isEmpty())
-            assertTrue(viewModel.uiState.value.status.contains("does not support for sign-in"))
-            assertNull(manager.currentState)
+            assertEquals(methods, viewModel.uiState.value.authMethods)
+            assertEquals(R.string.pick_sign_in_method_text_value, viewModel.authMethodPrompt())
+            assertSame(selection, manager.currentState)
+
+            viewModel.handleV2Result(NativeAuthResultV2.PasswordRequired(
+                createState(PasswordRequiredStateV2::class.java), NativeAuthFlowScenarioV2.SIGN_IN
+            ))
+            assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+            assertTrue(viewModel.uiState.value.flowActive)
         }
     }
 
@@ -1018,6 +1129,81 @@ class NativeAuthViewModelTest {
         assertEquals(BrowserSignInRequest(null, "browser"), request.await())
     }
 
+    @Test
+    fun browserFallbackWaitsForCollectorAndIsNotReplayed() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V2)
+
+        viewModel.handleV2Result(NativeAuthErrorV2(
+            errorType = "browser_required",
+            errorMessage = "Continue in a browser.",
+            correlationId = "correlation-id",
+            scenario = NativeAuthFlowScenarioV2.SIGN_IN
+        ))
+
+        assertTrue(viewModel.uiState.value.busy)
+        assertEquals(
+            BrowserSignInRequest(null, "browser"),
+            withTimeout(1_000) { viewModel.browserSignInRequests.first() }
+        )
+        val restartedCollector = async(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.browserSignInRequests.first()
+        }
+        assertFalse(restartedCollector.isCompleted)
+        restartedCollector.cancel()
+    }
+
+    @Test
+    fun socialSignInWaitsForCollector() = runBlocking {
+        val viewModel = createViewModel()
+
+        viewModel.requestBrowserSignIn("www.linkedin.com", "LinkedIn")
+
+        assertEquals(
+            BrowserSignInRequest("www.linkedin.com", "LinkedIn"),
+            withTimeout(1_000) { viewModel.browserSignInRequests.first() }
+        )
+    }
+
+    @Test
+    fun v1IncorrectPasswordRetainsPasswordContinuationForCorrection() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V1)
+        viewModel.handleV1SignInResult(SignInResult.PasswordRequired(createV1PasswordState()))
+
+        viewModel.handleV1SignInResult(SignInSubmitPasswordError(
+            errorType = "invalid_credentials",
+            errorMessage = "Incorrect password. Try again.",
+            correlationId = "correlation-id"
+        ))
+
+        assertTrue(viewModel.uiState.value.flowActive)
+        assertFalse(viewModel.uiState.value.busy)
+        assertEquals(NativeAuthDestination.PASSWORD, viewModel.uiState.value.destination)
+        assertEquals("Incorrect password. Try again.", viewModel.uiState.value.status)
+    }
+
+    @Test
+    fun v1PasswordBrowserRequiredWaitsForCollector() = runBlocking {
+        val viewModel = createViewModel()
+        viewModel.beginFlow(NativeAuthApi.V1)
+        viewModel.handleV1SignInResult(SignInResult.PasswordRequired(createV1PasswordState()))
+
+        viewModel.handleV1SignInResult(SignInSubmitPasswordError(
+            errorType = "browser_required",
+            errorMessage = "Continue in a browser.",
+            correlationId = "correlation-id"
+        ))
+
+        assertFalse(viewModel.uiState.value.flowActive)
+        assertTrue(viewModel.uiState.value.busy)
+        assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+        assertEquals(
+            BrowserSignInRequest(null, "browser"),
+            withTimeout(1_000) { viewModel.browserSignInRequests.first() }
+        )
+    }
+
     private fun createViewModel(
         initialMfaRequester: suspend (AwaitingMFAState, AuthMethod) -> MFARequiredResult =
             { state, method -> state.requestChallenge(method) },
@@ -1025,18 +1211,68 @@ class NativeAuthViewModelTest {
             { state, method -> state.requestChallenge(method) },
         authManager: AuthManager? = null,
         initialPasswordSubmitter: suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
-            { state, password -> state.submitPassword(password) }
+            { state, password -> state.submitPassword(password) },
+        application: INativeAuthPublicClientApplication = applicationWithoutCalls()
     ): NativeAuthViewModel {
-        val application = applicationWithoutCalls()
         return NativeAuthViewModel(
             application,
             authManager ?: AuthManager(application),
             autoRestoreAccount = false,
             initialV1MfaRequester = initialMfaRequester,
             repeatedV1MfaRequester = repeatedMfaRequester,
-            initialV2PasswordSubmitter = initialPasswordSubmitter
+            initialV2PasswordSubmitter = initialPasswordSubmitter,
+            dispatcher = Dispatchers.Unconfined
         )
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun applicationWithSignIn(
+        signIn: suspend () -> Any,
+        getAccount: () -> GetAccountResult
+    ): INativeAuthPublicClientApplication =
+        Proxy.newProxyInstance(
+            INativeAuthPublicClientApplication::class.java.classLoader,
+            arrayOf(INativeAuthPublicClientApplication::class.java)
+        ) { _, method, arguments ->
+            when (method.name) {
+                "signIn", "signInV2" -> {
+                    signIn.startCoroutine(arguments.last() as Continuation<Any>)
+                    COROUTINE_SUSPENDED
+                }
+                "getCurrentAccount" -> getAccount()
+                else -> throw UnsupportedOperationException(method.name)
+            }
+        } as INativeAuthPublicClientApplication
+
+    private fun createAccountState(): AccountState {
+        val account = Proxy.newProxyInstance(
+            IAccount::class.java.classLoader,
+            arrayOf(IAccount::class.java)
+        ) { _, method, _ ->
+            when (method.name) {
+                "getUsername" -> "user@example.com"
+                else -> throw UnsupportedOperationException(method.name)
+            }
+        } as IAccount
+        val constructor = AccountState::class.java.getDeclaredConstructor(
+            IAccount::class.java,
+            NativeAuthPublicClientApplicationConfiguration::class.java,
+            String::class.java
+        )
+        constructor.isAccessible = true
+        return constructor.newInstance(
+            account, NativeAuthPublicClientApplicationConfiguration(), "correlation-id"
+        )
+    }
+
+    private fun createV1PasswordState() = SignInPasswordRequiredState(
+        continuationToken = "continuation-token",
+        correlationId = "correlation-id",
+        username = "user@example.com",
+        scopes = null,
+        claimsRequestJson = null,
+        config = NativeAuthPublicClientApplicationConfiguration()
+    )
 
     private fun applicationWithoutCalls(): INativeAuthPublicClientApplication =
         Proxy.newProxyInstance(

@@ -85,7 +85,7 @@ Open `app/src/main/res/raw/native_auth_sample_app_config.json` file and you find
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Id_Here"
     }
   ],
   "challenge_types": ["oob", "password"],
@@ -101,6 +101,7 @@ The JSON configuration file has:
 
 * _client_id_ - the value _Enter_the_Application_Id_Here_ is replaced with **Application (client) ID** of the app you register during the project setup. The **Application (client) ID** is unique identifier of your registered application.
 * _Enter_the_Tenant_Subdomain_Here_ - the value _Enter_the_Tenant_Subdomain_Here_ is replaced with the Directory (tenant) subdomain. The tenant subdomain URL is used to construct the authentication endpoint for your app.
+* _Enter_the_Tenant_Id_Here_ - the value _Enter_the_Tenant_Id_Here_ is replaced with the Directory (tenant) Id. The tenant subdomain URL is used to construct the authentication endpoint for your app.
 
 You use `app/src/main/res/raw/native_auth_sample_app_config.json` file to set configuration options when you initialize the client app in the Microsoft Authentication Library (MSAL).
 

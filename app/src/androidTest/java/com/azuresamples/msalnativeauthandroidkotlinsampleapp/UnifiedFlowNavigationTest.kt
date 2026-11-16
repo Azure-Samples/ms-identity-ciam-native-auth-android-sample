@@ -117,21 +117,21 @@ class UnifiedFlowNavigationTest {
                     )
                 }
             }
+        }
+    }
 
-            private fun awaitUiState(
-                scenario: ActivityScenario<MainActivity>,
-                predicate: (NativeAuthUiState) -> Boolean
-            ) {
-                val ready = CountDownLatch(1)
-                scenario.onActivity { activity ->
-                    val viewModel = ViewModelProvider(activity)[NativeAuthViewModel::class.java]
-                    activity.lifecycleScope.launch {
-                        viewModel.uiState.first(predicate)
-                        ready.countDown()
-                    }
-                }
-                assertTrue("Timed out waiting for the authentication UI state", ready.await(10, TimeUnit.SECONDS))
+    private fun awaitUiState(
+        scenario: ActivityScenario<MainActivity>,
+        predicate: (NativeAuthUiState) -> Boolean
+    ) {
+        val ready = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            val viewModel = ViewModelProvider(activity)[NativeAuthViewModel::class.java]
+            activity.lifecycleScope.launch {
+                viewModel.uiState.first(predicate)
+                ready.countDown()
             }
         }
+        assertTrue("Timed out waiting for the authentication UI state", ready.await(10, TimeUnit.SECONDS))
     }
 }

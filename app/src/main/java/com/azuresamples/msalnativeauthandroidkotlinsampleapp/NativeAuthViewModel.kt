@@ -28,6 +28,7 @@ import com.microsoft.identity.nativeauth.statemachine.errors.ResetPasswordSubmit
 import com.microsoft.identity.nativeauth.statemachine.errors.ResendCodeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInContinuationError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInError
+import com.microsoft.identity.nativeauth.statemachine.errors.SignInSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpSubmitAttributesError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignUpSubmitPasswordError
@@ -62,13 +63,17 @@ import com.microsoft.identity.nativeauth.statemachine.states.SignUpAttributesReq
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpCodeRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignUpPasswordRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthRegistrationRequiredStateV2
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -132,7 +137,8 @@ class NativeAuthViewModel(
         { state, method -> state.requestChallenge(method) },
     private val initialV2PasswordSubmitter:
         suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
-        { state, password -> state.submitPassword(password) }
+        { state, password -> state.submitPassword(password) },
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NativeAuthUiState())
@@ -144,17 +150,18 @@ class NativeAuthViewModel(
     )
     val navigation: SharedFlow<NativeAuthDestination> = _navigation.asSharedFlow()
 
-    private val _browserSignInRequests = MutableSharedFlow<BrowserSignInRequest>(
-        extraBufferCapacity = 1
-    )
-    val browserSignInRequests: SharedFlow<BrowserSignInRequest> =
-        _browserSignInRequests.asSharedFlow()
+    private val _browserSignInRequests = Channel<BrowserSignInRequest>(Channel.BUFFERED)
+    val browserSignInRequests: Flow<BrowserSignInRequest> =
+        _browserSignInRequests.receiveAsFlow()
 
     private var v1State: Parcelable? = null
     private var v1SelectionState: Parcelable? = null
     private var pendingV2Password: CharArray? = null
     private var flowGeneration = 0L
     private var accessToken: String? = null
+    private var activeFlowOperations = 0
+    private var accountReconciliationPending = false
+    private var methodSelectionScenario: NativeAuthFlowScenarioV2? = null
 
     init {
         if (autoRestoreAccount) {
@@ -163,31 +170,41 @@ class NativeAuthViewModel(
     }
 
     fun setUseNativeAuthV2(enabled: Boolean) {
-        if (!_uiState.value.flowActive) {
+        if (!_uiState.value.flowActive && !_uiState.value.busy) {
             _uiState.value = _uiState.value.copy(useNativeAuthV2 = enabled)
         }
     }
 
     fun refreshAccount() {
-        viewModelScope.launch {
+        if (accountReconciliationPending) {
+            return
+        }
+        viewModelScope.launch(dispatcher) {
             _uiState.value = _uiState.value.copy(busy = true)
-            when (val result = authClient.getCurrentAccount()) {
-                is GetAccountResult.AccountFound -> updateAccount(result.resultValue)
-                is GetAccountResult.NoAccountFound -> {
-                    accessToken = null
-                    _uiState.value = _uiState.value.copy(
-                        busy = false,
-                        accountState = null,
-                        accountName = null,
-                        accessTokenStatus = AccessTokenStatus.NONE
-                    )
+            try {
+                when (val result = authClient.getCurrentAccount()) {
+                    is GetAccountResult.AccountFound -> updateAccount(result.resultValue)
+                    is GetAccountResult.NoAccountFound -> {
+                        accessToken = null
+                        _uiState.value = _uiState.value.copy(
+                            busy = false,
+                            accountState = null,
+                            accountName = null,
+                            accessTokenStatus = AccessTokenStatus.NONE
+                        )
+                    }
+                    else -> {
+                        _uiState.value = _uiState.value.copy(
+                            busy = false,
+                            status = errorMessage(result)
+                        )
+                    }
                 }
-                else -> {
-                    _uiState.value = _uiState.value.copy(
-                        busy = false,
-                        status = errorMessage(result)
-                    )
-                }
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    busy = false,
+                    status = exceptionMessage(exception)
+                )
             }
         }
     }
@@ -636,7 +653,7 @@ class NativeAuthViewModel(
 
     fun signOut() {
         val account = _uiState.value.accountState ?: return
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             _uiState.value = _uiState.value.copy(busy = true)
             when (val result = account.signOut()) {
                 is SignOutResult.Complete -> finishFlow(null, "Sign out successful.")
@@ -659,7 +676,7 @@ class NativeAuthViewModel(
             return
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             _uiState.value = _uiState.value.copy(
                 busy = true,
                 accessTokenStatus = AccessTokenStatus.LOADING,
@@ -733,7 +750,7 @@ class NativeAuthViewModel(
             busy = true,
             status = "Signing in with $displayName."
         )
-        if (!_browserSignInRequests.tryEmit(BrowserSignInRequest(domainHint, displayName))) {
+        if (!_browserSignInRequests.trySend(BrowserSignInRequest(domainHint, displayName)).isSuccess) {
             _uiState.value = _uiState.value.copy(
                 busy = false,
                 status = "Unable to start browser sign-in."
@@ -761,8 +778,11 @@ class NativeAuthViewModel(
             v1State is RegisterStrongAuthState ||
                 authManager.currentState is StrongAuthRegistrationRequiredStateV2 ->
                 R.string.pick_auth_method_registration_text_value
-            authManager.currentState is AuthMethodSelectionRequiredStateV2 ->
+            authManager.currentState is AuthMethodSelectionRequiredStateV2 &&
+                methodSelectionScenario == NativeAuthFlowScenarioV2.RESET_PASSWORD ->
                 R.string.pick_password_reset_method_text_value
+            authManager.currentState is AuthMethodSelectionRequiredStateV2 ->
+                R.string.pick_sign_in_method_text_value
             else -> R.string.pick_auth_method_text_value
         }
     }
@@ -770,9 +790,10 @@ class NativeAuthViewModel(
     fun cancelFlow() {
         flowGeneration++
         clearContinuation()
+        accountReconciliationPending = activeFlowOperations > 0
         _uiState.value = _uiState.value.copy(
             flowActive = false,
-            busy = false,
+            busy = accountReconciliationPending,
             activeApi = null,
             destination = NativeAuthDestination.HOME,
             status = "Authentication flow cancelled.",
@@ -800,7 +821,7 @@ class NativeAuthViewModel(
         api: NativeAuthApi? = null,
         password: CharArray? = null
     ): Long? {
-        if (_uiState.value.flowActive) {
+        if (_uiState.value.flowActive || _uiState.value.busy) {
             return null
         }
         val selectedApi = api ?: if (_uiState.value.useNativeAuthV2) {
@@ -918,19 +939,15 @@ class NativeAuthViewModel(
                 )
             }
             is NativeAuthResultV2.AuthMethodSelectionRequired -> {
-                if (result.scenario == NativeAuthFlowScenarioV2.RESET_PASSWORD) {
-                    continueV2(
-                        NativeAuthDestination.PICK_AUTH_METHOD,
-                        authMethods = result.authMethods,
-                        generation = generation
-                    )
-                } else {
-                    failFlow(
-                        "The SDK requested authentication-method selection, which this sample " +
-                            "does not support for sign-in.",
-                        generation
-                    )
+                methodSelectionScenario = result.scenario
+                if (result.scenario == NativeAuthFlowScenarioV2.SIGN_IN) {
+                    clearPendingV2Password()
                 }
+                continueV2(
+                    NativeAuthDestination.PICK_AUTH_METHOD,
+                    authMethods = result.authMethods,
+                    generation = generation
+                )
             }
             is NativeAuthResultV2.MFAVerificationRequired -> {
                 continueV2(
@@ -1084,6 +1101,7 @@ class NativeAuthViewModel(
             }
             is SignInError -> handleV1Error(result, generation)
             is SignInContinuationError -> handleV1Error(result, generation)
+            is SignInSubmitPasswordError -> handleRecoverableV1Error(result, generation)
             is SubmitCodeError -> handleRecoverableV1Error(result, generation)
             is MFASubmitChallengeError -> handleRecoverableV1Error(result, generation)
             else -> invalidContinuation(generation)
@@ -1224,7 +1242,7 @@ class NativeAuthViewModel(
             canResendChallenge = false
         )
         _navigation.emit(NativeAuthDestination.HOME)
-        _browserSignInRequests.emit(BrowserSignInRequest(null, "browser"))
+        _browserSignInRequests.send(BrowserSignInRequest(null, "browser"))
     }
 
     private fun continueV1(
@@ -1399,7 +1417,7 @@ class NativeAuthViewModel(
     }
 
     private fun retrieveAccessToken(accountState: AccountState) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             when (val result = getAccessToken(accountState, null)) {
                 is GetAccessTokenResult.Complete -> {
                     if (_uiState.value.accountState === accountState) {
@@ -1443,6 +1461,7 @@ class NativeAuthViewModel(
     private fun clearContinuation() {
         v1State = null
         v1SelectionState = null
+        methodSelectionScenario = null
         clearPendingV2Password()
         authManager.clearState()
     }
@@ -1464,9 +1483,18 @@ class NativeAuthViewModel(
         if (!isCurrentFlow(generation)) {
             return
         }
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             if (isCurrentFlow(generation)) {
-                operation()
+                activeFlowOperations++
+                try {
+                    operation()
+                } finally {
+                    activeFlowOperations--
+                    if (accountReconciliationPending && activeFlowOperations == 0) {
+                        accountReconciliationPending = false
+                        refreshAccount()
+                    }
+                }
             }
         }
     }
