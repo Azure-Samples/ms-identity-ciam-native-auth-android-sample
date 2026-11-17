@@ -138,7 +138,15 @@ class NativeAuthViewModel(
     private val initialV2PasswordSubmitter:
         suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
         { state, password -> state.submitPassword(password) },
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val initialV1RegistrationRequester:
+        suspend (RegisterStrongAuthState, NativeAuthChallengeAuthMethodParameters) ->
+            RegisterStrongAuthChallengeResult =
+        { state, parameters -> state.challengeAuthMethod(parameters) },
+    private val repeatedV1RegistrationRequester:
+        suspend (RegisterStrongAuthVerificationRequiredState, NativeAuthChallengeAuthMethodParameters) ->
+            RegisterStrongAuthChallengeResult =
+        { state, parameters -> state.challengeAuthMethod(parameters) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NativeAuthUiState())
@@ -156,6 +164,7 @@ class NativeAuthViewModel(
 
     private var v1State: Parcelable? = null
     private var v1SelectionState: Parcelable? = null
+    private var v1RegistrationParameters: NativeAuthChallengeAuthMethodParameters? = null
     private var pendingV2Password: CharArray? = null
     private var flowGeneration = 0L
     private var accessToken: String? = null
@@ -551,22 +560,12 @@ class NativeAuthViewModel(
                 }
                 val state = v1SelectionState as? RegisterStrongAuthState
                     ?: return@launchFlowOperation invalidContinuation(generation)
-                val result = state.challengeAuthMethod(
-                    NativeAuthChallengeAuthMethodParameters(authMethod, contact)
+                val parameters = NativeAuthChallengeAuthMethodParameters(authMethod, contact)
+                v1RegistrationParameters = parameters
+                handleV1RegistrationChallengeResult(
+                    initialV1RegistrationRequester(state, parameters),
+                    generation
                 )
-                when (result) {
-                    is RegisterStrongAuthChallengeResult.VerificationRequired -> {
-                        continueV1(
-                            result.result.getNextState(),
-                            NativeAuthDestination.MFA_VERIFICATION,
-                            sentTo = result.result.getSentTo(),
-                            channel = result.result.getChannel(),
-                            generation = generation
-                        )
-                    }
-                    is RegisterStrongAuthChallengeError ->
-                        handleRecoverableV1Error(result, generation)
-                }
             } catch (exception: Exception) {
                 failFlow(exceptionMessage(exception), generation)
             }
@@ -643,6 +642,14 @@ class NativeAuthViewModel(
                         return invalidContinuation(generation)
                     }
                     requestRepeatedV1MfaChallenge(state, method, generation)
+                }
+                is RegisterStrongAuthVerificationRequiredState -> {
+                    val parameters = v1RegistrationParameters
+                        ?: return invalidContinuation(generation)
+                    handleV1RegistrationChallengeResult(
+                        repeatedV1RegistrationRequester(state, parameters),
+                        generation
+                    )
                 }
                 else -> invalidContinuation(generation)
             }
@@ -1157,6 +1164,27 @@ class NativeAuthViewModel(
         }
     }
 
+    private suspend fun handleV1RegistrationChallengeResult(
+        result: RegisterStrongAuthChallengeResult,
+        generation: Long
+    ) {
+        when (result) {
+            is RegisterStrongAuthChallengeResult.VerificationRequired -> {
+                continueV1(
+                    result.result.getNextState(),
+                    NativeAuthDestination.MFA_VERIFICATION,
+                    sentTo = result.result.getSentTo(),
+                    channel = result.result.getChannel(),
+                    canResendChallenge = true,
+                    generation = generation
+                )
+            }
+            is RegisterStrongAuthChallengeError ->
+                handleRecoverableV1Error(result, generation)
+            else -> invalidContinuation(generation)
+        }
+    }
+
     private suspend fun requestInitialV1MfaChallenge(
         state: AwaitingMFAState,
         authMethod: AuthMethod,
@@ -1461,6 +1489,7 @@ class NativeAuthViewModel(
     private fun clearContinuation() {
         v1State = null
         v1SelectionState = null
+        v1RegistrationParameters = null
         methodSelectionScenario = null
         clearPendingV2Password()
         authManager.clearState()
