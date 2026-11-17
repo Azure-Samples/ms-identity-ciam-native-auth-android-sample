@@ -10,14 +10,13 @@
 
 ## Overview
 
-This sample Android application demonstrates how to handle sign-up, sign-in, sign-out, and password reset scenarios using Microsoft Entra for customers. 
-You can configure the sample to call a protected web API after authenticating successfully.
+This sample Android application demonstrates sign-up, sign-in, sign-out, password reset, multi-factor authentication, strong-authentication registration, browser and social sign-in, and protected web API access using Microsoft Entra External ID.
 
 ## Contents
 
 | File/folder | Description |
 |-------------|-------------|
-| `app/src/main/res/raw/native_auth_sample_app_config.json`       | Configuration file. |
+| `app/src/main/res/raw/native_auth_sample_app_config.json` | Native authentication configuration file. |
 | `.gitignore` | Define what to ignore at commit time. |
 | `README.md` | This README file. |
 | `LICENSE`   | The license for the sample. |
@@ -70,6 +69,8 @@ Run and test the Android sample mobile application by following the steps in [Ru
 
 Follow the steps in [Sign in users and call an API in a sample Android mobile app by using native authentication](https://learn.microsoft.com/entra/external-id/customers/sample-native-authentication-android-sample-app-call-web-api) to sign in users and call a protected API in the Android sample mobile app.
 
+Set `WEB_API_URL` and `WEB_API_SCOPES` in `HomeFragment.kt`. The **Call Protected API** action is available only after the user signs in.
+
 ### Additional step: Add email one-time passcode MFA to your Android app (Private Preview)
 
 Add email one-time passcode MFA to the sign in flow by following the steps in [Add email one-time passcode MFA to your Android app](https://github.com/microsoft/entra-previews/blob/PP5/docs/Native-Auth/Developer-guides/0-Android-Kotlin/Add-email-otp-mfa-sign-in.md).
@@ -84,7 +85,7 @@ Open `app/src/main/res/raw/native_auth_sample_app_config.json` file and you find
   "authorities": [
     {
       "type": "CIAM",
-      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/"
+      "authority_url": "https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/Enter_the_Tenant_Id_Here"
     }
   ],
   "challenge_types": ["oob", "password"],
@@ -100,6 +101,7 @@ The JSON configuration file has:
 
 * _client_id_ - the value _Enter_the_Application_Id_Here_ is replaced with **Application (client) ID** of the app you register during the project setup. The **Application (client) ID** is unique identifier of your registered application.
 * _Enter_the_Tenant_Subdomain_Here_ - the value _Enter_the_Tenant_Subdomain_Here_ is replaced with the Directory (tenant) subdomain. The tenant subdomain URL is used to construct the authentication endpoint for your app.
+* _Enter_the_Tenant_Id_Here_ - the value _Enter_the_Tenant_Id_Here_ is replaced with the Directory (tenant) Id. The tenant subdomain URL is used to construct the authentication endpoint for your app.
 
 You use `app/src/main/res/raw/native_auth_sample_app_config.json` file to set configuration options when you initialize the client app in the Microsoft Authentication Library (MSAL).
 
@@ -114,7 +116,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
     authClient = PublicClientApplication.createNativeAuthPublicClientApplication( 
         this, 
-        R.raw.auth_config_native_auth 
+        R.raw.native_auth_sample_app_config
     ) 
 } 
 ```
