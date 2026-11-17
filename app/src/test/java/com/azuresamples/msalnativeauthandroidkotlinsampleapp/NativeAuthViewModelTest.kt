@@ -6,13 +6,17 @@ import com.microsoft.identity.nativeauth.AuthMethod
 import com.microsoft.identity.nativeauth.INativeAuthPublicClientApplication
 import com.microsoft.identity.nativeauth.NativeAuthPublicClientApplicationConfiguration
 import com.microsoft.identity.nativeauth.RequiredUserAttribute
+import com.microsoft.identity.nativeauth.parameters.NativeAuthChallengeAuthMethodParameters
+import com.microsoft.identity.nativeauth.parameters.NativeAuthRegisterStrongAuthVerificationRequiredResultParameter
 import com.microsoft.identity.nativeauth.statemachine.NativeAuthFlowScenarioV2
 import com.microsoft.identity.nativeauth.statemachine.errors.NativeAuthErrorV2
+import com.microsoft.identity.nativeauth.statemachine.errors.RegisterStrongAuthChallengeError
 import com.microsoft.identity.nativeauth.statemachine.errors.SignInSubmitPasswordError
 import com.microsoft.identity.nativeauth.statemachine.errors.SubmitCodeError
 import com.microsoft.identity.nativeauth.statemachine.results.MFARequiredResult
 import com.microsoft.identity.nativeauth.statemachine.results.GetAccountResult
 import com.microsoft.identity.nativeauth.statemachine.results.NativeAuthResultV2
+import com.microsoft.identity.nativeauth.statemachine.results.RegisterStrongAuthChallengeResult
 import com.microsoft.identity.nativeauth.statemachine.results.SignInResult
 import com.microsoft.identity.nativeauth.statemachine.states.AttributesRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.AccountState
@@ -26,6 +30,8 @@ import com.microsoft.identity.nativeauth.statemachine.states.MFARequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.NativeAuthBaseStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.NewPasswordRequiredStateV2
 import com.microsoft.identity.nativeauth.statemachine.states.PasswordRequiredStateV2
+import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthState
+import com.microsoft.identity.nativeauth.statemachine.states.RegisterStrongAuthVerificationRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.SignInPasswordRequiredState
 import com.microsoft.identity.nativeauth.statemachine.states.StrongAuthVerificationRequiredStateV2
 import kotlinx.coroutines.CoroutineStart
@@ -623,6 +629,117 @@ class NativeAuthViewModelTest {
     }
 
     @Test
+    fun v1EnrollmentResendPreservesContactAndUsesEachRefreshedContinuation() = runBlocking {
+        for ((channel, contact) in listOf(
+            "email" to "",
+            "email" to "alternate@example.com",
+            "sms" to "+10001112222"
+        )) {
+            val method = AuthMethod(channel, "oob", "user@example.com", channel)
+            val config = NativeAuthPublicClientApplicationConfiguration()
+            val registration = RegisterStrongAuthState("register-token", "correlation-id", config)
+            var verification = RegisterStrongAuthVerificationRequiredState(
+                "initial-token", "correlation-id", config
+            )
+            var resends = 0
+            val viewModel = createViewModel(
+                initialRegistrationRequester = { state, parameters ->
+                    assertSame(registration, state)
+                    assertEquals(method, parameters.authMethod)
+                    assertEquals(contact, parameters.verificationContact)
+                    registrationChallengeResult(verification, "initial-contact", channel)
+                },
+                repeatedRegistrationRequester = { state, parameters ->
+                    assertSame(verification, state)
+                    assertEquals(method, parameters.authMethod)
+                    assertEquals(contact, parameters.verificationContact)
+                    resends++
+                    verification = RegisterStrongAuthVerificationRequiredState(
+                        "refreshed-token-$resends", "correlation-id", config
+                    )
+                    registrationChallengeResult(verification, "refreshed-contact-$resends", channel)
+                }
+            )
+            viewModel.beginFlow(NativeAuthApi.V1)
+            viewModel.handleV1SignInResult(
+                SignInResult.StrongAuthMethodRegistrationRequired(registration, listOf(method))
+            )
+            viewModel.selectAuthMethod(method)
+            viewModel.submitVerificationContact(contact)
+
+            assertEquals(NativeAuthDestination.MFA_VERIFICATION, viewModel.uiState.value.destination)
+            assertTrue(viewModel.uiState.value.canResendChallenge)
+            assertEquals("initial-contact", viewModel.uiState.value.sentTo)
+            for (attempt in 1..2) {
+                viewModel.resendChallenge()
+
+                assertEquals(attempt, resends)
+                assertTrue(viewModel.uiState.value.flowActive)
+                assertFalse(viewModel.uiState.value.busy)
+                assertTrue(viewModel.uiState.value.canResendChallenge)
+                assertEquals("refreshed-contact-$attempt", viewModel.uiState.value.sentTo)
+                assertEquals(channel, viewModel.uiState.value.channel)
+            }
+        }
+    }
+
+    @Test
+    fun v1EnrollmentResendErrorsAllowRetryOrBrowserFallback() = runBlocking {
+        for (errorType in listOf("invalid_input", "browser_required")) {
+            val method = AuthMethod("email", "oob", null, "email")
+            val config = NativeAuthPublicClientApplicationConfiguration()
+            val registration = RegisterStrongAuthState("register-token", "correlation-id", config)
+            val verification = RegisterStrongAuthVerificationRequiredState(
+                "verification-token", "correlation-id", config
+            )
+            var attempts = 0
+            val viewModel = createViewModel(
+                initialRegistrationRequester = { _, _ ->
+                    registrationChallengeResult(verification, "user@example.com", "email")
+                },
+                repeatedRegistrationRequester = { state, _ ->
+                    assertSame(verification, state)
+                    attempts++
+                    if (attempts == 1) {
+                        RegisterStrongAuthChallengeError(
+                            errorType = errorType,
+                            errorMessage = "Challenge could not be sent.",
+                            correlationId = "correlation-id"
+                        )
+                    } else {
+                        registrationChallengeResult(verification, "user@example.com", "email")
+                    }
+                }
+            )
+            viewModel.beginFlow(NativeAuthApi.V1)
+            viewModel.handleV1SignInResult(
+                SignInResult.StrongAuthMethodRegistrationRequired(registration, listOf(method))
+            )
+            viewModel.selectAuthMethod(method)
+            viewModel.submitVerificationContact("user@example.com")
+
+            viewModel.resendChallenge()
+
+            if (errorType == "browser_required") {
+                assertFalse(viewModel.uiState.value.flowActive)
+                assertEquals(NativeAuthDestination.HOME, viewModel.uiState.value.destination)
+                assertEquals(
+                    BrowserSignInRequest(null, "browser"),
+                    withTimeout(1_000) { viewModel.browserSignInRequests.first() }
+                )
+            } else {
+                assertTrue(viewModel.uiState.value.flowActive)
+                assertFalse(viewModel.uiState.value.busy)
+                assertTrue(viewModel.uiState.value.canResendChallenge)
+                assertEquals("Challenge could not be sent.", viewModel.uiState.value.status)
+                viewModel.resendChallenge()
+                assertEquals(2, attempts)
+                assertEquals("", viewModel.uiState.value.status)
+            }
+        }
+    }
+
+    @Test
     fun staleV2ResultCannotOverwriteNewV1FlowAfterCancel() = runBlocking {
         val manager = AuthManager(applicationWithoutCalls())
         val viewModel = createViewModel(authManager = manager)
@@ -1212,7 +1329,15 @@ class NativeAuthViewModelTest {
         authManager: AuthManager? = null,
         initialPasswordSubmitter: suspend (PasswordRequiredStateV2, CharArray) -> NativeAuthResultV2 =
             { state, password -> state.submitPassword(password) },
-        application: INativeAuthPublicClientApplication = applicationWithoutCalls()
+        application: INativeAuthPublicClientApplication = applicationWithoutCalls(),
+        initialRegistrationRequester:
+            suspend (RegisterStrongAuthState, NativeAuthChallengeAuthMethodParameters) ->
+                RegisterStrongAuthChallengeResult =
+            { state, parameters -> state.challengeAuthMethod(parameters) },
+        repeatedRegistrationRequester:
+            suspend (RegisterStrongAuthVerificationRequiredState, NativeAuthChallengeAuthMethodParameters) ->
+                RegisterStrongAuthChallengeResult =
+            { state, parameters -> state.challengeAuthMethod(parameters) }
     ): NativeAuthViewModel {
         return NativeAuthViewModel(
             application,
@@ -1221,7 +1346,28 @@ class NativeAuthViewModelTest {
             initialV1MfaRequester = initialMfaRequester,
             repeatedV1MfaRequester = repeatedMfaRequester,
             initialV2PasswordSubmitter = initialPasswordSubmitter,
-            dispatcher = Dispatchers.Unconfined
+            dispatcher = Dispatchers.Unconfined,
+            initialV1RegistrationRequester = initialRegistrationRequester,
+            repeatedV1RegistrationRequester = repeatedRegistrationRequester
+        )
+    }
+
+    private fun registrationChallengeResult(
+        state: RegisterStrongAuthVerificationRequiredState,
+        sentTo: String,
+        channel: String
+    ): RegisterStrongAuthChallengeResult {
+        val constructor =
+            NativeAuthRegisterStrongAuthVerificationRequiredResultParameter::class.java
+                .getDeclaredConstructor(
+                    RegisterStrongAuthVerificationRequiredState::class.java,
+                    Int::class.javaPrimitiveType,
+                    String::class.java,
+                    String::class.java
+                )
+        constructor.isAccessible = true
+        return RegisterStrongAuthChallengeResult.VerificationRequired(
+            constructor.newInstance(state, 6, sentTo, channel)
         )
     }
 
