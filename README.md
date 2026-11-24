@@ -71,7 +71,7 @@ Follow the steps in [Sign in users and call an API in a sample Android mobile ap
 
 Set `WEB_API_URL` and `WEB_API_SCOPES` in `HomeFragment.kt`. The **Call Protected API** action is available only after the user signs in.
 
-### Additional step: Add email one-time passcode MFA to your Android app (Private Preview)
+### Additional step: Add email one-time passcode MFA to your Android app
 
 Add email one-time passcode MFA to the sign in flow by following the steps in [Add email one-time passcode MFA to your Android app](https://github.com/microsoft/entra-previews/blob/PP5/docs/Native-Auth/Developer-guides/0-Android-Kotlin/Add-email-otp-mfa-sign-in.md).
 
