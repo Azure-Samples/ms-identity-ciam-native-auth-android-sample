@@ -34,7 +34,7 @@
     <string name="pick_password_reset_method_text_value">"Select a verification method for password reset."</string>
     <string name="pick_sign_in_method_text_value">"Select a method to sign in."</string>
     <string name="cancel_message">"Cancel"</string>
-    <string name="use_native_auth_v2">"Use Native Auth V2 (preview)"</string>
+    <string name="use_native_auth_v2">"Use Native Auth V2"</string>
     <string name="password_optional">"Password (leave empty to use email one-time passcode)"</string>
     <string name="optional_signup_attributes">"Optional sign-up attributes"</string>
     <string name="signed_in_as">"Signed in as %1$s"</string>
